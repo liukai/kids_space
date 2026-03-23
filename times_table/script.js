@@ -11,7 +11,7 @@
  * - Practice totals: localStorage mathPracticeState (score / cheat / tried survive reload)
  * - Wrong: up to 2 retries; 3rd wrong shows answer then auto-advance. Correct: short pause then next.
  * - Secrets (answer + Check, no score): 0410 → number rain; 1218 → party emoji rain + floor bounce.
- * - Number pad: always shown under the answer; pointerdown prevents blur while tapping keys.
+ * - Check button: under the answer; pointerdown prevents blur when tapping 🔎 on touch devices.
  * - Sounds (Web Audio): type tap, correct chord, gentle wrong, tada on new trophy.
  */
 
@@ -341,7 +341,7 @@
     btnChineseTable: document.getElementById("btn-chinese-table"),
     fullTableWrap: document.getElementById("full-table-wrap"),
     fullTable: document.getElementById("full-table"),
-    mobileNumpad: document.getElementById("mobile-numpad"),
+    btnAnswerCheck: document.getElementById("btn-answer-check"),
     celebrationToast: document.getElementById("celebration-toast"),
     trophyToast: document.getElementById("trophy-toast"),
     setSummary: document.getElementById("set-summary"),
@@ -367,78 +367,32 @@
   /** Chinese lines only on the ladder table */
   let showTableChinese = false;
 
-  /** Max digits in the answer box (matches input max="999"). */
-  const MAX_ANSWER_DIGITS = 3;
-
   const CELL_STATS_KEY = "mathCellStats";
   /** Saved score, cheat, tried — survives reload (browser localStorage, not HTTP cookies). */
   const PRACTICE_STATE_KEY = "mathPracticeState";
   /** Per pair "min-max": { r: right count, w: wrong count } */
   let cellStats = {};
 
-  function appendAnswerDigit(ch) {
-    if (
-      el.answerInput.disabled ||
-      el.answerInput.readOnly ||
-      ch === null ||
-      ch === undefined
-    ) {
-      return;
-    }
-    var v = String(el.answerInput.value).trim();
-    if (v.length >= MAX_ANSWER_DIGITS) return;
-    el.answerInput.value = v + String(ch);
-    playSoundType();
-    maybeStartQuestionTimerFromInput();
-  }
+  function initAnswerCheckButton() {
+    if (!el.btnAnswerCheck) return;
 
-  function backspaceAnswerDigit() {
-    if (el.answerInput.disabled || el.answerInput.readOnly) return;
-    var v = String(el.answerInput.value);
-    if (v.length === 0) return;
-    el.answerInput.value = v.slice(0, -1);
-    playSoundType();
-  }
-
-  function initMobileNumpad() {
-    if (!el.mobileNumpad) return;
-
-    el.mobileNumpad.addEventListener(
+    el.btnAnswerCheck.addEventListener(
       "pointerdown",
       function (e) {
-        if (e.target.closest("button.mobile-numpad-key")) {
-          e.preventDefault();
-        }
+        e.preventDefault();
       },
       true
     );
 
-    el.mobileNumpad.addEventListener("click", function (e) {
-      var digitBtn = e.target.closest("button[data-digit]");
-      if (digitBtn) {
-        if (!el.answerInput.disabled) {
-          el.answerInput.focus();
-        }
-        appendAnswerDigit(digitBtn.getAttribute("data-digit"));
+    el.btnAnswerCheck.addEventListener("click", function () {
+      if (cheatAwaitingContinue) {
+        advanceAfterAttempt();
         return;
       }
-      if (e.target.closest("button[data-action='back']")) {
-        if (!el.answerInput.disabled) {
-          el.answerInput.focus();
-        }
-        backspaceAnswerDigit();
-        return;
+      if (!el.answerInput.disabled) {
+        el.answerInput.focus();
       }
-      if (e.target.closest("button[data-action='check']")) {
-        if (cheatAwaitingContinue) {
-          advanceAfterAttempt();
-          return;
-        }
-        if (!el.answerInput.disabled) {
-          el.answerInput.focus();
-        }
-        submitAnswer();
-      }
+      submitAnswer();
     });
   }
 
@@ -880,7 +834,7 @@
   }
 
   /**
-   * Question 1 of each set: stay at 0.0s until the first digit (numpad or keyboard).
+   * Question 1 of each set: stay at 0.0s until the first digit (keyboard / on-screen keyboard).
    * Questions 2–10: start counting as soon as the question is shown.
    */
   function armQuestionTimer() {
@@ -1329,9 +1283,9 @@
       el.btnCheat.addEventListener("click", useCheat);
     }
 
-    initMobileNumpad();
+    initAnswerCheckButton();
 
-    /* Typing beep for hardware / mobile soft keyboard (numpad uses append/backspace). */
+    /* Typing beep for hardware / mobile soft keyboard. */
     el.answerInput.addEventListener("input", function () {
       if (el.answerInput.disabled || el.answerInput.readOnly) return;
       playSoundType();

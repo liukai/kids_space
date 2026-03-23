@@ -94,7 +94,7 @@
             <span class="stat-emoji" aria-hidden="true">✏️</span>
             <span class="stat-label">Tried</span>
           </div>
-          <span id="tried-count" class="stat-value-big" title="Every time you tap 🔎 on the number pad" aria-live="polite">0</span>
+          <span id="tried-count" class="stat-value-big" title="Every time you tap 🔎 Check" aria-live="polite">0</span>
         </div>
         <div class="stat-block">
           <div class="stat-heading">
@@ -210,25 +210,10 @@
         />
       </div>
 
-      <div id="mobile-numpad" class="mobile-numpad" aria-label="Number pad">
-        <div class="mobile-numpad-grid" role="group" aria-label="Number keys">
-          <button type="button" class="mobile-numpad-key" data-digit="1">1</button>
-          <button type="button" class="mobile-numpad-key" data-digit="2">2</button>
-          <button type="button" class="mobile-numpad-key" data-digit="3">3</button>
-          <button type="button" class="mobile-numpad-key" data-digit="4">4</button>
-          <button type="button" class="mobile-numpad-key" data-digit="5">5</button>
-          <button type="button" class="mobile-numpad-key" data-digit="6">6</button>
-          <button type="button" class="mobile-numpad-key" data-digit="7">7</button>
-          <button type="button" class="mobile-numpad-key" data-digit="8">8</button>
-          <button type="button" class="mobile-numpad-key" data-digit="9">9</button>
-          <button type="button" class="mobile-numpad-key mobile-numpad-back" data-action="back" aria-label="Backspace">
-            ⌫
-          </button>
-          <button type="button" class="mobile-numpad-key" data-digit="0">0</button>
-          <button type="button" class="mobile-numpad-key mobile-numpad-check" data-action="check" aria-label="Check answer">
-            🔎
-          </button>
-        </div>
+      <div class="answer-check-row" id="answer-check-row" aria-label="Submit answer">
+        <button type="button" class="btn-answer-check" id="btn-answer-check" aria-label="Check answer">
+          🔎
+        </button>
       </div>
     </section>
 

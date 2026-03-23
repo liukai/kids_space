@@ -1060,100 +1060,50 @@ html[data-theme="unicorn"] .answer-input--cheat-reveal {
   border-color: rgba(139, 92, 246, 0.4);
 }
 
-/* ----- Answer number pad (always visible under the field) ----- */
-.mobile-numpad {
-  margin: 0.35rem 0 0.65rem;
-}
-
-.mobile-numpad-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.4rem;
-  max-width: min(320px, 100%);
-  margin: 0 auto;
+/* ----- Check answer (under the field; digits via keyboard / OS keypad) ----- */
+.answer-check-row {
+  display: flex;
+  justify-content: center;
+  margin: 0.5rem 0 0.65rem;
   touch-action: manipulation;
 }
 
-.mobile-numpad-key {
+.btn-answer-check {
   font-family: inherit;
-  font-size: 1.35rem;
-  font-weight: 800;
-  min-height: 2.75rem;
-  padding: 0.5rem;
-  border: 2px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--card);
-  color: var(--text);
-  cursor: pointer;
-  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.06);
-  transition: transform 0.1s ease, filter 0.12s ease;
-}
-
-.mobile-numpad-key:active {
-  transform: scale(0.96);
-}
-
-.mobile-numpad-back {
-  font-size: 1.5rem;
-  line-height: 1;
-  background: rgba(196, 92, 106, 0.12);
-  color: var(--try-color);
-  border-color: rgba(196, 92, 106, 0.35);
-  box-shadow: 0 2px 0 rgba(196, 92, 106, 0.2);
-}
-
-.mobile-numpad-check {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 2.75rem;
-  padding: 0.4rem;
+  min-width: 4.75rem;
+  min-height: 2.85rem;
+  padding: 0.45rem 1rem;
   font-size: 1.45rem;
+  font-weight: 800;
   line-height: 1;
+  border: 2px solid var(--primary-dark);
+  border-radius: var(--radius-sm);
   background: var(--primary);
   color: #fff;
-  border-color: var(--primary-dark);
+  cursor: pointer;
   box-shadow: 0 2px 0 var(--primary-dark);
+  transition: transform 0.1s ease, filter 0.12s ease;
 }
 
-html[data-theme="unicorn"] .mobile-numpad-check {
+.btn-answer-check:active {
+  transform: scale(0.96);
+}
+
+html[data-theme="unicorn"] .btn-answer-check {
   background: var(--primary-solid);
   background-image: var(--primary);
   border-color: var(--primary-dark);
   color: #fff;
 }
 
-html[data-theme="retro"] .mobile-numpad-key:not(.mobile-numpad-check):not(.mobile-numpad-back) {
-  background: #121a16;
-  color: #c8f5d4;
-  border-color: rgba(120, 230, 160, 0.35);
-  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
-}
-
-html[data-theme="retro"] .mobile-numpad-back {
-  background: #2a1f1c;
-  color: #ffb4a8;
-  border-color: rgba(255, 140, 120, 0.42);
-  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
-}
-
-html[data-theme="retro"] .mobile-numpad-check {
+html[data-theme="retro"] .btn-answer-check {
   background: #1e4d32;
   color: #c8ffd8;
   border-color: rgba(110, 252, 160, 0.45);
   box-shadow: 0 2px 0 rgba(0, 0, 0, 0.4);
-}
-
-html[data-theme="unicorn"] .mobile-numpad-key:not(.mobile-numpad-check):not(.mobile-numpad-back) {
-  background: rgba(255, 255, 255, 0.55);
-  border-color: rgba(168, 85, 247, 0.22);
-}
-
-html[data-theme="unicorn"] .mobile-numpad-back {
-  background: rgba(219, 39, 119, 0.14);
-  color: var(--try-color);
-  border-color: rgba(219, 39, 119, 0.3);
-  box-shadow: 0 2px 0 rgba(168, 85, 247, 0.12);
 }
 
 .btn {

@@ -14,7 +14,7 @@ After you publish the repo on GitHub, you can add a CI badge with:
 - **Reference ladder** — full table in 九九 “staircase” layout with optional **Chinese rhymes** per cell.
 - **Practice history** — per-pair right/wrong bars in the table; **Clear history** resets ladder + saved score/cheat/tried counts (browser `localStorage` only).
 - **Themes** — Classic, Retro, and Unicorn; choice is remembered.
-- **Touch-friendly** — on-screen number pad; Web Audio feedback (unlocks on first interaction).
+- **Touch-friendly** — 🔎 Check under the answer (type digits with the keyboard or OS number pad); Web Audio feedback (unlocks on first interaction).
 - **Accessibility** — labels, `aria-live` regions, progress semantics, reduced-motion awareness for heavy animations.
 
 ## Run locally
