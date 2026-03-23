@@ -6,8 +6,8 @@ A small collection of **browser games for kids** — plain HTML, CSS, and JavaSc
 
 | Game | What it is | Open locally |
 |------|------------|--------------|
-| [**Typing practice**](typing_practice/) | Retro-terminal typing: letters, words, sentences, quiz; optional speech (English + 中文) and key sounds. | Open [`typing_practice/index.html`](typing_practice/index.html) |
-| [**Times table**](times_table/) | Multiplication practice (1×1–9×9), trophies, themes, optional 九九 rhymes, progress in the browser. | Open [`times_table/index.html`](times_table/index.html) |
+| [**Typing practice**](typing_practice/index.html) | Retro-terminal typing: letters, words, sentences, quiz; optional speech (English + 中文) and key sounds. | Open [`typing_practice/index.html`](typing_practice/index.html) |
+| [**Times table**](times_table/index.html) | Multiplication practice (1×1–9×9), trophies, themes, optional 九九 rhymes, progress in the browser. | Open [`times_table/index.html`](times_table/index.html) |
 
 Each folder has its own **README** with features, file layout, and tips:
 
@@ -24,8 +24,8 @@ After you enable **GitHub Actions** as the Pages source in **Settings → Pages*
 
 Use the **site home page** ([`index.html`](index.html) at the repo root) to jump to either game:
 
-- `…/typing_practice/`
-- `…/times_table/`
+- `…/typing_practice/index.html`
+- `…/times_table/index.html`
 
 Paths are relative, so the same links work when you clone the repo and open `index.html` via a local server (recommended) or from disk where supported.
 
