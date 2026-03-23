@@ -292,6 +292,7 @@ html[data-theme="retro"] .feedback-area.try {
   max-width: 900px;
   margin: 0 auto;
   padding: 1.25rem 1rem 2.5rem;
+  padding-top: max(1.25rem, env(safe-area-inset-top, 0px));
   padding-left: max(1rem, env(safe-area-inset-left, 0px));
   padding-right: max(1rem, env(safe-area-inset-right, 0px));
   padding-bottom: max(2.5rem, env(safe-area-inset-bottom, 0px));
@@ -393,6 +394,12 @@ html[data-theme="retro"] .feedback-area.try {
   margin-bottom: 0;
   box-shadow: var(--shadow);
   border: 1px solid var(--panel-border);
+}
+
+@media (max-width: 480px) {
+  .panel {
+    padding: 1rem 0.85rem;
+  }
 }
 
 .practice-panel {
@@ -911,17 +918,18 @@ html[data-theme="unicorn"] .trophy-progress-fill {
 .equation-wrap {
   position: relative;
   text-align: center;
-  margin: 0.5rem 0 0.4rem;
+  margin: 0.35rem 0 0.4rem;
 }
 
-/* Per-set: progress bar, this-question timer, avg when right, % right — compact strip above answer */
+/* Per-set: progress bar, this-question timer, avg when right, % right — above the question */
 .practice-set-strip {
-  margin: 0 0 0.55rem;
+  margin: 0.15rem 0 0.5rem;
   padding: 0.45rem 0.5rem;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background: rgba(0, 0, 0, 0.04);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  touch-action: manipulation;
 }
 
 html[data-theme="retro"] .practice-set-strip {
@@ -1194,13 +1202,23 @@ html[data-theme="retro"] .set-slots-legend {
   line-height: 1.15;
 }
 
-@media (max-width: 380px) {
+@media (max-width: 520px) {
   .set-strip-grid {
     grid-template-columns: 1fr 1fr;
   }
 
   .set-strip-cell:last-of-type {
     grid-column: 1 / -1;
+  }
+
+  .set-slot-markers {
+    gap: 0.38rem;
+  }
+
+  .set-slot-dot,
+  button.set-slot-dot {
+    width: 1.08rem;
+    height: 1.08rem;
   }
 }
 
