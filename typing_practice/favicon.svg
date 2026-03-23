@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Command line">
+  <rect width="64" height="64" rx="12" fill="#030806"/>
+  <!-- prior output lines -->
+  <rect x="9" y="13" width="30" height="5" rx="1.5" fill="#2a5c44" opacity="0.65"/>
+  <rect x="9" y="21" width="20" height="5" rx="1.5" fill="#2a5c44" opacity="0.45"/>
+  <!-- prompt > (tip on the right) -->
+  <path
+    d="M 12 26 L 36 40 L 12 54"
+    fill="none"
+    stroke="#5dff9a"
+    stroke-width="8"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <!-- underscore cursor -->
+  <rect x="42" y="44" width="15" height="7" rx="2" fill="#9dffc0"/>
+</svg>

@@ -1,6 +1,6 @@
 # Typing practice
 
-Kid-friendly **typing practice**: letters, CVC / sight / vocab, short sentences, and a quiz — with optional English + 中文 speech (master + per-language toggles), **key sounds** on/off, trophy **popups after** you finish a letter / word / line / quiz, and a short **completion flash** on the screen. **Retro computer** styling.
+Kid-friendly **typing practice**: letters, CVC / sight / vocab, short sentences, and a quiz — with optional English + 中文 speech (master + per-language toggles), **key sounds** on/off, trophy **popups after** you finish a letter / word / line / quiz, and a short **completion flash** on the screen. **Retro terminal** (green CRT-style screen) styling.
 
 ## Project structure
 
