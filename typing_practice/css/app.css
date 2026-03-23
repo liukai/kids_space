@@ -1221,7 +1221,28 @@ body::after {
   font-weight: 900;
   letter-spacing: 0.04em;
 }
-/* 🏆 +1 — mega trophy: clearly above 🥇 gold toast, not screen-filling */
+/* 🥇 +1 — mega trophy: same look as gold toast, slightly larger */
+.trophy-toast.trophy-toast--sz-gold-plus {
+  width: auto;
+  max-width: min(320px, 94vw);
+}
+.trophy-toast.trophy-toast--sz-gold-plus .trophy-toast-card {
+  padding: 12px 20px 13px;
+  gap: 11px;
+  border-radius: 15px;
+  width: auto;
+  justify-content: center;
+}
+.trophy-toast.trophy-toast--sz-gold-plus .trophy-toast-emoji {
+  font-size: 1.95rem;
+  line-height: 1;
+}
+.trophy-toast.trophy-toast--sz-gold-plus .trophy-toast-text {
+  font-size: 1.08rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+/* 🏆 +1 — legacy mega layout (unused by toast map; kept for reference) */
 .trophy-toast.trophy-toast--sz-trophy {
   width: min(560px, calc(100vw - 16px));
 }
