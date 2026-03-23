@@ -2,9 +2,9 @@
  * Math Game — 九九乘法表 practice (plain JS, no build)
  *
  * - Scoring: points from the smaller factor (2×9 & 9×2 both use 2); flair + flying 🎉
- * - Trophies: trophyCountFromScore(), progress bar (20 pts each), flying 🏆 to count + pop, maybeCelebrateTrophy()
- * - Set-of-10: stats panel (Set bar + Right %); timer (Q1 on first digit, Q2+ on show) + avg time when right; openSetSummary()
- * - Table filter: getActiveTables(), buildQuestionPool(); Clear → 1× only
+ * - Trophies: trophyCountFromScore(), compact strip atop practice panel; flying 🏆 to count + pop, maybeCelebrateTrophy()
+ * - Set-of-10: practice strip (Set bar + Right %, timer, avg); 10 dots; when 10/10 done, no auto summary/new set — 🔄 New set; tap dots to re-show that fact
+ * - Table filter: getActiveTables() may be empty; Clear → no tables, practice disabled + hint
  * - Ladder table + bars: renderFullTable(), cellStats (localStorage), showTableChinese, Clear history
  * - Cheat: tiny corner control; fills answer in a peek font, no auto-advance — 🔎 or Enter continues
  * - Tried: totalTried — each valid Check this session (wrong retries count)
@@ -12,6 +12,7 @@
  * - Wrong: up to 2 retries; 3rd wrong shows answer then auto-advance. Correct: short pause then next.
  * - Secrets (answer + Check, no score): 0410 → number rain; 1218 → party emoji rain + floor bounce.
  * - Check button: under the answer; pointerdown prevents blur when tapping 🔎 on touch devices.
+ * - Optional on-screen keypad (toggle; hidden by default; preference in localStorage).
  * - Sounds (Web Audio): type tap, correct chord, gentle wrong, tada on new trophy.
  */
 
@@ -336,6 +337,7 @@
     tableChips: document.getElementById("table-chips"),
     btnAllTables: document.getElementById("btn-all-tables"),
     btnClearTables: document.getElementById("btn-clear-tables"),
+    tableFilterWarn: document.getElementById("table-filter-warn"),
     btnToggleTable: document.getElementById("btn-toggle-table"),
     btnClearHistory: document.getElementById("btn-clear-history"),
     btnChineseTable: document.getElementById("btn-chinese-table"),
@@ -347,11 +349,18 @@
     setSummary: document.getElementById("set-summary"),
     setSummaryText: document.getElementById("set-summary-text"),
     setSummaryContinue: document.getElementById("set-summary-continue"),
+    btnNewSet: document.getElementById("btn-new-set"),
+    btnSetSummary: document.getElementById("btn-set-summary"),
     successBurst: document.getElementById("success-burst"),
+    numpad: document.getElementById("numpad"),
+    btnToggleKeypad: document.getElementById("btn-toggle-keypad"),
+    numpadBackspace: document.getElementById("numpad-backspace"),
   };
 
   const THEME_KEY = "mathGameTheme";
   const THEMES = ["classic", "retro", "unicorn"];
+  /** "1" = keypad visible (optional; default hidden). */
+  const KEYPAD_VISIBLE_KEY = "mathGameKeypadVisible";
 
   let totalScore = 0;
   let cheatCount = 0;
@@ -396,9 +405,100 @@
     });
   }
 
+  function setKeypadVisible(show) {
+    if (!el.numpad || !el.btnToggleKeypad) return;
+    if (show) {
+      el.numpad.removeAttribute("hidden");
+    } else {
+      el.numpad.setAttribute("hidden", "");
+    }
+    el.btnToggleKeypad.setAttribute("aria-expanded", show ? "true" : "false");
+    el.btnToggleKeypad.textContent = "\u2328\ufe0f";
+    el.btnToggleKeypad.setAttribute(
+      "aria-label",
+      show ? "Hide number keypad" : "Show number keypad"
+    );
+    el.btnToggleKeypad.setAttribute("title", show ? "Hide keypad" : "Show keypad");
+    try {
+      localStorage.setItem(KEYPAD_VISIBLE_KEY, show ? "1" : "0");
+    } catch (err) {
+      /* ignore */
+    }
+    if (show && el.answerInput && !el.answerInput.disabled) {
+      window.requestAnimationFrame(function () {
+        el.answerInput.focus();
+      });
+    }
+  }
+
+  function appendNumpadDigit(ch) {
+    if (!el.answerInput || el.answerInput.disabled || el.answerInput.readOnly) {
+      return;
+    }
+    var v = String(el.answerInput.value).replace(/\D/g, "");
+    if (v.length >= 3) {
+      return;
+    }
+    el.answerInput.value = v + ch;
+    playSoundType();
+    maybeStartQuestionTimerFromInput();
+    el.answerInput.focus();
+  }
+
+  function numpadBackspace() {
+    if (!el.answerInput || el.answerInput.disabled || el.answerInput.readOnly) {
+      return;
+    }
+    var v = String(el.answerInput.value);
+    el.answerInput.value = v.slice(0, Math.max(0, v.length - 1));
+    playSoundType();
+    el.answerInput.focus();
+  }
+
+  function initKeypad() {
+    if (!el.numpad || !el.btnToggleKeypad) return;
+
+    var savedOpen = false;
+    try {
+      savedOpen = localStorage.getItem(KEYPAD_VISIBLE_KEY) === "1";
+    } catch (err) {
+      /* ignore */
+    }
+    setKeypadVisible(savedOpen);
+
+    el.btnToggleKeypad.addEventListener("click", function () {
+      var open = el.numpad.hasAttribute("hidden");
+      setKeypadVisible(open);
+    });
+
+    function bindPadButton(btn) {
+      btn.addEventListener(
+        "pointerdown",
+        function (e) {
+          e.preventDefault();
+        },
+        true
+      );
+    }
+
+    document.querySelectorAll(".numpad-key[data-digit]").forEach(function (btn) {
+      bindPadButton(btn);
+      btn.addEventListener("click", function () {
+        appendNumpadDigit(btn.getAttribute("data-digit") || "");
+      });
+    });
+
+    if (el.numpadBackspace) {
+      bindPadButton(el.numpadBackspace);
+      el.numpadBackspace.addEventListener("click", numpadBackspace);
+    }
+  }
+
   let selectedTables = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9]);
 
   const QUESTIONS_PER_SET = 10;
+  /** Time over this (ms) on a correct check → yellow “slow” (if not already red). */
+  const SET_SLOW_MS = 5000;
 
   let slotInSet = 1;
   let setCorrect = 0;
@@ -418,6 +518,179 @@
   let waitingAutoAdvance = false;
   /** After cheat: answer shown; 🔎 or Enter advances (no auto timer). */
   let cheatAwaitingContinue = false;
+
+  /** Per finished question this set: null = not yet, ok / warn / bad (green / yellow / red dots). */
+  var setQuestionMarks = new Array(QUESTIONS_PER_SET).fill(null);
+  /** Same indices: { a, b } for each finished question (for dot review after set ends). */
+  var setQuestionPairs = new Array(QUESTIONS_PER_SET).fill(null);
+
+  function clearSetQuestionMarks() {
+    setQuestionMarks = new Array(QUESTIONS_PER_SET).fill(null);
+    setQuestionPairs = new Array(QUESTIONS_PER_SET).fill(null);
+  }
+
+  function isSetCompleteIdle() {
+    return (
+      setTotal >= QUESTIONS_PER_SET &&
+      !waitingAutoAdvance &&
+      !cheatAwaitingContinue
+    );
+  }
+
+  /**
+   * After 10/10, tap a dot to show that multiplication again (full answer in the equation line).
+   * @param {number} slotIndex 0..9
+   */
+  function showReviewForSetSlot(slotIndex) {
+    if (slotIndex < 0 || slotIndex >= QUESTIONS_PER_SET) {
+      return;
+    }
+    if (!isSetCompleteIdle()) {
+      return;
+    }
+    var pair = setQuestionPairs[slotIndex];
+    if (!pair) {
+      return;
+    }
+    var prod = pair.a * pair.b;
+    el.equation.textContent = pair.a + " × " + pair.b + " = " + prod;
+    if (el.questionPoints) {
+      el.questionPoints.textContent = "";
+      el.questionPoints.classList.remove("question-points-flair--earned");
+      el.questionPoints.removeAttribute("aria-label");
+    }
+    setFeedback(true, "Question " + (slotIndex + 1) + ": " + pair.a + "×" + pair.b + " = " + prod);
+  }
+
+  /**
+   * @param {{ fail?: boolean, cheat?: boolean, hadRetries?: boolean, elapsedMs?: number }} o
+   */
+  function recordSetQuestionOutcome(o) {
+    var idx = setTotal - 1;
+    if (idx < 0 || idx >= QUESTIONS_PER_SET) {
+      return;
+    }
+    if (o.fail) {
+      setQuestionMarks[idx] = "bad";
+    } else if (o.cheat) {
+      setQuestionMarks[idx] = "warn";
+    } else if (o.hadRetries || (o.elapsedMs != null && o.elapsedMs > SET_SLOW_MS)) {
+      setQuestionMarks[idx] = "warn";
+    } else {
+      setQuestionMarks[idx] = "ok";
+    }
+    setQuestionPairs[idx] = { a: currentA, b: currentB };
+  }
+
+  function renderSetQuestionMarkers() {
+    var row = document.getElementById("set-slot-markers");
+    if (!row) {
+      return;
+    }
+    row.innerHTML = "";
+    var idleDone = isSetCompleteIdle();
+    for (var i = 0; i < QUESTIONS_PER_SET; i++) {
+      var dot = document.createElement("button");
+      dot.type = "button";
+      dot.className = "set-slot-dot";
+      var pair = setQuestionPairs[i];
+      var canReview = idleDone && pair != null;
+      dot.disabled = !canReview;
+      var st = setQuestionMarks[i];
+      if (st === "bad") {
+        dot.classList.add("set-slot-dot--bad");
+        dot.title = canReview
+          ? "Show again: question " + (i + 1)
+          : "Missed (answer shown)";
+      } else if (st === "warn") {
+        dot.classList.add("set-slot-dot--warn");
+        dot.title = canReview
+          ? "Show again: question " + (i + 1)
+          : "Slow (>5s) or retries / peek";
+      } else if (st === "ok") {
+        dot.classList.add("set-slot-dot--ok");
+        dot.title = canReview
+          ? "Show again: question " + (i + 1)
+          : "Nice — quick and clean";
+      } else {
+        dot.classList.add("set-slot-dot--todo");
+        dot.title = "Question " + (i + 1) + " not done yet";
+      }
+      if (pair) {
+        dot.setAttribute(
+          "aria-label",
+          canReview
+            ? "Show question " +
+                (i + 1) +
+                " again: " +
+                pair.a +
+                " times " +
+                pair.b
+            : "Question " + (i + 1) + " done"
+        );
+      } else {
+        dot.setAttribute("aria-label", "Question " + (i + 1) + " not done yet");
+      }
+      dot.dataset.slotIndex = String(i);
+      dot.addEventListener("click", function (ev) {
+        var t = ev.currentTarget;
+        var idx = parseInt(t.getAttribute("data-slot-index") || "", 10);
+        if (!Number.isFinite(idx)) {
+          return;
+        }
+        showReviewForSetSlot(idx);
+      });
+      row.appendChild(dot);
+    }
+  }
+
+  function updateNewSetButton() {
+    if (!el.btnNewSet) {
+      return;
+    }
+    el.btnNewSet.disabled = selectedTables.size === 0;
+  }
+
+  function updateSetSummaryButton() {
+    if (!el.btnSetSummary) {
+      return;
+    }
+    el.btnSetSummary.hidden = !isSetCompleteIdle();
+  }
+
+  function resetCurrentSet() {
+    if (el.setSummary) {
+      el.setSummary.hidden = true;
+    }
+    waitingAutoAdvance = false;
+    cheatAwaitingContinue = false;
+    wrongAttemptsOnQuestion = 0;
+    slotInSet = 1;
+    setCorrect = 0;
+    setTotal = 0;
+    setCorrectDurationsMs = [];
+    clearSetQuestionMarks();
+    answered = false;
+    clearCheatRevealUi();
+    clearFeedback();
+    clearQuestionTimerTick();
+    questionTimerStarted = false;
+    questionFrozenElapsedMs = 0;
+    updateQuestionTimerDisplay();
+    el.answerInput.value = "";
+    updatePracticeButtons();
+    if (selectedTables.size === 0) {
+      syncTableSelectionPracticeUI();
+      updateSetDisplay();
+      return;
+    }
+    el.answerInput.disabled = false;
+    pickRandomQuestion();
+    renderEquation();
+    armQuestionTimer();
+    updateSetDisplay();
+    el.answerInput.focus();
+  }
 
   function removeRainLayers() {
     var a = document.getElementById("number-rain-layer");
@@ -564,20 +837,76 @@
     }, 700);
   }
 
-  /**
-   * Active tables for practice. Empty selection is not used — Clear sets {1} only.
-   * If somehow empty, fall back to 1×.
-   */
+  /** Selected tables for practice; may be empty (no questions until user picks at least one). */
   function getActiveTables() {
-    if (selectedTables.size === 0) {
-      return new Set([1]);
-    }
     return selectedTables;
+  }
+
+  /** No tables → disable answer path, show hints (filter strip + feedback). */
+  function syncTableSelectionPracticeUI() {
+    if (selectedTables.size === 0) {
+      clearQuestionTimerTick();
+      questionTimerStarted = false;
+      questionFrozenElapsedMs = 0;
+      updateQuestionTimerDisplay();
+      answered = false;
+      waitingAutoAdvance = false;
+      cheatAwaitingContinue = false;
+      wrongAttemptsOnQuestion = 0;
+      clearCheatRevealUi();
+      if (el.answerInput) {
+        el.answerInput.disabled = true;
+        el.answerInput.value = "";
+        el.answerInput.readOnly = false;
+        el.answerInput.classList.remove("answer-input--cheat-reveal");
+      }
+      if (el.btnAnswerCheck) {
+        el.btnAnswerCheck.disabled = true;
+      }
+      if (el.btnToggleKeypad) {
+        el.btnToggleKeypad.disabled = true;
+      }
+      if (el.numpad) {
+        el.numpad.setAttribute("hidden", "");
+        if (el.btnToggleKeypad) {
+          el.btnToggleKeypad.setAttribute("aria-expanded", "false");
+        }
+      }
+      renderEquation();
+      setFeedback(false, "Pick at least one table above 🙂");
+      if (el.tableFilterWarn) {
+        el.tableFilterWarn.hidden = false;
+        el.tableFilterWarn.textContent =
+          "Choose at least one number (1×–9×), or tap 🔢 All.";
+      }
+      updatePracticeButtons();
+      updateSetDisplay();
+      return;
+    }
+
+    if (el.tableFilterWarn) {
+      el.tableFilterWarn.hidden = true;
+      el.tableFilterWarn.textContent = "";
+    }
+    if (el.btnAnswerCheck) {
+      el.btnAnswerCheck.disabled = false;
+    }
+    if (el.btnToggleKeypad) {
+      el.btnToggleKeypad.disabled = false;
+    }
+    updatePracticeButtons();
+    if (el.answerInput) {
+      el.answerInput.disabled = answered;
+    }
+    updateSetDisplay();
   }
 
   function buildQuestionPool() {
     const tables = getActiveTables();
     const pool = [];
+    if (tables.size === 0) {
+      return pool;
+    }
     for (let a = 1; a <= 9; a++) {
       for (let b = 1; b <= 9; b++) {
         if (tables.has(a) || tables.has(b)) {
@@ -590,6 +919,12 @@
 
   function pickRandomQuestion() {
     const pool = buildQuestionPool();
+    if (pool.length === 0) {
+      currentA = 0;
+      currentB = 0;
+      currentAnswer = 0;
+      return;
+    }
     const pair = pool[Math.floor(Math.random() * pool.length)];
     currentA = pair[0];
     currentB = pair[1];
@@ -608,6 +943,15 @@
   }
 
   function renderEquation() {
+    if (selectedTables.size === 0) {
+      el.equation.textContent = "— × — = ?";
+      if (el.questionPoints) {
+        el.questionPoints.textContent = "";
+        el.questionPoints.classList.remove("question-points-flair--earned");
+        el.questionPoints.removeAttribute("aria-label");
+      }
+      return;
+    }
     el.equation.textContent = `${currentA} × ${currentB} = ?`;
     updateQuestionPointsLabel();
   }
@@ -785,8 +1129,9 @@
 
   function updatePracticeButtons() {
     if (el.btnCheat) {
-      el.btnCheat.hidden = answered;
-      el.btnCheat.disabled = answered;
+      var noTables = selectedTables.size === 0;
+      el.btnCheat.hidden = answered || noTables;
+      el.btnCheat.disabled = answered || noTables;
     }
   }
 
@@ -900,6 +1245,9 @@
       );
     }
     updateSetAvgTimeDisplay();
+    renderSetQuestionMarkers();
+    updateNewSetButton();
+    updateSetSummaryButton();
   }
 
   function triggerScorePop() {
@@ -928,11 +1276,27 @@
       trophyToastTimer = null;
     }
 
-    el.trophyToast.hidden = false;
-    el.trophyToast.textContent =
+    var plusEl = document.getElementById("trophy-toast-plus");
+    var cheerEl = document.getElementById("trophy-toast-cheer");
+    if (plusEl) {
+      plusEl.textContent = gained === 1 ? "+1" : "+" + gained;
+    }
+    if (cheerEl) {
+      cheerEl.textContent =
+        gained === 1
+          ? "You got a trophy!"
+          : "You got " + gained + " trophies!";
+    }
+    el.trophyToast.setAttribute(
+      "aria-label",
       gained === 1
-        ? "🏆 +1 🎉  You got a trophy!"
-        : `🏆 +${gained} 🎉  You got ${gained} trophies!`;
+        ? "Trophy earned. Plus one."
+        : gained + " trophies earned."
+    );
+
+    el.trophyToast.hidden = false;
+    el.trophyToast.classList.remove("show");
+    void el.trophyToast.offsetWidth;
     el.trophyToast.classList.add("show");
     window.setTimeout(playSoundTada, 200);
 
@@ -940,8 +1304,8 @@
       el.trophyToast.classList.remove("show");
       trophyToastTimer = window.setTimeout(function () {
         el.trophyToast.hidden = true;
-      }, 350);
-    }, 2800);
+      }, 380);
+    }, 3200);
   }
 
   function setFeedback(good, message) {
@@ -960,23 +1324,49 @@
     el.answerInput.classList.remove("answer-input--cheat-reveal");
   }
 
-  /** After answering or cheating: either open set summary or load next question */
+  /** After answering or cheating: load next question, or idle at 10/10 (no auto summary / new set). */
   function advanceAfterAttempt() {
     clearCheatRevealUi();
     wrongAttemptsOnQuestion = 0;
     if (setTotal >= QUESTIONS_PER_SET) {
-      if (el.setSummary.hidden) {
-        openSetSummary();
+      clearQuestionTimerTick();
+      questionTimerStarted = false;
+      questionFrozenElapsedMs = 0;
+      updateQuestionTimerDisplay();
+      answered = true;
+      el.answerInput.disabled = true;
+      el.answerInput.value = "";
+      el.answerInput.readOnly = false;
+      el.answerInput.classList.remove("answer-input--cheat-reveal");
+      var msg =
+        "Set done! You got " + setCorrect + "/" + QUESTIONS_PER_SET + ".";
+      if (setCorrect > 0 && setCorrectDurationsMs.length > 0) {
+        var sum = 0;
+        for (var ai = 0; ai < setCorrectDurationsMs.length; ai++) {
+          sum += setCorrectDurationsMs[ai];
+        }
+        var avgSec = sum / setCorrectDurationsMs.length / 1000;
+        msg +=
+          " Avg when right: " + formatSecondsShort(avgSec) + ".";
       }
+      msg += " Tap a dot to see a question again, or 🔄 New set.";
+      setFeedback(true, msg);
+      updatePracticeButtons();
+      updateSetDisplay();
       return;
     }
 
     slotInSet += 1;
     answered = false;
     clearFeedback();
-    el.answerInput.disabled = false;
     el.answerInput.value = "";
     updatePracticeButtons();
+    if (selectedTables.size === 0) {
+      syncTableSelectionPracticeUI();
+      updateSetDisplay();
+      return;
+    }
+    el.answerInput.disabled = false;
     pickRandomQuestion();
     renderEquation();
     armQuestionTimer();
@@ -986,6 +1376,9 @@
 
   function submitAnswer() {
     if (answered || waitingAutoAdvance) {
+      return;
+    }
+    if (selectedTables.size === 0) {
       return;
     }
 
@@ -1025,10 +1418,18 @@
 
     if (ok) {
       freezeQuestionTimer();
+      var hadRetries = wrongAttemptsOnQuestion > 0;
+      var elapsedOk = questionFrozenElapsedMs;
       setCorrectDurationsMs.push(questionFrozenElapsedMs);
       wrongAttemptsOnQuestion = 0;
       setCorrect += 1;
       setTotal += 1;
+      recordSetQuestionOutcome({
+        fail: false,
+        cheat: false,
+        hadRetries: hadRetries,
+        elapsedMs: elapsedOk,
+      });
       answered = true;
       updatePracticeButtons();
 
@@ -1068,6 +1469,7 @@
     if (wrongAttemptsOnQuestion >= MAX_WRONG_BEFORE_ANSWER) {
       freezeQuestionTimer();
       setTotal += 1;
+      recordSetQuestionOutcome({ fail: true });
       answered = true;
       updatePracticeButtons();
       playSoundWrong();
@@ -1104,6 +1506,9 @@
     if (answered || waitingAutoAdvance || cheatAwaitingContinue) {
       return;
     }
+    if (selectedTables.size === 0) {
+      return;
+    }
 
     cheatCount += 1;
     updateCheatDisplay();
@@ -1114,6 +1519,10 @@
     cheatAwaitingContinue = true;
     freezeQuestionTimer();
     setTotal += 1;
+    recordSetQuestionOutcome({
+      cheat: true,
+      elapsedMs: questionFrozenElapsedMs,
+    });
     setFeedback(false, "Tap 🔎 for next 🙂");
     updateSetDisplay();
 
@@ -1140,29 +1549,17 @@
         formatSecondsShort(avgSec) +
         ".";
     }
+    lines += " Tap 🔄 New set for another round.";
     el.setSummaryText.textContent = lines;
     el.setSummary.hidden = false;
+    updateNewSetButton();
     el.setSummaryContinue.focus();
   }
 
-  function closeSetSummaryAndContinue() {
+  function closeSetSummaryDialog() {
     el.setSummary.hidden = true;
-    clearCheatRevealUi();
-    slotInSet = 1;
-    setCorrect = 0;
-    setTotal = 0;
-    setCorrectDurationsMs = [];
-    wrongAttemptsOnQuestion = 0;
-    answered = false;
-    clearFeedback();
-    el.answerInput.disabled = false;
-    el.answerInput.value = "";
-    updatePracticeButtons();
-    pickRandomQuestion();
-    renderEquation();
-    armQuestionTimer();
-    updateSetDisplay();
-    el.answerInput.focus();
+    updateNewSetButton();
+    updateSetSummaryButton();
   }
 
   function nextQuestion() {
@@ -1176,9 +1573,6 @@
     }
 
     if (setTotal >= QUESTIONS_PER_SET) {
-      if (el.setSummary.hidden) {
-        openSetSummary();
-      }
       return;
     }
 
@@ -1187,9 +1581,14 @@
     answered = false;
     clearCheatRevealUi();
     clearFeedback();
-    el.answerInput.disabled = false;
     el.answerInput.value = "";
     updatePracticeButtons();
+    if (selectedTables.size === 0) {
+      syncTableSelectionPracticeUI();
+      updateSetDisplay();
+      return;
+    }
+    el.answerInput.disabled = false;
     pickRandomQuestion();
     renderEquation();
     armQuestionTimer();
@@ -1199,29 +1598,30 @@
 
   function renderTableChips() {
     el.tableChips.innerHTML = "";
-    const active = getActiveTables();
     for (let n = 1; n <= 9; n++) {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "table-chip";
       btn.textContent = n + "×";
-      btn.setAttribute("aria-pressed", active.has(n) ? "true" : "false");
+      btn.setAttribute("aria-pressed", selectedTables.has(n) ? "true" : "false");
       btn.addEventListener("click", function () {
-        const next = new Set(selectedTables.size === 0 ? [1] : selectedTables);
+        const next = new Set(selectedTables);
         if (next.has(n)) {
           next.delete(n);
         } else {
           next.add(n);
         }
-        if (next.size === 0) {
-          next.add(1);
-        }
         selectedTables = next;
         renderTableChips();
-        if (!answered) {
+        if (selectedTables.size > 0) {
+          clearFeedback();
+        }
+        syncTableSelectionPracticeUI();
+        if (selectedTables.size > 0 && !answered) {
           pickRandomQuestion();
           renderEquation();
           armQuestionTimer();
+          el.answerInput.focus();
         }
       });
       el.tableChips.appendChild(btn);
@@ -1284,6 +1684,7 @@
     }
 
     initAnswerCheckButton();
+    initKeypad();
 
     /* Typing beep for hardware / mobile soft keyboard. */
     el.answerInput.addEventListener("input", function () {
@@ -1329,21 +1730,20 @@
     el.btnAllTables.addEventListener("click", function () {
       selectedTables = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9]);
       renderTableChips();
+      clearFeedback();
+      syncTableSelectionPracticeUI();
       if (!answered) {
         pickRandomQuestion();
         renderEquation();
         armQuestionTimer();
+        el.answerInput.focus();
       }
     });
 
     el.btnClearTables.addEventListener("click", function () {
-      selectedTables = new Set([1]);
+      selectedTables = new Set();
       renderTableChips();
-      if (!answered) {
-        pickRandomQuestion();
-        renderEquation();
-        armQuestionTimer();
-      }
+      syncTableSelectionPracticeUI();
     });
 
     el.btnToggleTable.addEventListener("click", function () {
@@ -1368,10 +1768,27 @@
       });
     }
 
-    el.setSummaryContinue.addEventListener("click", closeSetSummaryAndContinue);
+    el.setSummaryContinue.addEventListener("click", closeSetSummaryDialog);
+
+    if (el.btnSetSummary) {
+      el.btnSetSummary.addEventListener("click", function () {
+        if (!isSetCompleteIdle()) {
+          return;
+        }
+        openSetSummary();
+      });
+    }
+
+    if (el.btnNewSet) {
+      el.btnNewSet.addEventListener("click", function () {
+        resetCurrentSet();
+      });
+    }
 
     window.addEventListener("beforeunload", savePracticeState);
-    el.answerInput.focus();
+    if (selectedTables.size > 0) {
+      el.answerInput.focus();
+    }
   }
 
   if (document.readyState === "loading") {

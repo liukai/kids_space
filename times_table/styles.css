@@ -230,11 +230,17 @@ html[data-theme="retro"] .celebration-toast {
   box-shadow: 0 0 24px rgba(80, 255, 120, 0.2);
 }
 
-html[data-theme="retro"] .trophy-toast {
-  background: linear-gradient(135deg, #3d3020, #2a2210);
+html[data-theme="retro"] .trophy-toast-card {
+  background: linear-gradient(160deg, #4a3d18, #2a2218);
+  border-color: rgba(234, 179, 8, 0.55);
+  box-shadow:
+    0 0 36px rgba(255, 180, 60, 0.28),
+    inset 0 1px 0 rgba(255, 230, 160, 0.12);
+}
+
+html[data-theme="retro"] .trophy-toast-plus,
+html[data-theme="retro"] .trophy-toast-cheer {
   color: #ffe8a8;
-  border: 1px solid rgba(255, 200, 100, 0.35);
-  box-shadow: 0 0 28px rgba(255, 180, 60, 0.2);
 }
 
 html[data-theme="retro"] .btn-theme[aria-pressed="false"] {
@@ -394,6 +400,133 @@ html[data-theme="retro"] .feedback-area.try {
   margin-bottom: 1rem;
 }
 
+/* Trophies + next-trophy bar — top of practice panel (IDs for script / flying 🏆) */
+.practice-trophy-strip {
+  margin: 0 0 0.45rem;
+  padding: 0.38rem 0.55rem;
+  padding-right: 2.85rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  background: linear-gradient(
+    145deg,
+    rgba(253, 230, 138, 0.35) 0%,
+    rgba(255, 255, 255, 0.5) 45%,
+    rgba(254, 243, 199, 0.25) 100%
+  );
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+html[data-theme="retro"] .practice-trophy-strip {
+  background: linear-gradient(145deg, rgba(60, 45, 20, 0.55), rgba(20, 28, 24, 0.9));
+  border-color: rgba(234, 179, 8, 0.38);
+  box-shadow: inset 0 1px 0 rgba(255, 220, 150, 0.08);
+}
+
+html[data-theme="unicorn"] .practice-trophy-strip {
+  background: linear-gradient(125deg, rgba(253, 242, 248, 0.85), rgba(250, 245, 255, 0.75));
+  border-color: rgba(232, 121, 249, 0.28);
+}
+
+.trophy-strip-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.9rem;
+}
+
+.trophy-strip-earned {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  flex-shrink: 0;
+}
+
+.trophy-strip-k {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.trophy-strip-num {
+  font-size: 1.32rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--text);
+  min-width: 1ch;
+}
+
+.trophy-strip-next {
+  flex: 1 1 10rem;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+}
+
+.trophy-strip-next-label {
+  font-size: 0.6rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  line-height: 1.2;
+}
+
+html[data-theme="retro"] .trophy-strip-next-label {
+  color: #c4b896;
+}
+
+.trophy-strip-bar-line {
+  display: flex;
+  align-items: center;
+  gap: 0.38rem;
+  min-width: 0;
+}
+
+.trophy-progress-visual--inline {
+  flex: 1;
+  min-width: 0;
+  gap: 0.28rem;
+}
+
+.practice-trophy-strip .trophy-progress-track--inline {
+  height: 0.48rem;
+  min-height: 8px;
+  border-width: 1px;
+}
+
+.trophy-progress-goal--inline {
+  font-size: 0.95rem;
+  line-height: 1;
+  opacity: 0.88;
+}
+
+.trophy-progress-count--inline {
+  flex-shrink: 0;
+  font-size: 0.64rem;
+  font-weight: 800;
+  color: var(--muted);
+  text-align: right;
+  margin: 0;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-theme="retro"] .trophy-progress-count--inline {
+  color: #a8c49a;
+}
+
+@media (max-width: 420px) {
+  .trophy-strip-inner {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .trophy-strip-next {
+    flex-basis: auto;
+  }
+}
+
 .practice-panel .feedback-area {
   padding-right: 2.75rem;
 }
@@ -507,7 +640,7 @@ html[data-theme="unicorn"] .set-progress-fill {
   line-height: 1;
 }
 
-/* Score | Trophies, Cheat | Tried, Timer | Avg right, Set | Right, then full-width trophy bar */
+/* Score | Cheat | Tried (trophies live in practice panel) */
 .stats-panel {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -778,7 +911,297 @@ html[data-theme="unicorn"] .trophy-progress-fill {
 .equation-wrap {
   position: relative;
   text-align: center;
-  margin: 0.5rem 0 0.75rem;
+  margin: 0.5rem 0 0.4rem;
+}
+
+/* Per-set: progress bar, this-question timer, avg when right, % right — compact strip above answer */
+.practice-set-strip {
+  margin: 0 0 0.55rem;
+  padding: 0.45rem 0.5rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.04);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+html[data-theme="retro"] .practice-set-strip {
+  background: rgba(0, 0, 0, 0.22);
+  box-shadow: inset 0 1px 0 rgba(140, 255, 180, 0.06);
+  border-color: rgba(120, 230, 160, 0.28);
+}
+
+html[data-theme="unicorn"] .practice-set-strip {
+  background: rgba(255, 255, 255, 0.5);
+  border-color: rgba(168, 85, 247, 0.2);
+}
+
+.set-strip-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.45rem 0.55rem;
+  align-items: end;
+}
+
+.set-strip-span {
+  grid-column: 1 / -1;
+}
+
+.set-strip-head {
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  line-height: 1.2;
+  margin-bottom: 0.1rem;
+}
+
+html[data-theme="retro"] .set-strip-head {
+  color: #86d5a5;
+}
+
+.set-strip-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem 0.65rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.12rem;
+}
+
+.set-strip-head-row .set-strip-head {
+  margin-bottom: 0;
+}
+
+.set-strip-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem 0.5rem;
+}
+
+.btn-new-set {
+  font-family: inherit;
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+  border: 2px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 0.1s ease, filter 0.12s ease, border-color 0.15s ease;
+}
+
+.btn-new-set:hover:not(:disabled) {
+  border-color: var(--secondary-solid, var(--secondary));
+}
+
+.btn-new-set:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.btn-new-set:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+html[data-theme="retro"] .btn-new-set {
+  background: #1a2420;
+  color: #c8f5d4;
+  border-color: rgba(120, 230, 160, 0.32);
+}
+
+.set-slot-markers {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.28rem;
+  margin: 0.4rem 0 0.15rem;
+  padding: 0;
+  list-style: none;
+  min-height: 1.35rem;
+}
+
+.set-slot-dot {
+  width: 0.95rem;
+  height: 0.95rem;
+  border-radius: 999px;
+  border: 2px solid rgba(45, 42, 50, 0.18);
+  background: rgba(0, 0, 0, 0.06);
+  flex-shrink: 0;
+  box-sizing: border-box;
+  cursor: default;
+}
+
+button.set-slot-dot {
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  line-height: 0;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+button.set-slot-dot:not(:disabled) {
+  cursor: pointer;
+}
+
+button.set-slot-dot:disabled {
+  cursor: default;
+  pointer-events: none;
+}
+
+button.set-slot-dot:not(:disabled):focus-visible {
+  outline: 2px solid var(--secondary-solid, var(--secondary));
+  outline-offset: 2px;
+}
+
+.set-slot-dot--todo {
+  opacity: 0.5;
+}
+
+.set-slot-dot--ok {
+  background: var(--bar-green);
+  border-color: #2e7d32;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.set-slot-dot--warn {
+  background: #fbc02d;
+  border-color: #f57f17;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.set-slot-dot--bad {
+  background: #e53935;
+  border-color: #b71c1c;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+html[data-theme="retro"] .set-slot-dot {
+  border-color: rgba(120, 230, 160, 0.22);
+  background: rgba(0, 0, 0, 0.35);
+}
+
+html[data-theme="retro"] .set-slot-dot--todo {
+  opacity: 0.45;
+}
+
+html[data-theme="retro"] .set-slot-dot--ok {
+  border-color: #5ee89a;
+  box-shadow: 0 0 8px rgba(94, 232, 154, 0.25);
+}
+
+html[data-theme="retro"] .set-slot-dot--warn {
+  background: #f9a825;
+  border-color: #ffca28;
+}
+
+html[data-theme="retro"] .set-slot-dot--bad {
+  background: #ff7043;
+  border-color: #ffab91;
+}
+
+.set-slots-legend {
+  margin: 0.1rem 0 0;
+  padding: 0;
+  font-size: 0.58rem;
+  font-weight: 700;
+  color: var(--muted);
+  line-height: 1.35;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem 0.65rem;
+}
+
+.set-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.set-legend-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  flex-shrink: 0;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+.set-legend-dot--ok {
+  background: var(--bar-green);
+}
+
+.set-legend-dot--warn {
+  background: #fbc02d;
+}
+
+.set-legend-dot--bad {
+  background: #e53935;
+}
+
+html[data-theme="retro"] .set-slots-legend {
+  color: #7ecf9a;
+}
+
+.set-strip-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+.set-strip-fraction {
+  font-size: 0.98rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.set-progress-visual--strip {
+  flex: 1;
+  min-width: 0;
+}
+
+.practice-set-strip .set-progress-track--strip {
+  height: 0.52rem;
+  min-height: 10px;
+}
+
+.practice-set-strip .set-progress-goal {
+  font-size: 1rem;
+}
+
+.set-strip-cell {
+  text-align: center;
+  min-width: 0;
+}
+
+.set-strip-value {
+  display: block;
+  font-size: clamp(0.92rem, 3.2vw, 1.12rem);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  line-height: 1.15;
+}
+
+@media (max-width: 380px) {
+  .set-strip-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .set-strip-cell:last-of-type {
+    grid-column: 1 / -1;
+  }
 }
 
 .equation-row {
@@ -1063,7 +1486,10 @@ html[data-theme="unicorn"] .answer-input--cheat-reveal {
 /* ----- Check answer (under the field; digits via keyboard / OS keypad) ----- */
 .answer-check-row {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
   margin: 0.5rem 0 0.65rem;
   touch-action: manipulation;
 }
@@ -1090,6 +1516,148 @@ html[data-theme="unicorn"] .answer-input--cheat-reveal {
 
 .btn-answer-check:active {
   transform: scale(0.96);
+}
+
+.btn-keypad-toggle {
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 4.75rem;
+  min-height: 2.85rem;
+  padding: 0.45rem 1rem;
+  font-size: 1.45rem;
+  font-weight: 800;
+  line-height: 1;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  color: var(--text);
+  cursor: pointer;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.06);
+  transition: transform 0.1s ease, border-color 0.12s ease, filter 0.12s ease;
+}
+
+.btn-keypad-toggle:hover {
+  border-color: var(--secondary-solid, var(--secondary));
+}
+
+.btn-keypad-toggle:active {
+  transform: scale(0.96);
+}
+
+.btn-keypad-toggle[aria-expanded="true"] {
+  border-color: var(--chip-on-border);
+  background: var(--chip-on);
+  color: var(--chip-on-text);
+  box-shadow: var(--shadow);
+}
+
+html[data-theme="retro"] .btn-keypad-toggle {
+  background: #1a2420;
+  color: #c8f5d4;
+  border-color: rgba(120, 230, 160, 0.35);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+}
+
+html[data-theme="retro"] .btn-keypad-toggle:hover {
+  border-color: rgba(140, 255, 180, 0.5);
+}
+
+html[data-theme="retro"] .btn-keypad-toggle[aria-expanded="true"] {
+  background: #1a3024;
+  border-color: #5ee89a;
+  color: #d2ffe4;
+  box-shadow: 0 0 14px rgba(94, 232, 154, 0.2);
+}
+
+html[data-theme="unicorn"] .btn-keypad-toggle[aria-expanded="true"] {
+  border-color: #e879f9;
+  background: linear-gradient(135deg, #fce7f3, #fae8ff);
+  color: #6b21a8;
+}
+
+/* New set — same row as Check / keypad; always available when tables are on */
+.answer-check-row .btn-new-set--check-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 4.75rem;
+  min-height: 2.85rem;
+  padding: 0.35rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.15;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.06);
+  text-align: center;
+}
+
+html[data-theme="retro"] .answer-check-row .btn-new-set--check-row {
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+}
+
+.numpad {
+  margin-top: 0.65rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed var(--border);
+}
+
+.numpad[hidden] {
+  display: none !important;
+}
+
+.numpad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.45rem;
+  max-width: 17.5rem;
+  margin: 0 auto;
+  touch-action: manipulation;
+}
+
+.numpad-key {
+  font-family: inherit;
+  min-height: 2.75rem;
+  padding: 0.35rem;
+  font-size: 1.3rem;
+  font-weight: 800;
+  line-height: 1;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  color: var(--text);
+  cursor: pointer;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.06);
+  transition: transform 0.08s ease, filter 0.12s ease;
+}
+
+.numpad-key:hover {
+  border-color: var(--secondary-solid, var(--secondary));
+}
+
+.numpad-key:active {
+  transform: scale(0.96);
+}
+
+.numpad-key--wide {
+  grid-column: span 2;
+}
+
+html[data-theme="retro"] .numpad-key {
+  background: #1a2420;
+  color: #c8f5d4;
+  border-color: rgba(120, 230, 160, 0.35);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+}
+
+html[data-theme="retro"] .numpad-key:hover {
+  border-color: rgba(140, 255, 180, 0.5);
+}
+
+html[data-theme="unicorn"] .numpad-key {
+  background: rgba(255, 255, 255, 0.55);
+  border-color: rgba(168, 85, 247, 0.25);
 }
 
 html[data-theme="unicorn"] .btn-answer-check {
@@ -1237,6 +1805,23 @@ html[data-theme="unicorn"] .btn-cheat-micro {
   display: flex;
   gap: 0.5rem;
   margin-bottom: 0.75rem;
+}
+
+.table-filter-warn {
+  margin: 0.6rem 0 0;
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--try-color);
+  text-align: center;
+}
+
+.table-filter-warn[hidden] {
+  display: none !important;
+}
+
+html[data-theme="retro"] .table-filter-warn {
+  color: #ffb4a8;
 }
 
 .table-chips {
@@ -1529,38 +2114,137 @@ html[data-theme="unicorn"] .celebration-toast {
   box-shadow: 0 8px 28px rgba(232, 121, 249, 0.25), 0 0 0 4px rgba(244, 114, 182, 0.2);
 }
 
+/* Full-screen mini celebration: big 🏆 + +1 (see maybeCelebrateTrophy) */
 .trophy-toast {
   position: fixed;
-  bottom: max(1rem, env(safe-area-inset-bottom, 0px));
-  left: 50%;
-  transform: translateX(-50%) translateY(calc(100% + 1.5rem));
-  z-index: 200;
-  background: linear-gradient(135deg, #ffd54f, #ffb300);
-  color: #3e2723;
-  font-weight: 800;
-  font-size: 1.2rem;
-  padding: 0.85rem 1.5rem;
-  border-radius: 999px;
-  box-shadow: 0 8px 28px rgba(255, 152, 0, 0.45);
-  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.35s ease;
-  opacity: 0;
+  inset: 0;
+  z-index: 220;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(1rem, env(safe-area-inset-top, 0px)) 1rem max(1rem, env(safe-area-inset-bottom, 0px));
+  margin: 0;
   pointer-events: none;
-  text-align: center;
-  max-width: 90vw;
+  background: rgba(45, 42, 50, 0.22);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.35s ease, visibility 0.35s ease;
 }
 
 .trophy-toast.show {
-  transform: translateX(-50%) translateY(0);
   opacity: 1;
+  visibility: visible;
+}
+
+.trophy-toast-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  padding: 1.1rem 1.6rem 1rem;
+  max-width: min(92vw, 20rem);
+  border-radius: 22px;
+  border: 3px solid #e65100;
+  background: linear-gradient(165deg, #ffe082 0%, #ffb300 45%, #ff8f00 100%);
+  box-shadow:
+    0 16px 48px rgba(255, 140, 0, 0.45),
+    0 4px 0 rgba(183, 71, 0, 0.35),
+    inset 0 2px 0 rgba(255, 255, 255, 0.55);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.trophy-toast.show .trophy-toast-card {
+  opacity: 1;
+  animation: trophyCardCelebrate 0.9s cubic-bezier(0.34, 1.35, 0.64, 1) both;
+}
+
+@keyframes trophyCardCelebrate {
+  0% {
+    transform: scale(0.45) translateY(1.5rem);
+  }
+  55% {
+    transform: scale(1.06) translateY(-0.2rem);
+  }
+  100% {
+    transform: scale(1) translateY(0);
+  }
+}
+
+.trophy-toast-emoji {
+  display: block;
+  font-size: clamp(3.25rem, 14vw, 5.25rem);
+  line-height: 1;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.2));
+  animation: trophyEmojiCelebrate 0.9s ease-in-out infinite;
+}
+
+@keyframes trophyEmojiCelebrate {
+  0%,
+  100% {
+    transform: rotate(-5deg) scale(1);
+  }
+  50% {
+    transform: rotate(5deg) scale(1.06);
+  }
+}
+
+.trophy-toast-plus {
+  margin: 0;
+  padding: 0;
+  font-size: clamp(1.65rem, 6vw, 2.15rem);
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+  color: #3e2723;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.trophy-toast-cheer {
+  margin: 0;
+  padding: 0;
+  font-size: clamp(0.88rem, 3.2vw, 1.05rem);
+  font-weight: 800;
+  line-height: 1.25;
+  color: #5d4037;
+  text-align: center;
+}
+
+html[data-theme="unicorn"] .trophy-toast-card {
+  border-color: #e879f9;
+  background: linear-gradient(145deg, #fef3c7, #fce7f3 50%, #e0f2fe);
+  box-shadow:
+    0 16px 40px rgba(232, 121, 249, 0.3),
+    inset 0 2px 0 rgba(255, 255, 255, 0.65);
+}
+
+html[data-theme="unicorn"] .trophy-toast-plus {
+  color: #6b21a8;
+}
+
+html[data-theme="unicorn"] .trophy-toast-cheer {
+  color: #86198f;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .trophy-toast {
-    transition: opacity 0.3s ease;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
   }
 
-  .trophy-toast:not(.show) {
-    transform: translateX(-50%) translateY(0);
+  .trophy-toast-card {
+    transition: opacity 0.25s ease;
+    transform: none;
+  }
+
+  .trophy-toast.show .trophy-toast-card {
+    animation: none;
+    transform: none;
+    opacity: 1;
+  }
+
+  .trophy-toast-emoji {
+    animation: none;
   }
 }
 

@@ -26,12 +26,18 @@
 </head>
 <body>
   <div id="celebration-toast" class="celebration-toast" aria-live="polite" hidden></div>
-  <div id="trophy-toast" class="trophy-toast" aria-live="polite" hidden></div>
+  <div id="trophy-toast" class="trophy-toast" role="status" aria-live="assertive" hidden>
+    <div class="trophy-toast-card">
+      <span class="trophy-toast-emoji" aria-hidden="true">🏆</span>
+      <p class="trophy-toast-plus" id="trophy-toast-plus">+1</p>
+      <p class="trophy-toast-cheer" id="trophy-toast-cheer">Trophy!</p>
+    </div>
+  </div>
   <div id="set-summary" class="set-summary-overlay" hidden>
     <div class="set-summary-card" role="dialog" aria-labelledby="set-summary-title">
       <h2 id="set-summary-title">Set done! 🎉</h2>
       <p id="set-summary-text" class="set-summary-text"></p>
-      <button type="button" class="btn btn-primary btn-large" id="set-summary-continue">Next</button>
+      <button type="button" class="btn btn-primary btn-large" id="set-summary-continue">Close</button>
     </div>
   </div>
 
@@ -47,130 +53,48 @@
       </div>
     </header>
 
-    <div class="top-panels">
-      <section class="panel filter-panel" aria-labelledby="filter-heading">
-        <h2 id="filter-heading" class="panel-heading">Pick Tables</h2>
-        <p class="panel-hint">Choose which numbers to use</p>
-        <div class="filter-actions">
-          <button type="button" class="btn btn-small" id="btn-all-tables">All</button>
-          <button type="button" class="btn btn-small" id="btn-clear-tables">Clear</button>
-        </div>
-        <div id="table-chips" class="table-chips" role="group" aria-label="Multiplication tables"></div>
-      </section>
-
-      <section
-        class="panel stats-panel"
-        aria-label="Score, trophies, and this set"
-        title="Score, cheats, and tries are saved in this browser after each answer."
-      >
-        <div class="stat-block">
-          <div class="stat-heading">
-            <span class="stat-emoji" aria-hidden="true">⭐</span>
-            <span class="stat-label">Score</span>
-          </div>
-          <span id="total-score" class="stat-value-big score-value">0</span>
-        </div>
-        <div class="stat-block">
-          <div class="stat-heading">
-            <span class="stat-emoji" aria-hidden="true">🏆</span>
-            <span class="stat-label">Trophies</span>
-          </div>
-          <span
-            id="trophy-display"
-            class="stat-value-big trophy-value"
-            title="1 trophy every 20 points"
-            aria-live="polite"
-          >0</span>
-        </div>
-        <div class="stat-block">
-          <div class="stat-heading">
-            <span class="stat-emoji" aria-hidden="true">🙈</span>
-            <span class="stat-label">Cheat</span>
-          </div>
-          <span id="cheat-count" class="stat-value-big">0</span>
-        </div>
-        <div class="stat-block">
-          <div class="stat-heading">
-            <span class="stat-emoji" aria-hidden="true">✏️</span>
-            <span class="stat-label">Tried</span>
-          </div>
-          <span id="tried-count" class="stat-value-big" title="Every time you tap 🔎 Check" aria-live="polite">0</span>
-        </div>
-        <div class="stat-block">
-          <div class="stat-heading">
-            <span class="stat-emoji" aria-hidden="true">⏱</span>
-            <span class="stat-label">Timer</span>
-          </div>
-          <span
-            id="question-timer"
-            class="stat-value-big stat-timer-value"
-            title="Question 1: starts when you type the first digit. Questions 2–10: starts when shown. Stops when you answer or cheat."
-          >0.0s</span>
-        </div>
-        <div class="stat-block">
-          <div class="stat-heading">
-            <span class="stat-emoji" aria-hidden="true">⚡</span>
-            <span class="stat-label">Avg right</span>
-          </div>
-          <span
-            id="set-avg-right-time"
-            class="stat-value-big"
-            title="Average time to get a question right this set (cheat and missed questions not counted)"
-            aria-live="polite"
-          >—</span>
-        </div>
-        <div class="stat-block stat-block--set">
-          <div class="stat-heading">
-            <span class="stat-emoji" aria-hidden="true">📋</span>
-            <span class="stat-label">Set</span>
-          </div>
-          <div class="stat-set-row">
-            <span id="set-progress" class="stat-set-fraction">1/10</span>
-            <div class="set-progress-visual">
-              <div
-                id="set-progress-bar"
-                class="set-progress-track"
-                role="progressbar"
-                aria-valuemin="0"
-                aria-valuemax="10"
-                aria-valuenow="0"
-                aria-valuetext="0 of 10 questions done in this set"
-              >
-                <div id="set-progress-fill" class="set-progress-fill"></div>
-              </div>
-              <span class="set-progress-goal" aria-hidden="true" title="10 in a set">🏁</span>
-            </div>
-          </div>
-        </div>
-        <div class="stat-block">
-          <div class="stat-heading">
-            <span class="stat-emoji" aria-hidden="true">✅</span>
-            <span class="stat-label">Right</span>
-          </div>
-          <span id="set-accuracy" class="stat-value-big" aria-live="polite">—</span>
-        </div>
-        <div class="trophy-progress-row">
-          <span class="trophy-progress-title">Next trophy</span>
-          <div class="trophy-progress-visual">
-            <div
-              id="trophy-progress-bar"
-              class="trophy-progress-track"
-              role="progressbar"
-              aria-valuemin="0"
-              aria-valuemax="20"
-              aria-valuenow="0"
-              aria-valuetext="0 of 20 points to next trophy"
-            >
-              <div id="trophy-progress-fill" class="trophy-progress-fill"></div>
-            </div>
-            <span id="trophy-progress-goal" class="trophy-progress-goal" aria-hidden="true" title="Next trophy">🏆</span>
-          </div>
-          <span id="trophy-progress-count" class="trophy-progress-count">0 / 20</span>
-        </div>
-      </section>
-    </div>
-
     <section class="panel practice-panel" aria-label="Practice">
+      <div
+        class="practice-trophy-strip"
+        role="region"
+        aria-label="Trophies earned and progress toward the next trophy"
+      >
+        <div class="trophy-strip-inner">
+          <div class="trophy-strip-earned" title="1 trophy every 20 points">
+            <span class="trophy-strip-k" aria-hidden="true">🏆</span>
+            <span
+              id="trophy-display"
+              class="trophy-strip-num trophy-value"
+              aria-live="polite"
+            >0</span>
+          </div>
+          <div class="trophy-strip-next">
+            <span class="trophy-strip-next-label">Next 🏆</span>
+            <div class="trophy-strip-bar-line">
+              <div class="trophy-progress-visual trophy-progress-visual--inline">
+                <div
+                  id="trophy-progress-bar"
+                  class="trophy-progress-track trophy-progress-track--inline"
+                  role="progressbar"
+                  aria-valuemin="0"
+                  aria-valuemax="20"
+                  aria-valuenow="0"
+                  aria-valuetext="0 of 20 points to next trophy"
+                >
+                  <div id="trophy-progress-fill" class="trophy-progress-fill"></div>
+                </div>
+                <span
+                  id="trophy-progress-goal"
+                  class="trophy-progress-goal trophy-progress-goal--inline"
+                  aria-hidden="true"
+                  title="Next trophy at 20 points in this leg"
+                >🏆</span>
+              </div>
+              <span id="trophy-progress-count" class="trophy-progress-count trophy-progress-count--inline">0 / 20</span>
+            </div>
+          </div>
+        </div>
+      </div>
       <button
         type="button"
         class="btn-cheat-micro"
@@ -196,6 +120,80 @@
         </div>
       </div>
 
+      <div
+        class="practice-set-strip"
+        role="region"
+        aria-label="This set: progress, time, and how many you got right"
+      >
+        <div class="set-strip-grid">
+          <div class="set-strip-span">
+            <div class="set-strip-head-row">
+              <div class="set-strip-head">📋 This set</div>
+              <div class="set-strip-head-actions">
+                <button
+                  type="button"
+                  class="btn-new-set btn-set-summary"
+                  id="btn-set-summary"
+                  hidden
+                  title="Open score card for this set"
+                  aria-label="Open set summary"
+                >
+                  📋 Summary
+                </button>
+              </div>
+            </div>
+            <div class="set-strip-progress-row">
+              <span id="set-progress" class="set-strip-fraction">1/10</span>
+              <div class="set-progress-visual set-progress-visual--strip">
+                <div
+                  id="set-progress-bar"
+                  class="set-progress-track set-progress-track--strip"
+                  role="progressbar"
+                  aria-valuemin="0"
+                  aria-valuemax="10"
+                  aria-valuenow="0"
+                  aria-valuetext="0 of 10 questions done in this set"
+                >
+                  <div id="set-progress-fill" class="set-progress-fill"></div>
+                </div>
+                <span class="set-progress-goal" aria-hidden="true" title="10 questions per set">🏁</span>
+              </div>
+            </div>
+            <div
+              id="set-slot-markers"
+              class="set-slot-markers"
+              role="group"
+              aria-label="One dot per question; after the set ends, tap a dot to see that fact again"
+            ></div>
+            <p class="set-slots-legend">
+              <span class="set-legend-item"><span class="set-legend-dot set-legend-dot--ok"></span> ok</span>
+              <span class="set-legend-item"><span class="set-legend-dot set-legend-dot--warn"></span> slow, retries, or peek</span>
+              <span class="set-legend-item"><span class="set-legend-dot set-legend-dot--bad"></span> missed</span>
+            </p>
+          </div>
+          <div class="set-strip-cell">
+            <div class="set-strip-head" title="Question 1: starts when you type the first digit. Questions 2–10: when shown.">
+              ⏱ This Q
+            </div>
+            <span
+              id="question-timer"
+              class="set-strip-value stat-timer-value"
+              title="Stops when you answer or use cheat."
+            >0.0s</span>
+          </div>
+          <div class="set-strip-cell">
+            <div class="set-strip-head" title="Average time to get a question right this set (cheats and misses not counted)">
+              ⚡ Avg
+            </div>
+            <span id="set-avg-right-time" class="set-strip-value" aria-live="polite">—</span>
+          </div>
+          <div class="set-strip-cell">
+            <div class="set-strip-head">✅ Right</div>
+            <span id="set-accuracy" class="set-strip-value" aria-live="polite">—</span>
+          </div>
+        </div>
+      </div>
+
       <div class="answer-row">
         <label class="sr-only" for="answer-input">Your answer</label>
         <input
@@ -210,12 +208,97 @@
         />
       </div>
 
-      <div class="answer-check-row" id="answer-check-row" aria-label="Submit answer">
+      <div
+        class="answer-check-row"
+        id="answer-check-row"
+        role="group"
+        aria-label="Check answer, new set, and keypad"
+      >
         <button type="button" class="btn-answer-check" id="btn-answer-check" aria-label="Check answer">
           🔎
         </button>
+        <button
+          type="button"
+          class="btn-new-set btn-new-set--check-row"
+          id="btn-new-set"
+          title="Start a fresh 10-question round (clears this set)"
+          aria-label="New set of 10 questions"
+        >
+          🔄 New set
+        </button>
+        <button
+          type="button"
+          class="btn-keypad-toggle"
+          id="btn-toggle-keypad"
+          aria-expanded="false"
+          aria-controls="numpad"
+          aria-label="Show number keypad"
+          title="Show keypad"
+        >
+          ⌨️
+        </button>
+      </div>
+      <div id="numpad" class="numpad" hidden>
+        <div class="numpad-grid" role="group" aria-label="Number keypad">
+          <button type="button" class="numpad-key" data-digit="7">7</button>
+          <button type="button" class="numpad-key" data-digit="8">8</button>
+          <button type="button" class="numpad-key" data-digit="9">9</button>
+          <button type="button" class="numpad-key" data-digit="4">4</button>
+          <button type="button" class="numpad-key" data-digit="5">5</button>
+          <button type="button" class="numpad-key" data-digit="6">6</button>
+          <button type="button" class="numpad-key" data-digit="1">1</button>
+          <button type="button" class="numpad-key" data-digit="2">2</button>
+          <button type="button" class="numpad-key" data-digit="3">3</button>
+          <button type="button" class="numpad-key numpad-key--wide" data-digit="0">0</button>
+          <button type="button" class="numpad-key" id="numpad-backspace" aria-label="Backspace">⌫</button>
+        </div>
       </div>
     </section>
+
+    <div class="top-panels">
+      <section
+        class="panel stats-panel"
+        aria-label="Score and tries"
+        title="Score, cheats, and tries are saved in this browser after each answer."
+      >
+        <div class="stat-block">
+          <div class="stat-heading">
+            <span class="stat-emoji" aria-hidden="true">⭐</span>
+            <span class="stat-label">Score</span>
+          </div>
+          <span id="total-score" class="stat-value-big score-value">0</span>
+        </div>
+        <div class="stat-block">
+          <div class="stat-heading">
+            <span class="stat-emoji" aria-hidden="true">🙈</span>
+            <span class="stat-label">Cheat</span>
+          </div>
+          <span id="cheat-count" class="stat-value-big">0</span>
+        </div>
+        <div class="stat-block">
+          <div class="stat-heading">
+            <span class="stat-emoji" aria-hidden="true">✏️</span>
+            <span class="stat-label">Tried</span>
+          </div>
+          <span id="tried-count" class="stat-value-big" title="Every time you tap 🔎 Check" aria-live="polite">0</span>
+        </div>
+      </section>
+
+      <section class="panel filter-panel" aria-labelledby="filter-heading">
+        <h2 id="filter-heading" class="panel-heading">Pick Tables</h2>
+        <p class="panel-hint">Choose which numbers to use</p>
+        <div class="filter-actions">
+          <button type="button" class="btn btn-small" id="btn-all-tables" aria-label="Select all tables (1× through 9×)">
+            🔢 All
+          </button>
+          <button type="button" class="btn btn-small" id="btn-clear-tables" aria-label="Clear table selection">
+            🧹 Clear
+          </button>
+        </div>
+        <div id="table-chips" class="table-chips" role="group" aria-label="Multiplication tables"></div>
+        <p id="table-filter-warn" class="table-filter-warn" role="status" aria-live="polite" hidden></p>
+      </section>
+    </div>
 
     <section class="panel table-panel">
       <button type="button" class="btn btn-outline btn-block" id="btn-toggle-table" aria-expanded="false">
