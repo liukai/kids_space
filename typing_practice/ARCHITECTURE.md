@@ -9,7 +9,7 @@ Plain **static** site: no build step, no bundler. Open `index.html` in a browser
 | **`data/words.json`** | **Authoritative word list** — edit this (valid JSON). See `data/README.md`. |
 | **`js/words-data.js`** | **Embedded copy** for `file://` (browsers block `fetch` for local JSON). Regenerate with `python3 tools/sync_words_to_js.py` after changing the JSON. |
 | **`js/config.js`** | **Tunables only** — storage keys, difficulty inference lists, quiz length, trophy ladder, UI hint strings. No entries from the word bank. |
-| **`js/app.js`** | **Runtime** — loads config + words, normalizes rows, typing loop, speech, keyboard, trophies. |
+| **`js/app.js`** | **Runtime** — loads config + words, normalizes rows, typing loop, speech, trophies. |
 | **`index.html`** | Shell + stable element **`id`s**. |
 | **`css/app.css`** | Presentation. |
 

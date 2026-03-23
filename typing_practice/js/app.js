@@ -18,6 +18,7 @@
   const LS_TTS_ZH = cfg.storage.ttsZhKey || "typingPracticeTtsZh";
   const LS_KEY_SOUNDS =
     cfg.storage.keySoundsKey || "typingPracticeKeySounds";
+  const LS_KB_ROWS = cfg.storage.kbRowsKey || "typingPracticeKbRows";
 
   /** @type {{ w: string, zh: string, kind: string, e: string, level?: string, difficulty?: number }[]} */
   let wordBank = [];
@@ -140,38 +141,138 @@
     }
   }
 
+  /** Large type banner (emoji + short label) for kids. */
+  const KIND_TYPE_BANNER = {
+    cvc: { emoji: "🐸", label: "Sound-out word" },
+    sight: { emoji: "❤️", label: "Sight word" },
+    simple: { emoji: "📖", label: "Vocab word" },
+    phrase: { emoji: "📝", label: "Sentence" },
+  };
+
+  function wordTypeBannerHTML(kind) {
+    const t = KIND_TYPE_BANNER[kind];
+    if (!t) return "";
+    return (
+      '<div class="word-type-banner" role="status">' +
+      '<span class="word-type-hero" aria-hidden="true">' +
+      t.emoji +
+      "</span>" +
+      '<span class="word-type-title">' +
+      t.label +
+      "</span>" +
+      "</div>"
+    );
+  }
+
+  function wordTypeBannerLetterHTML() {
+    return (
+      '<div class="word-type-banner word-type-banner--letter" role="status">' +
+      '<span class="word-type-hero" aria-hidden="true">🔤</span>' +
+      '<span class="word-type-title">Letter</span>' +
+      "</div>"
+    );
+  }
+
+  function wordTypeBannerQuizHTML() {
+    return (
+      '<div class="word-type-banner word-type-banner--quiz" role="status">' +
+      '<span class="word-type-hero" aria-hidden="true">🎲</span>' +
+      '<span class="word-type-title">Quiz</span>' +
+      "</div>"
+    );
+  }
+
+  /** Filled ★ = reached level, ☆ = not yet (1…dmax). */
+  function buildLevelStars(dv, dmax, sizeClass) {
+    const sc = sizeClass ? " " + sizeClass : "";
+    let html = "";
+    for (let i = 1; i <= dmax; i++) {
+      const on = i <= dv;
+      html +=
+        '<span class="diff-star' +
+        sc +
+        (on ? " lit" : "") +
+        '" title="' +
+        (on ? "Star " + i + " of " + dmax + " (active)" : "Star " + i + " of " + dmax) +
+        '">' +
+        (on ? "★" : "☆") +
+        "</span>";
+    }
+    return html;
+  }
+
   function difficultyMeterHTML(d, opts) {
+    const o = opts || {};
     const dv = clampDifficulty(d);
     const levels = cfg.difficultyLevels;
     const meta = levels[dv - 1];
-    const quizMix = opts && opts.quizMix;
-    let peas = "";
-    for (let i = 1; i <= cfg.difficulty.max; i++) {
-      const on = i <= dv;
-      peas +=
-        '<span class="diff-pea' +
-        (on ? " lit" : "") +
-        '" title="' +
-        (on ? "Level " + i + " active" : "Level " + i + " inactive") +
-        '">' +
-        (on ? "●" : "○") +
-        "</span>";
-    }
+    const quizMix = o.quizMix;
+    const compact = o.compact;
     const dmax = cfg.difficulty.max;
     if (quizMix) {
+      if (compact) {
+        return (
+          wordTypeBannerQuizHTML() +
+          '<div class="diff-compact diff-compact--quiz" role="status">' +
+          '<span class="diff-star-row diff-star-row--inline" aria-hidden="true">' +
+          buildLevelStars(5, dmax, " diff-star--sm") +
+          "</span>" +
+          '<span class="diff-compact-denom">All levels ①–⑤</span>' +
+          "</div>"
+        );
+      }
       return (
-        '<div class="diff-pea-row" aria-hidden="true">' +
-        '<span class="diff-pea lit">●</span><span class="diff-pea lit">●</span><span class="diff-pea lit">●</span><span class="diff-pea lit">●</span><span class="diff-pea lit">●</span></div>' +
+        '<div class="diff-star-row" aria-hidden="true">' +
+        buildLevelStars(5, dmax, "") +
+        "</div>" +
         '<div class="diff-fun-title"><span class="diff-big-emoji" aria-hidden="true">🎲</span>Mixed quiz</div>' +
         '<div class="diff-fun-sub">①–⑤ all in one go</div>'
       );
     }
+    if (compact && o.letter) {
+      const starsSm = buildLevelStars(dv, dmax, " diff-star--sm");
+      const easy = levels[0];
+      const easyTxt = easy ? easy.emoji + " " + easy.label : "① Easy";
+      return (
+        wordTypeBannerLetterHTML() +
+        '<div class="diff-compact diff-compact--letter" role="status">' +
+        '<span class="diff-star-row diff-star-row--inline" aria-hidden="true">' +
+        starsSm +
+        "</span>" +
+        '<span class="diff-compact-main">' +
+        easyTxt +
+        "</span>" +
+        "</div>"
+      );
+    }
+    if (compact && meta && o.kind && KIND_TYPE_BANNER[o.kind]) {
+      const starsSm = buildLevelStars(dv, dmax, " diff-star--sm");
+      return (
+        wordTypeBannerHTML(o.kind) +
+        '<div class="diff-compact diff-compact--word" role="status">' +
+        '<span class="diff-star-row diff-star-row--inline" aria-hidden="true">' +
+        starsSm +
+        "</span>" +
+        '<span class="diff-compact-main">' +
+        meta.emoji +
+        " " +
+        meta.label +
+        "</span>" +
+        '<span class="diff-compact-denom">' +
+        dv +
+        "/" +
+        dmax +
+        "</span>" +
+        "</div>"
+      );
+    }
+    const starsFull = buildLevelStars(dv, dmax, "");
     if (!meta) {
-      return '<div class="diff-pea-row" aria-hidden="true">' + peas + "</div>";
+      return '<div class="diff-star-row" aria-hidden="true">' + starsFull + "</div>";
     }
     return (
-      '<div class="diff-pea-row" aria-hidden="true">' +
-      peas +
+      '<div class="diff-star-row" aria-hidden="true">' +
+      starsFull +
       "</div>" +
       '<div class="diff-fun-title"><span class="diff-big-emoji" aria-hidden="true">' +
       meta.emoji +
@@ -191,46 +292,52 @@
   function setDifficultyDisplay(mode, entry) {
     const el = document.getElementById("wordDifficultyFun");
     if (!el) return;
+    el.classList.remove("diff-wrap-compact");
     if (mode === "quiz") {
-      el.classList.add("diff-quiz-mix");
+      el.classList.add("diff-quiz-mix", "diff-wrap-compact");
       el.setAttribute("aria-label", "Difficulty: quiz mix, all levels");
-      el.innerHTML = difficultyMeterHTML(cfg.difficulty.max, { quizMix: true });
+      el.innerHTML = difficultyMeterHTML(cfg.difficulty.max, {
+        quizMix: true,
+        compact: true,
+      });
       return;
     }
     el.classList.remove("diff-quiz-mix");
     if (mode === "letter") {
       const d = 1;
+      el.classList.add("diff-wrap-compact");
       el.setAttribute(
         "aria-label",
-        "Difficulty 1 of " + cfg.difficulty.max + ", warm up"
+        "Difficulty 1 of " + cfg.difficulty.max + ", letter warm-up"
       );
-      el.innerHTML = difficultyMeterHTML(d, null);
+      el.innerHTML = difficultyMeterHTML(d, { compact: true, letter: true });
       return;
     }
     if (entry) {
       const d = difficultyForEntry(entry);
       const dl = cfg.difficultyLevels[d - 1];
+      const edu =
+        entry.level ||
+        (cfg.eduHintsByKind && cfg.eduHintsByKind[entry.kind]) ||
+        "";
+      el.classList.add("diff-wrap-compact");
       el.setAttribute(
         "aria-label",
-        "Difficulty " + d + " of " + cfg.difficulty.max + ", " + (dl && dl.label)
+        (dl && dl.label ? dl.label + ". " : "") +
+          (edu ? edu + " " : "") +
+          "Level " +
+          d +
+          " of " +
+          cfg.difficulty.max
       );
-      el.innerHTML = difficultyMeterHTML(d, null);
+      el.innerHTML = difficultyMeterHTML(d, {
+        compact: true,
+        kind: entry.kind,
+      });
       return;
     }
     el.innerHTML = "";
     el.removeAttribute("aria-label");
-  }
-
-  function defaultEduLevelByKind(kind) {
-    const h = cfg.eduHintsByKind && cfg.eduHintsByKind[kind];
-    return h || "";
-  }
-
-  /** Educator-facing line under the type badge (custom `level` on entry, else default by kind). */
-  function getEduLevelText(entry) {
-    if (!entry) return "";
-    if (entry.level) return entry.level;
-    return defaultEduLevelByKind(entry.kind);
   }
 
   /** Emoji hint for letter mode (lowercase a–z) */
@@ -296,71 +403,6 @@
     if (ch >= "a" && ch <= "z") return ch;
     return null;
   }
-
-  const FINGER = {
-    q: { id: "LP", name: "👈 Pinky (left)", color: "#ef5350", hint: "☝️ Little finger → Q" },
-    w: { id: "LR", name: "👈 Ring (left)", color: "#ff7043", hint: "☝️ Ring finger → W" },
-    e: { id: "LM", name: "👈 Middle (left)", color: "#ffca28", hint: "☝️ Tall finger → E" },
-    r: { id: "LI", name: "👈 Pointer (left)", color: "#66bb6a", hint: "☝️ Pointer → R" },
-    t: { id: "LI", name: "👈 Pointer (left)", color: "#66bb6a", hint: "☝️ Pointer on T" },
-    y: { id: "RI", name: "👉 Pointer (right)", color: "#42a5f5", hint: "☝️ Pointer on Y" },
-    u: { id: "RI", name: "👉 Pointer (right)", color: "#42a5f5", hint: "☝️ Pointer on U" },
-    i: { id: "RM", name: "👉 Middle (right)", color: "#5c6bc0", hint: "☝️ Tall finger → I" },
-    o: { id: "RR", name: "👉 Ring (right)", color: "#7e57c2", hint: "☝️ Ring → O" },
-    p: { id: "RP", name: "👉 Pinky (right)", color: "#ab47bc", hint: "☝️ Little finger → P" },
-    a: { id: "LP", name: "👈 Pinky (left)", color: "#ef5350", hint: "🏠 Home row · pinky on A" },
-    s: { id: "LR", name: "👈 Ring (left)", color: "#ff7043", hint: "🏠 Ring on S" },
-    d: { id: "LM", name: "👈 Middle (left)", color: "#ffca28", hint: "🏠 Middle on D" },
-    f: { id: "LI", name: "👈 Pointer (left)", color: "#66bb6a", hint: "🏠 Left bump · F" },
-    g: { id: "LI", name: "👈 Pointer (left)", color: "#66bb6a", hint: "☝️ Left pointer → G" },
-    h: { id: "RI", name: "👉 Pointer (right)", color: "#42a5f5", hint: "☝️ Right pointer → H" },
-    j: { id: "RI", name: "👉 Pointer (right)", color: "#42a5f5", hint: "🏠 Right bump · J" },
-    k: { id: "RM", name: "👉 Middle (right)", color: "#5c6bc0", hint: "🏠 Middle on K" },
-    l: { id: "RR", name: "👉 Ring (right)", color: "#7e57c2", hint: "🏠 Ring on L" },
-    z: { id: "LP", name: "👈 Pinky (left)", color: "#ef5350", hint: "☝️ Pinky on Z" },
-    x: { id: "LR", name: "👈 Ring (left)", color: "#ff7043", hint: "☝️ Ring on X" },
-    c: { id: "LM", name: "👈 Middle (left)", color: "#ffca28", hint: "☝️ Middle on C" },
-    v: { id: "LI", name: "👈 Pointer (left)", color: "#66bb6a", hint: "☝️ Pointer on V" },
-    b: { id: "LI", name: "👈 Pointer (left)", color: "#66bb6a", hint: "☝️ Pointer on B" },
-    n: { id: "RI", name: "👉 Pointer (right)", color: "#42a5f5", hint: "☝️ Pointer on N" },
-    m: { id: "RI", name: "👉 Pointer (right)", color: "#42a5f5", hint: "☝️ Pointer on M" },
-    " ": {
-      id: "TH",
-      name: "👍 Thumbs · space",
-      color: "#90a4ae",
-      hint: "␣ Long bar · space between words",
-    },
-    ",": {
-      id: "PUNCT_C",
-      name: "Comma ,",
-      color: "#78909c",
-      hint: "⏸️ Tiny pause",
-    },
-    ".": {
-      id: "PUNCT_D",
-      name: "Period .",
-      color: "#546e7a",
-      hint: "🛑 Full stop",
-    },
-    ";": {
-      id: "PUNCT_SEMI",
-      name: "Semicolon ;",
-      color: "#607d8b",
-      hint: "⏸️ Bigger pause",
-    },
-    "\n": {
-      id: "ENTER",
-      name: "Enter ⏎",
-      color: "#5c6bc0",
-      hint: "⏎ New line (quiz every ~10 words)",
-    },
-  };
-
-  const ROWS = [
-    ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
-    ["a", "s", "d", "f", "g", "h", "j", "k", "l", ";"],
-    ["z", "x", "c", "v", "b", "n", "m", ",", "."],
-  ];
 
   function defaultStats() {
     return {
@@ -446,11 +488,6 @@
     );
   }
 
-  /** Practice words + quiz words (letters separate). */
-  function wordsTypedAllModes() {
-    return wordsPracticeWordCount() + (stats.wordsQuiz | 0);
-  }
-
   /** @deprecated use wordsPracticeWordCount or practiceFinishesTotal */
   function wordsTypedTotal() {
     return wordsPracticeWordCount();
@@ -470,7 +507,6 @@
   const modeLetter = document.getElementById("modeLetter");
   const modeSentence = document.getElementById("modeSentence");
   const modeQuiz = document.getElementById("modeQuiz");
-  const flashLabel = document.getElementById("flashLabel");
   const wordDisplay = document.getElementById("wordDisplay");
   const statWordsTotalEl = document.getElementById("statWordsTotal");
   const statCvcEl = document.getElementById("statCvc");
@@ -479,7 +515,6 @@
   const statPhraseEl = document.getElementById("statPhrase");
   const statLettersEl = document.getElementById("statLetters");
   const statQuizWordsEl = document.getElementById("statQuizWords");
-  const statWordsGrandEl = document.getElementById("statWordsGrand");
   const statFinishesEl = document.getElementById("statFinishes");
   const btnClearStats = document.getElementById("btnClearStats");
   const roundInfoEl = document.getElementById("roundInfo");
@@ -493,11 +528,6 @@
   const chkTtsZh = document.getElementById("chkTtsZh");
   const chkKeySounds = document.getElementById("chkKeySounds");
   const wordStageEl = document.getElementById("wordStage");
-  const keyboardEl = document.getElementById("keyboard");
-  const fingerSwatch = document.getElementById("fingerSwatch");
-  const fingerName = document.getElementById("fingerName");
-  const fingerDetail = document.getElementById("fingerDetail");
-  const legendEl = document.getElementById("legend");
   const hiddenInput = document.getElementById("hiddenInput");
   const flash = document.getElementById("flash");
   const btnSpeak = document.getElementById("btnSpeak");
@@ -516,7 +546,6 @@
   /** Word-start indices we already spoke for this paragraph (quiz). */
   const quizSpokenWordStarts = new Set();
   let quizWordSpeakTimer = 0;
-  const keyEls = new Map();
 
   let trophyToastHideTimer = 0;
 
@@ -539,7 +568,7 @@
   function initSoundPrefControls() {
     if (chkTtsMaster) chkTtsMaster.checked = loadBoolPref(LS_TTS_MASTER, true);
     if (chkTtsEn) chkTtsEn.checked = loadBoolPref(LS_TTS_EN, true);
-    if (chkTtsZh) chkTtsZh.checked = loadBoolPref(LS_TTS_ZH, true);
+    if (chkTtsZh) chkTtsZh.checked = loadBoolPref(LS_TTS_ZH, false);
     if (chkKeySounds) chkKeySounds.checked = loadBoolPref(LS_KEY_SOUNDS, true);
     function wire(el, key) {
       if (!el) return;
@@ -554,6 +583,32 @@
     wire(chkTtsEn, LS_TTS_EN);
     wire(chkTtsZh, LS_TTS_ZH);
     wire(chkKeySounds, LS_KEY_SOUNDS);
+  }
+
+  function loadKbRowsPrefs() {
+    if (!chkTop || !chkHome || !chkBot) return;
+    try {
+      const raw = localStorage.getItem(LS_KB_ROWS);
+      if (raw == null || raw === "") return;
+      const o = JSON.parse(raw);
+      if (typeof o.top === "boolean") chkTop.checked = o.top;
+      if (typeof o.home === "boolean") chkHome.checked = o.home;
+      if (typeof o.bot === "boolean") chkBot.checked = o.bot;
+    } catch (_) {}
+  }
+
+  function saveKbRowsPrefs() {
+    if (!chkTop || !chkHome || !chkBot) return;
+    try {
+      localStorage.setItem(
+        LS_KB_ROWS,
+        JSON.stringify({
+          top: chkTop.checked,
+          home: chkHome.checked,
+          bot: chkBot.checked,
+        })
+      );
+    } catch (_) {}
   }
 
   function ttsMasterOn() {
@@ -572,10 +627,10 @@
     return !!(chkKeySounds && chkKeySounds.checked);
   }
 
-  /** Pin toast just above the green CRT (word display), centered on it. */
+  /** Pin toast just above the green typing panel, centered on it. */
   function syncTrophyToastPlacement() {
     const root = document.getElementById("trophyToast");
-    const shell = document.querySelector(".retro-crt-shell");
+    const shell = document.querySelector(".crt-surface-wrap");
     if (!root || root.hidden || !shell) return;
     const r = shell.getBoundingClientRect();
     if (r.width < 4 || r.height < 4) return;
@@ -676,7 +731,7 @@
       "trophy-merge-gold": {
         emoji: "🏆",
         sizeClass: "trophy-toast--sz-trophy",
-        ms: 5200,
+        ms: 6400,
       },
     };
     const m = map[kind] || {
@@ -696,6 +751,7 @@
       syncTrophyToastPlacement();
       requestAnimationFrame(syncTrophyToastPlacement);
     });
+    if (kind === "trophy-merge-gold") playMegaTrophyCelebrationSound();
     trophyToastHideTimer = window.setTimeout(() => hideTrophyToast(), m.ms);
   }
 
@@ -928,14 +984,7 @@
     lastGentleNudgeAt = now;
     const el = document.getElementById("gentleNudge");
     if (!el) return;
-    const msgs = [
-      "🌟 Almost! Try the glowing key.",
-      "💪 You got this — try again.",
-      "👀 Peek at the keyboard.",
-      "✨ Soft try again.",
-      "🙂 Oops — one more time.",
-      "⌨️ Find the bright key.",
-    ];
+    const msgs = ["✨", "💪", "🌟", "👍", "🙂"];
     el.textContent = msgs[Math.floor(Math.random() * msgs.length)];
     el.classList.add("visible");
     clearTimeout(gentleNudgeHideTimer);
@@ -944,100 +993,11 @@
     }, 2600);
   }
 
-  function buildKeyboard() {
-    keyboardEl.innerHTML = "";
-    keyEls.clear();
-    legendEl.innerHTML = "";
-    const rowTierClass = ["kb-row-top", "kb-row-home", "kb-row-bottom"];
-    for (let ri = 0; ri < ROWS.length; ri++) {
-      const row = ROWS[ri];
-      const div = document.createElement("div");
-      div.className =
-        "kb-row " + (rowTierClass[ri] || "kb-row-top");
-      for (const ch of row) {
-        const k = document.createElement("div");
-        k.className = "key";
-        k.textContent = ch;
-        k.dataset.key = ch;
-        const f = FINGER[ch];
-        if (f) k.style.borderColor = f.color;
-        keyEls.set(ch, k);
-        div.appendChild(k);
-      }
-      keyboardEl.appendChild(div);
-    }
-    const row4 = document.createElement("div");
-    row4.className = "kb-row kb-row-space";
-    const sp = document.createElement("div");
-    sp.className = "key space out";
-    sp.textContent = "space";
-    sp.dataset.key = " ";
-    sp.style.borderColor = "#90a4ae";
-    keyEls.set(" ", sp);
-    row4.appendChild(sp);
-    keyboardEl.appendChild(row4);
-
-    const rowEnter = document.createElement("div");
-    rowEnter.className = "kb-row kb-row-enter";
-    const entK = document.createElement("div");
-    entK.className = "key key-enter";
-    entK.textContent = "⏎ Enter";
-    entK.dataset.key = "\n";
-    const fEnt = FINGER["\n"];
-    if (fEnt) entK.style.borderColor = fEnt.color;
-    keyEls.set("\n", entK);
-    rowEnter.appendChild(entK);
-    keyboardEl.appendChild(rowEnter);
-
-    const seen = new Set();
-    const order = ["LP", "LR", "LM", "LI", "RI", "RM", "RR", "RP"];
-    const byId = {};
-    for (const ch of Object.keys(FINGER)) {
-      const f = FINGER[ch];
-      if (!byId[f.id]) byId[f.id] = f;
-    }
-    for (const id of order) {
-      const f = byId[id];
-      if (!f || seen.has(id)) continue;
-      seen.add(id);
-      const item = document.createElement("div");
-      item.className = "leg-item";
-      item.innerHTML =
-        '<span class="leg-dot" style="background:' +
-        f.color +
-        '"></span> ' +
-        f.name;
-      legendEl.appendChild(item);
-    }
-  }
-
-  function updateKeyOpacity() {
-    const allowed = getAllowedSet();
-    const showPunct = isSentenceMode() || isQuizMode();
-    for (const [ch, el] of keyEls) {
-      if (ch === "," || ch === "." || ch === ";") {
-        el.classList.toggle("out", !showPunct || !allowed.has(ch));
-        continue;
-      }
-      if (ch === " ") {
-        el.classList.toggle("out", !showPunct);
-        continue;
-      }
-      if (ch === "\n") {
-        el.classList.toggle("out", !isQuizMode());
-        continue;
-      }
-      el.classList.toggle("out", !allowed.has(ch));
-    }
-  }
-
   function renderKidStats() {
     const pWords = wordsPracticeWordCount();
     const qWords = stats.wordsQuiz | 0;
     if (statWordsTotalEl) statWordsTotalEl.textContent = String(pWords);
     if (statQuizWordsEl) statQuizWordsEl.textContent = String(qWords);
-    if (statWordsGrandEl)
-      statWordsGrandEl.textContent = String(wordsTypedAllModes());
     if (statFinishesEl)
       statFinishesEl.textContent = String(practiceFinishesTotal());
     statCvcEl.textContent = String(stats.wordsCvc);
@@ -1834,18 +1794,163 @@
     return entryTypingText(queue[wi]);
   }
 
+  /**
+   * Finger colors (touch-typing zones) — bright borders on simple key caps.
+   * L: pinky / ring / middle / index · R: index / middle / ring / pinky · thumbs: gray
+   */
+  const KEY_BORDER = {
+    q: "#e91e63",
+    a: "#e91e63",
+    z: "#e91e63",
+    w: "#ff6f00",
+    s: "#ff6f00",
+    x: "#ff6f00",
+    e: "#fbc02d",
+    d: "#fbc02d",
+    c: "#fbc02d",
+    r: "#2e7d32",
+    t: "#2e7d32",
+    f: "#2e7d32",
+    g: "#2e7d32",
+    v: "#2e7d32",
+    b: "#2e7d32",
+    y: "#00838f",
+    u: "#00838f",
+    h: "#00838f",
+    j: "#00838f",
+    n: "#00838f",
+    m: "#00838f",
+    i: "#1565c0",
+    k: "#1565c0",
+    ",": "#1565c0",
+    o: "#6a1b9a",
+    l: "#6a1b9a",
+    ".": "#6a1b9a",
+    p: "#ad1457",
+    ";": "#ad1457",
+    " ": "#546e7a",
+    "\n": "#546e7a",
+  };
+
+  /** Light key-cap wash matching the finger border color (next-key highlight). */
+  function fingerHighlightBackground(borderHex) {
+    const raw = String(borderHex).replace(/^#/, "");
+    if (raw.length !== 6) return "";
+    const r = parseInt(raw.slice(0, 2), 16);
+    const g = parseInt(raw.slice(2, 4), 16);
+    const b = parseInt(raw.slice(4, 6), 16);
+    if ([r, g, b].some((x) => Number.isNaN(x))) return "";
+    const br = 232;
+    const bg = 229;
+    const bb = 222;
+    const t = 0.4;
+    const R = Math.round(br + (r - br) * t);
+    const G = Math.round(bg + (g - bg) * t);
+    const B = Math.round(bb + (b - bb) * t);
+    return `rgb(${R}, ${G}, ${B})`;
+  }
+
+  const keyboardEl = document.getElementById("keyboard");
+  /** @type {Record<string, HTMLButtonElement>} */
+  const keyEls = {};
+
+  function buildKeyboard() {
+    if (!keyboardEl) return;
+    keyboardEl.innerHTML = "";
+    for (const k of Object.keys(keyEls)) delete keyEls[k];
+
+    function appendLetterKey(rowEl, ch) {
+      const k = document.createElement("button");
+      k.type = "button";
+      k.className = "key";
+      k.disabled = true;
+      k.tabIndex = -1;
+      k.style.borderColor = KEY_BORDER[ch] || "#6d6258";
+      k.textContent = ch;
+      keyEls[ch] = k;
+      rowEl.appendChild(k);
+    }
+
+    const top = document.createElement("div");
+    top.className = "kb-row kb-row-top";
+    for (const ch of "qwertyuiop") appendLetterKey(top, ch);
+    keyboardEl.appendChild(top);
+
+    const home = document.createElement("div");
+    home.className = "kb-row kb-row-home";
+    for (const ch of "asdfghjkl;") appendLetterKey(home, ch);
+    const ent = document.createElement("button");
+    ent.type = "button";
+    ent.className = "key key-enter";
+    ent.disabled = true;
+    ent.tabIndex = -1;
+    ent.style.borderColor = KEY_BORDER["\n"] || "#4a4858";
+    ent.textContent = "⏎";
+    ent.setAttribute("aria-label", "Enter");
+    keyEls["\n"] = ent;
+    home.appendChild(ent);
+    keyboardEl.appendChild(home);
+
+    const bot = document.createElement("div");
+    bot.className = "kb-row kb-row-bot";
+    for (const ch of "zxcvbnm,.") appendLetterKey(bot, ch);
+    keyboardEl.appendChild(bot);
+
+    const base = document.createElement("div");
+    base.className = "kb-row kb-row-base";
+    const sp = document.createElement("button");
+    sp.type = "button";
+    sp.className = "key key-space";
+    sp.disabled = true;
+    sp.tabIndex = -1;
+    sp.style.borderColor = KEY_BORDER[" "] || "#5c5650";
+    sp.textContent = "␣";
+    sp.setAttribute("aria-label", "Space");
+    keyEls[" "] = sp;
+    base.appendChild(sp);
+    keyboardEl.appendChild(base);
+  }
+
+  function updateKeyOpacity() {
+    const allowed = getAllowedSet();
+    for (const ch of Object.keys(keyEls)) {
+      const el = keyEls[ch];
+      if (!el) continue;
+      const ok = practiceKeyAllowed(ch, allowed);
+      el.style.opacity = ok ? "1" : "0.32";
+      el.style.filter = ok ? "" : "brightness(0.78)";
+    }
+  }
+
+  function updateKeyHighlights() {
+    for (const ch of Object.keys(keyEls)) {
+      const el = keyEls[ch];
+      el.classList.remove("next", "wrong");
+      el.style.borderColor = KEY_BORDER[ch] || "#6d6258";
+      el.style.background = "";
+    }
+    const w = currentWord();
+    if (w == null || pos >= w.length) return;
+    const next = w[pos];
+    const targetEl = keyEls[next];
+    if (!targetEl) return;
+    const accent = KEY_BORDER[next] || "#78909c";
+    targetEl.classList.add("next");
+    targetEl.style.borderColor = accent;
+    targetEl.style.background = fingerHighlightBackground(accent);
+  }
+
   function validateRows() {
     const set = getAllowedSet();
     if (set.size === 0) {
       rowWarn.classList.add("show");
-      rowWarn.textContent = "⚠️ Turn on at least one row.";
+      rowWarn.textContent = "Turn a row on.";
       return false;
     }
     rowWarn.classList.remove("show");
     if ((isTypingWords() || isQuizMode()) && !allowedHasVowel(set)) {
       rowWarn.classList.add("show");
-      rowWarn.textContent =
-        "🔤 Need vowels for words — turn on Home or Top · or pick 🔤 one letter";
+      rowWarn.textContent = "Need vowels — Home or Top, or Letter mode.";
       return false;
     }
     return true;
@@ -1877,9 +1982,10 @@
       let filtered = filterWords(allowed);
       if (filtered.length === 0) {
         filtered = fullPoolForMode().slice();
-        rowWarn.classList.add("show");
-        rowWarn.textContent =
-          "⌨️ Tight pick — showing all we have for this mode.";
+        if (filtered.length > 0) {
+          rowWarn.classList.add("show");
+          rowWarn.textContent = "Showing all words for this mode.";
+        }
       }
       const first = pickWeightedPracticeEntry(filtered);
       queue = first ? [first] : [];
@@ -1887,9 +1993,12 @@
       pos = 0;
     }
     hiddenInput.value = "";
-    updateKeyOpacity();
     renderWord();
     saveStats();
+    if (!wordBank.length) {
+      rowWarn.classList.add("show");
+      rowWarn.textContent = "No words — check words.json / console.";
+    }
     if (!isQuizMode()) scheduleSpeakIntro();
     ensureTypingFocus();
   }
@@ -1934,37 +2043,19 @@
       if (readIntroTextEl) {
         const botOn = chkBot.checked;
         const homeOn = chkHome.checked;
-        if (botOn && homeOn)
-          readIntroTextEl.textContent = "🔊 Hear , . ; ⏎ · not spaces";
+        if (botOn && homeOn) readIntroTextEl.textContent = "🔊 Quiz · hear , . ; ⏎";
         else if (!botOn && homeOn)
-          readIntroTextEl.textContent = "🔊 Hear ; ⏎ · no , . without bottom row";
+          readIntroTextEl.textContent = "🔊 Quiz · need Bottom for , .";
         else if (botOn && !homeOn)
-          readIntroTextEl.textContent = "🔊 Hear , . ⏎ · no ; without home row";
-        else
-          readIntroTextEl.textContent = "🔊 Hear ⏎ · Home for ; · Bottom for , .";
+          readIntroTextEl.textContent = "🔊 Quiz · need Home for ;";
+        else readIntroTextEl.textContent = "🔊 Quiz · need Home + Bottom";
       }
       btnSpeak.textContent = "🔊 This bit";
       wordDisplay.classList.remove("letter-mode", "phrase-mode");
       wordDisplay.classList.add("quiz-paragraph");
-      {
-        const botOn = chkBot.checked;
-        const homeOn = chkHome.checked;
-        if (botOn && homeOn)
-          flashLabel.textContent =
-            "🎲 ~30 words · 👂 then ⌨️ · ␣ · ⏎ · ⏱️ starts when correct";
-        else if (!botOn && homeOn)
-          flashLabel.textContent =
-            "🎲 ~30 words · 👂 then ⌨️ · ⏎ · no , . (turn on Bottom)";
-        else if (botOn && !homeOn)
-          flashLabel.textContent =
-            "🎲 ~30 words · 👂 then ⌨️ · ⏎ · no ; (turn on Home)";
-        else
-          flashLabel.textContent =
-            "🎲 ~30 words · 👂 then ⌨️ · ⏎ · Home + Bottom for , . ;";
-      }
       wordBadgeRow.innerHTML = "";
       setDifficultyDisplay("quiz", null);
-      setWordLevelLine("🎲 Mix of 🐸❤️📖📝 from your list.");
+      setWordLevelLine("");
       zhLine.textContent = "";
       wordEmojiEl.textContent = "📚";
       const wq = quizParagraph;
@@ -2001,18 +2092,18 @@
         }
       }
       roundInfoEl.textContent =
-        "🎲 " + countWordsInText(quizParagraph) + " words this run";
+        "🎲 " + countWordsInText(quizParagraph) + " words";
       renderKidStats();
       updateQuizHud();
-      updateFingerHint();
-      updateKeyHighlights();
       updateTrophy2xBadge();
+      updateKeyOpacity();
+      updateKeyHighlights();
       scheduleSpeakCurrentQuizWord();
       return;
     }
 
     if (readIntroTextEl) {
-      readIntroTextEl.textContent = "🔊 Word + 中文 first";
+      readIntroTextEl.textContent = "🔊 Hear word";
     }
     btnSpeak.textContent = "🔊 Again";
 
@@ -2022,19 +2113,13 @@
     const entEarly = currentEntry();
     const isPhrase = entEarly && entEarly.kind === "phrase";
     wordDisplay.classList.toggle("phrase-mode", !letterMode && isPhrase);
-    flashLabel.textContent = letterMode
-      ? "🔤 Type this letter"
-      : isPhrase
-        ? "📝 Type this sentence"
-        : "📖 Type this word";
 
     const w = currentWord();
     wordDisplay.innerHTML = "";
     if (letterMode) {
-      wordBadgeRow.innerHTML =
-        '<span class="tag cvc" style="margin-left:0">🔤 Letter</span>';
+      wordBadgeRow.innerHTML = "";
       setDifficultyDisplay("letter", null);
-      setWordLevelLine("🔤 One finger · one key.");
+      setWordLevelLine("");
       zhLine.textContent = "键盘字母";
       wordEmojiEl.textContent = LETTER_EMOJI[w] || "🔤";
       const span = document.createElement("span");
@@ -2045,22 +2130,9 @@
       const ent = currentEntry();
       wordBadgeRow.innerHTML = "";
       if (ent) {
-        if (ent.kind === "phrase") {
-          wordBadgeRow.innerHTML =
-            '<span class="tag phrase">📝 Sentence</span>';
-        } else if (ent.kind === "sight") {
-          wordBadgeRow.innerHTML =
-            '<span class="heart" title="❤️ Know it by heart">❤️</span><span class="tag sight">❤️ Sight word</span>';
-        } else if (ent.kind === "cvc") {
-          wordBadgeRow.innerHTML =
-            '<span class="tag cvc">🐸 Sound-out word</span>';
-        } else {
-          wordBadgeRow.innerHTML =
-            '<span class="tag simple">📖 Vocab word</span>';
-        }
         setDifficultyDisplay("word", ent);
-        setWordLevelLine(getEduLevelText(ent));
-        zhLine.textContent = ent.zh;
+        setWordLevelLine(ent.level ? String(ent.level).trim() : "");
+        zhLine.textContent = ent.zh != null ? String(ent.zh) : "";
         wordEmojiEl.textContent = ent.e || "✨";
       } else {
         setDifficultyDisplay("word", null);
@@ -2101,14 +2173,14 @@
       }
     }
     roundInfoEl.textContent = letterMode
-      ? "🔤 From rows you picked"
+      ? "🔤 Letter"
       : isSentenceMode()
         ? "📝 Line " + (practiceRoundIndex + 1)
         : "📖 Word " + (practiceRoundIndex + 1);
     renderKidStats();
-    updateFingerHint();
-    updateKeyHighlights();
     updateTrophy2xBadge();
+    updateKeyOpacity();
+    updateKeyHighlights();
     scrollTypingCurrentIntoView();
   }
 
@@ -2127,67 +2199,6 @@
         cur.scrollIntoView();
       }
     });
-  }
-
-  function updateFingerHint() {
-    if (isQuizMode()) {
-      if (!quizParagraph || pos >= quizParagraph.length) {
-        fingerName.textContent = "🎉 Nice!";
-        fingerDetail.textContent =
-          "✅ Done · next page soon";
-        fingerSwatch.style.background = "#bdbdbd";
-        return;
-      }
-      fingerName.textContent = "💪 Go!";
-      fingerDetail.textContent = "👀 Match glow · ⏎ = Enter";
-      fingerSwatch.style.background = "#7e57c2";
-      return;
-    }
-    const w = currentWord();
-    const letterMode = isLetterMode();
-    if (letterMode && w && pos >= w.length) {
-      fingerName.textContent = "⭐ Great!";
-      fingerDetail.textContent = "✅ Next letter soon";
-      fingerSwatch.style.background = "#bdbdbd";
-      return;
-    }
-    if (!letterMode && (!w || pos >= w.length)) {
-      fingerName.textContent = "⭐ Great!";
-      fingerDetail.textContent = "✅ Next word soon";
-      fingerSwatch.style.background = "#bdbdbd";
-      return;
-    }
-    const ch = letterMode ? w : w[pos];
-    const f = FINGER[ch];
-    if (f) {
-      fingerName.textContent = f.name;
-      fingerDetail.textContent = f.hint;
-      fingerSwatch.style.background = f.color;
-    } else {
-      fingerName.textContent = (ch || "?").toUpperCase();
-      fingerDetail.textContent = "❓ Key off your rows";
-      fingerSwatch.style.background = "#9e9e9e";
-    }
-  }
-
-  function updateKeyHighlights() {
-    for (const [, el] of keyEls) {
-      el.classList.remove("next", "wrong");
-      el.style.removeProperty("background");
-    }
-    const w = currentWord();
-    const letterMode = isLetterMode();
-    if (!w || w.length === 0) return;
-    if (pos >= w.length) return;
-    let ch = letterMode ? w : w[pos];
-    if (typeof ch === "string" && ch.length === 1 && ch >= "A" && ch <= "Z")
-      ch = ch.toLowerCase();
-    const el = keyEls.get(ch);
-    if (el && !el.classList.contains("out")) {
-      el.classList.add("next");
-      const f = FINGER[ch];
-      el.style.background = f ? f.color + "55" : "rgba(110, 231, 160, 0.38)";
-    }
   }
 
   /** @type {AudioContext | null} */
@@ -2276,12 +2287,65 @@
     } catch (_) {}
   }
 
-  function flashWrongKey(typed) {
+  /** Mega 🏆 merge: ascending fanfare + shimmer — longer than key SFX, respects key sounds. */
+  function playMegaTrophyCelebrationSound() {
+    if (!keySoundsOn()) return;
+    try {
+      const ctx = ensureTypingAudioContext();
+      if (!ctx) return;
+      const t0 = ctx.currentTime;
+      const arp = [
+        { f: 392.0, at: 0.0, dur: 0.26 },
+        { f: 523.25, at: 0.12, dur: 0.28 },
+        { f: 659.25, at: 0.24, dur: 0.3 },
+        { f: 783.99, at: 0.36, dur: 0.32 },
+        { f: 1046.5, at: 0.52, dur: 0.42 },
+      ];
+      for (const n of arp) {
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = "triangle";
+        const s = t0 + n.at;
+        const e = s + n.dur;
+        osc.frequency.setValueAtTime(n.f, s);
+        g.gain.setValueAtTime(0, s);
+        g.gain.linearRampToValueAtTime(0.1, s + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0008, e);
+        osc.connect(g);
+        g.connect(ctx.destination);
+        osc.start(s);
+        osc.stop(e + 0.03);
+      }
+      const shine = [
+        { f: 1318.51, at: 0.82 },
+        { f: 1567.98, at: 0.9 },
+        { f: 1760.0, at: 0.98 },
+      ];
+      for (const n of shine) {
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = "sine";
+        const s = t0 + n.at;
+        const e = s + 0.62;
+        osc.frequency.setValueAtTime(n.f, s);
+        g.gain.setValueAtTime(0, s);
+        g.gain.linearRampToValueAtTime(0.055, s + 0.025);
+        g.gain.exponentialRampToValueAtTime(0.0008, e);
+        osc.connect(g);
+        g.connect(ctx.destination);
+        osc.start(s);
+        osc.stop(e + 0.02);
+      }
+    } catch (_) {}
+  }
+
+  function flashWrongKey(ch) {
     playTypingWrongSound();
-    const el = keyEls.get(typed) || keyEls.get(typed.toLowerCase());
-    if (el) {
+    if (ch != null && keyEls[ch]) {
+      const el = keyEls[ch];
+      el.classList.remove("next");
       el.classList.add("wrong");
-      setTimeout(() => el.classList.remove("wrong"), 400);
+      window.setTimeout(() => el.classList.remove("wrong"), 450);
     }
     gentleMistypeReminder();
   }
@@ -2339,7 +2403,6 @@
       pos = 0;
       hiddenInput.value = "";
       document.getElementById("quizDoneBanner")?.classList.remove("show");
-      updateKeyOpacity();
       renderWord();
       ensureTypingFocus();
       return;
@@ -2359,7 +2422,6 @@
       queue = next ? [next] : [];
     }
     hiddenInput.value = "";
-    updateKeyOpacity();
     renderWord();
     scheduleSpeakIntro();
     ensureTypingFocus();
@@ -2483,9 +2545,13 @@
     }
   }
 
-  chkTop.addEventListener("change", rebuildQueue);
-  chkHome.addEventListener("change", rebuildQueue);
-  chkBot.addEventListener("change", rebuildQueue);
+  function onKbRowsChange() {
+    saveKbRowsPrefs();
+    rebuildQueue();
+  }
+  chkTop.addEventListener("change", onKbRowsChange);
+  chkHome.addEventListener("change", onKbRowsChange);
+  chkBot.addEventListener("change", onKbRowsChange);
   modeWord.addEventListener("change", rebuildQueue);
   modeLetter.addEventListener("change", rebuildQueue);
   modeSentence.addEventListener("change", rebuildQueue);
@@ -2506,17 +2572,27 @@
         if (!r.ok) throw new Error(path + ": HTTP " + r.status);
         return r.text();
       });
-    const [css, configScript, wordsJson, appScript] = await Promise.all([
+    const [css, configScript, wordsJson, appScript, faviconSvg] = await Promise.all([
       loadText("css/app.css"),
       loadText("js/config.js"),
       loadText("data/words.json"),
       loadText("js/app.js"),
+      loadText("favicon.svg").catch(() => ""),
     ]);
 
     const htmlEl = document.documentElement.cloneNode(true);
     const head = htmlEl.querySelector("head");
     const body = htmlEl.querySelector("body");
     if (!head || !body) throw new Error("Missing head/body");
+
+    if (faviconSvg) {
+      head.querySelectorAll('link[rel="icon"]').forEach((n) =>
+        n.setAttribute(
+          "href",
+          "data:image/svg+xml;charset=utf-8," + encodeURIComponent(faviconSvg.trim())
+        )
+      );
+    }
 
     head.querySelectorAll('link[rel="stylesheet"][href*="css/app.css"]').forEach((n) =>
       n.remove()
@@ -2563,8 +2639,6 @@
     }
   });
 
-  buildKeyboard();
-
   async function boot() {
     buildInferenceCaches();
     try {
@@ -2573,22 +2647,16 @@
       console.error("typing_practice: could not load words", err);
       wordBank = [];
     }
-    if (!wordBank.length) {
-      const fd = document.getElementById("flashLabel");
-      if (fd)
-        fd.textContent =
-          "⚠️ No words loaded — check data/words.json (and the browser console).";
-    }
     finalizeWordDifficulties();
-    FINGER["\n"].hint =
-      "⏎ New line (quiz every ~" + cfg.quiz.lineBreakEveryNWords + " words)";
     stats = loadStats();
+    buildKeyboard();
     renderKidStats();
     renderTrophyPanel();
     initAllVoicePickers();
     window.setTimeout(initAllVoicePickers, 350);
     window.setTimeout(initAllVoicePickers, 1100);
     initSoundPrefControls();
+    loadKbRowsPrefs();
     rebuildQueue();
     bindTrophyToastLayoutListeners();
   }

@@ -22,6 +22,8 @@ window.TYPING_PRACTICE_CONFIG = {
     ttsEnKey: "typingPracticeTtsEn",
     ttsZhKey: "typingPracticeTtsZh",
     keySoundsKey: "typingPracticeKeySounds",
+    /** Top / Home / Bottom keyboard row checkboxes (JSON `{top,home,bot}`). */
+    kbRowsKey: "typingPracticeKbRows",
   },
 
   difficulty: {
