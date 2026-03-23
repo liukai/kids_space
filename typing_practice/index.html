@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TYPING.EXE — retro terminal</title>
+  <!-- Fonts: optional online; IBM Plex Mono / VT323 have system fallbacks in CSS -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=VT323&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+<!-- Pure local: js/words-data.js embeds the word list (no fetch). Edit data/words.json then: python3 tools/sync_words_to_js.py -->
+  <div class="page-wrap app-shell">
+  <header class="app-topbar">
+    <h1 class="app-title">TYPING.EXE</h1>
+  </header>
+
+  <div class="app-work">
+  <aside class="config-panel" id="configPanel" aria-label="Settings">
+    <div id="controls">
+      <p class="panel-hint">🔡 Small letters only · 🔊 speech &amp; key sounds (see Sound)</p>
+      <h2 class="config-heading">⌨️ Rows on/off</h2>
+      <div class="row-toggles">
+        <label><input type="checkbox" id="chkTop" checked /> Top <span class="dim">Q–P</span></label>
+        <label><input type="checkbox" id="chkHome" checked /> Home <span class="dim">A–L</span></label>
+        <label><input type="checkbox" id="chkBot" checked /> Bottom <span class="dim">Z–M</span></label>
+      </div>
+      <div id="rowWarn">⚠️ Turn on a row · words need vowels → try Home or Top</div>
+      <h2 class="config-heading">Mode</h2>
+      <div class="mode-col" role="radiogroup" aria-label="Typing mode">
+        <label><input type="radio" name="mode" id="modeLetter" value="letter" /> Letter</label>
+        <label><input type="radio" name="mode" id="modeWord" value="word" checked /> Word</label>
+        <label><input type="radio" name="mode" id="modeSentence" value="sentence" /> Sentence</label>
+        <label><input type="radio" name="mode" id="modeQuiz" value="quiz" /> Quiz</label>
+      </div>
+      <label class="read-toggle read-toggle-panel"><input type="checkbox" id="chkReadIntro" checked /> <span id="readIntroText">🔊 Hear first, then type</span></label>
+      <h2 class="config-heading">🔊 Sound</h2>
+      <div class="sound-toggles" role="group" aria-label="Sound and speech">
+        <label class="sound-line sound-line-master"><input type="checkbox" id="chkTtsMaster" checked /> All speech</label>
+        <label class="sound-line"><input type="checkbox" id="chkTtsEn" checked /> English speech</label>
+        <label class="sound-line"><input type="checkbox" id="chkTtsZh" checked /> 中文 speech</label>
+        <label class="sound-line"><input type="checkbox" id="chkKeySounds" checked /> Key sounds (clicks &amp; buzz)</label>
+      </div>
+      <div class="voice-panel">
+        <div class="voice-line">
+          <label for="selEnVoice">🔊 English voice</label>
+          <select id="selEnVoice" aria-label="English voice"></select>
+        </div>
+        <div class="voice-line">
+          <label for="selZhVoice">🔊 中文 voice</label>
+          <select id="selZhVoice" aria-label="Chinese voice"></select>
+        </div>
+      </div>
+      <div class="stats-tools">
+        <button type="button" id="btnClearStats" class="btn-clear-stats">🗑️ Clear scores</button>
+        <button type="button" id="btnDownloadPage" class="btn-download-page panel-btn">💾 Save for later</button>
+      </div>
+    </div>
+
+    <p class="panel-footnote">👆 Stuck? Tap the big typing box.</p>
+  </aside>
+
+  <div class="typing-stage">
+  <div id="flash" tabindex="0" role="application" aria-label="Typing">
+    <div class="retro-pc-chassis">
+      <div class="retro-pc-brand" aria-hidden="true">
+        <span class="retro-pc-led"></span>
+        <span class="retro-pc-label">TYPING-100</span>
+      </div>
+      <div class="retro-pc-vents" aria-hidden="true"></div>
+    <div id="gentleNudge" class="gentle-nudge" role="status" aria-live="polite"></div>
+    <div id="quizHud" class="quiz-hud" style="display: none;">
+      🏃 <strong id="quizWpmLive">—</strong> wpm · words <strong id="quizWordProg">0</strong>/<strong id="quizWordTotal">0</strong>
+    </div>
+    <div id="quizDoneBanner" class="quiz-done-banner" role="status" aria-live="polite"></div>
+    <div class="word-card-meta" aria-live="polite">
+      <span class="flash-label" id="flashLabel">👂 Type what you hear</span>
+      <div id="wordBadgeRow" aria-hidden="true"></div>
+      <div id="wordDifficultyFun" class="difficulty-fun-wrap" role="status" aria-live="polite"></div>
+      <div id="wordLevelLine" class="word-level-line" role="note" aria-live="polite"></div>
+    </div>
+    <div class="retro-crt-shell">
+    <div class="word-stage" id="wordStage">
+      <div
+        id="trophy2xBadge"
+        class="trophy-2x-badge"
+        hidden
+        role="status"
+        aria-live="polite"
+      ></div>
+      <span id="wordEmoji" class="word-emoji-main" aria-hidden="true">✨</span>
+      <div id="wordDisplay" aria-live="polite"></div>
+    </div>
+    </div>
+    <div class="word-card-actions">
+      <div class="card-btns">
+        <button type="button" id="btnSpeak" class="btn-hear-again">🔊 Again</button>
+        <button type="button" id="btnNext" class="btn-skip">⏭️ Skip</button>
+      </div>
+    </div>
+    <div id="zhLine" lang="zh-CN"></div>
+    </div>
+    <div class="retro-pc-stand" aria-hidden="true"></div>
+  </div>
+  </div>
+
+  <aside class="stats-panel" id="statsPanel" aria-label="Trophies and scores">
+    <div class="panel-stats">
+      <div class="trophy-panel" id="trophyPanel">
+        <div class="trophy-panel-head" aria-live="polite">
+          <div class="trophy-panel-title">🏆 Trophies</div>
+          <div class="trophy-hero-row">
+            <span class="trophy-hero" aria-hidden="true">🏆</span>
+            <span class="trophy-hero-times" aria-hidden="true">×</span>
+            <span class="trophy-hero-count" id="trophyMegaCountEl">0</span>
+          </div>
+        </div>
+        <div class="trophy-points-line">⭐ Points <strong id="trophyPointsEl">0</strong></div>
+        <div class="trophy-micro">🥉³→🥈 · 🥈³→🥇 · 🥇³→🏆</div>
+        <div class="trophy-next-progress" id="trophyNextProgressBlock">
+          <div class="trophy-next-label" id="trophyNextLabel">—</div>
+          <div
+            class="trophy-next-track"
+            id="trophyNextTrack"
+            role="progressbar"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="0"
+            aria-label="Progress toward next trophy"
+          >
+            <div class="trophy-next-fill" id="trophyNextFill"></div>
+          </div>
+        </div>
+        <div class="trophy-row-visual" id="trophyRowBronze">
+          <span class="trophy-row-emoji" aria-hidden="true">🥉</span>
+          <div class="trophy-dots" id="trophyBronzeDots" aria-hidden="true"></div>
+        </div>
+        <div class="trophy-row-visual" id="trophyRowSilver">
+          <span class="trophy-row-emoji" aria-hidden="true">🥈</span>
+          <div class="trophy-dots" id="trophySilverDots" aria-hidden="true"></div>
+        </div>
+        <div class="trophy-row-visual" id="trophyRowGold">
+          <span class="trophy-row-emoji" aria-hidden="true">🥇</span>
+          <div class="trophy-dots" id="trophyGoldDots" aria-hidden="true"></div>
+        </div>
+      </div>
+      <div id="kidStats" class="kid-stats kid-stats-panel" aria-live="polite">
+        <div class="kid-stats-title">📊 Your scores</div>
+        <div
+          class="kid-stats-total"
+          title="Word &amp; Sentence modes only: each CVC/sight/vocab word + every word inside finished sentences"
+        >
+          📖 Words (Word + Sentence): <strong id="statWordsTotal">0</strong>
+        </div>
+        <div class="kid-stats-subhint">
+          🎲 Quiz: <strong id="statQuizWords">0</strong> words · Total words:
+          <strong id="statWordsGrand">0</strong>
+          <span class="kid-stats-subhint-note">(practice + quiz)</span>
+        </div>
+        <div class="kid-stats-subhint kid-stats-subhint--finishes">
+          Chips add to <strong id="statFinishes">0</strong>
+          <span class="kid-stats-subhint-note">(📝 = sentences finished, 1 each)</span>
+        </div>
+        <div class="kid-stats-grid">
+          <div
+            class="stat-chip cvc"
+            title="Sound-out (CVC) words — +1 each time you finish one"
+          >
+            <span class="stat-emoji">🐸</span>
+            <span class="stat-label">CVC</span>
+            <span class="stat-num" id="statCvc">0</span>
+          </div>
+          <div
+            class="stat-chip sight"
+            title="Sight words — +1 each time you finish one"
+          >
+            <span class="stat-emoji">❤️</span>
+            <span class="stat-label">Sight</span>
+            <span class="stat-num" id="statSight">0</span>
+          </div>
+          <div
+            class="stat-chip simple"
+            title="Vocabulary words — +1 each time you finish one"
+          >
+            <span class="stat-emoji">🌈</span>
+            <span class="stat-label">Vocab</span>
+            <span class="stat-num" id="statSimple">0</span>
+          </div>
+          <div
+            class="stat-chip phrase"
+            title="Sentence mode: +1 per finished line (all words in that line also count in Words total above)"
+          >
+            <span class="stat-emoji">📝</span>
+            <span class="stat-label">Lines</span>
+            <span class="stat-num" id="statPhrase">0</span>
+          </div>
+        </div>
+        <div
+          class="kid-stats-letters"
+          title="Letter mode only — not included in word totals"
+        >
+          🔤 Letter drills: <strong id="statLetters">0</strong>
+        </div>
+        <div class="kid-round" id="roundInfo">—</div>
+        <div id="quizStatsFooter" class="quiz-stats-footer quiz-stats-inline" style="display: none;">
+          🏃 Quiz wpm · best <strong id="statQuizBest">—</strong> · last
+          <strong id="statQuizLast">—</strong> ·
+          <strong id="statQuizCount">0</strong> quizzes done
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  </div>
+
+  <input id="hiddenInput" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-hidden="true" />
+
+  <div id="trophyToast" class="trophy-toast" hidden role="status" aria-live="polite">
+    <div class="trophy-toast-card">
+      <span class="trophy-toast-emoji" id="trophyToastEmoji" aria-hidden="true">🏆</span>
+      <div class="trophy-toast-text" id="trophyToastText"></div>
+    </div>
+  </div>
+
+  <footer class="app-kb-footer">
+  <div id="kb-wrap">
+    <div id="keyboard" aria-hidden="true"></div>
+    <div id="fingerPanel">
+      <h3>👆 Next key</h3>
+      <div id="fingerHint">
+        <div id="fingerSwatch"></div>
+        <div>
+          <div id="fingerName">—</div>
+          <div id="fingerDetail">⌨️ Match the glowing key</div>
+        </div>
+      </div>
+    </div>
+    <div class="legend" id="legend"></div>
+  </div>
+  </footer>
+
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/words-data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "typing-practice-words",
+  "title": "Typing practice word bank",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["w", "zh", "kind", "e"],
+    "additionalProperties": false,
+    "properties": {
+      "w": { "type": "string", "description": "Word, phrase, or sentence to type" },
+      "zh": { "type": "string", "description": "Chinese hint / translation" },
+      "kind": {
+        "type": "string",
+        "enum": ["cvc", "sight", "simple", "phrase"]
+      },
+      "e": { "type": "string", "description": "Emoji or icon hint" },
+      "level": {
+        "type": "string",
+        "description": "Optional educator note under the type badge"
+      },
+      "difficulty": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 5,
+        "description": "Optional; omitted → inferred from config.inference"
+      }
+    }
+  }
+}
