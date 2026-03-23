@@ -667,6 +667,7 @@
   const TROPHY_TOAST_SIZE_CLASSES = [
     "trophy-toast--sz-regular",
     "trophy-toast--sz-gold",
+    "trophy-toast--sz-gold-plus",
     "trophy-toast--sz-trophy",
   ];
 
@@ -689,49 +690,25 @@
     }, 320);
   }
 
-  /** Bronze ⭐ steps only (no merge): 🥉 +1 or +n — regular size. */
-  function showMedalPlusToast(n) {
-    const steps = Math.max(1, n | 0);
-    const root = document.getElementById("trophyToast");
-    const emojiEl = document.getElementById("trophyToastEmoji");
-    const textEl = document.getElementById("trophyToastText");
-    if (!root || !emojiEl || !textEl) return;
-    window.clearTimeout(trophyToastHideTimer);
-    root.classList.remove("trophy-toast--leaving");
-    stripTrophyToastSizes(root);
-    root.classList.add("trophy-toast--sz-regular");
-    emojiEl.textContent = "🥉";
-    textEl.textContent = steps === 1 ? "+1" : "+" + steps;
-    root.hidden = false;
-    bindTrophyToastLayoutListeners();
-    requestAnimationFrame(() => {
-      syncTrophyToastPlacement();
-      requestAnimationFrame(syncTrophyToastPlacement);
-    });
-    trophyToastHideTimer = window.setTimeout(() => hideTrophyToast(), 2400);
-  }
-
-  /** Merge rewards: always “<earned> +1” — 🥈/🥇 regular, 🥇 merge slightly bigger, 🏆 big. */
+  /** Merge rewards: no toast for bronze merge; 🥇 gold size for silver merge; 🥇 + slightly bigger for mega trophy. */
   function showTrophyAchievementToast(kind) {
+    if (kind === "trophy-merge-bronze") {
+      return;
+    }
     const root = document.getElementById("trophyToast");
     const emojiEl = document.getElementById("trophyToastEmoji");
     const textEl = document.getElementById("trophyToastText");
     if (!root || !emojiEl || !textEl) return;
     const map = {
-      "trophy-merge-bronze": {
-        emoji: "🥈",
-        sizeClass: "trophy-toast--sz-regular",
-        ms: 2800,
-      },
       "trophy-merge-silver": {
         emoji: "🥇",
         sizeClass: "trophy-toast--sz-gold",
         ms: 3600,
       },
       "trophy-merge-gold": {
-        emoji: "🏆",
-        sizeClass: "trophy-toast--sz-trophy",
-        ms: 6400,
+        emoji: "🥇",
+        sizeClass: "trophy-toast--sz-gold-plus",
+        ms: 3600,
       },
     };
     const m = map[kind] || {
@@ -764,17 +741,11 @@
     window.setTimeout(() => stage.classList.remove("typing-complete-flash"), 720);
   }
 
-  /** After letter / word / line, or on quiz merge (🥈/🥇/🏆) while typing. */
-  function queueTrophyPresentation(mergeKinds, medalSteps) {
+  /** Merge toasts only (🥈/🥇/🏆). No 🥉 +1 toast or fly — bronze steps update the panel only. */
+  function queueTrophyPresentation(mergeKinds, _medalSteps) {
     const startDelay = 90;
     window.setTimeout(() => {
-      if (medalSteps > 0) {
-        window.setTimeout(() => spawnTrophyFly(), 40);
-      }
       if (!mergeKinds.length) {
-        if (medalSteps > 0) {
-          window.setTimeout(() => showMedalPlusToast(medalSteps), 120);
-        }
         return;
       }
       let d = 220;
@@ -1145,33 +1116,6 @@
     window.setTimeout(() => panel.classList.remove(kind), 580);
   }
 
-  function spawnTrophyFly() {
-    const from = wordDisplay.getBoundingClientRect();
-    const target = document.getElementById("trophyBronzeDots");
-    if (!target) return;
-    const to = target.getBoundingClientRect();
-    const el = document.createElement("div");
-    el.className = "trophy-collect-fx";
-    el.textContent = "🥉";
-    el.setAttribute("aria-hidden", "true");
-    document.body.appendChild(el);
-    const sx = from.left + from.width / 2;
-    const sy = from.top + from.height / 2;
-    const tx = to.left + to.width / 2;
-    const ty = to.top + to.height / 2;
-    el.style.transform = `translate(${sx}px, ${sy}px) translate(-50%, -50%) scale(1)`;
-    el.style.opacity = "1";
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        el.style.transition =
-          "transform 0.52s cubic-bezier(0.2, 0.85, 0.3, 1), opacity 0.52s ease";
-        el.style.transform = `translate(${tx}px, ${ty}px) translate(-50%, -50%) scale(0.45)`;
-        el.style.opacity = "0.9";
-      });
-    });
-    window.setTimeout(() => el.remove(), 560);
-  }
-
   /** True if the key just typed was the last character of a quiz “word” (token). */
   function quizJustCompletedAWord(s, indexJustTyped) {
     if (indexJustTyped < 0 || indexJustTyped >= s.length) return false;
@@ -1184,7 +1128,7 @@
   /**
    * Each completed word → bronze steps (+ ladder). Level 4 & 5 bank entries → 2× steps (e.g. 1 word = 2🥉).
    * Quiz / no entry → never doubled.
-   * @param {{ quizLive?: boolean }} [opts] — quiz: update dots/bar every word; only show toast/fly on 🥈/🥇/🏆 merges (no 🥉+1 spam).
+   * @param {{ quizLive?: boolean }} [opts] — quiz: update dots/bar every word; pop-up toasts only on merges (not bronze +1).
    */
   function awardWordTrophies(wordCount, entryForDifficulty, opts) {
     const quizLive = opts && opts.quizLive === true;
