@@ -1,15 +1,16 @@
 /**
- * Math Game — 九九乘法表 practice (plain JS, no build)
+ * Times Fun — 九九乘法表 practice (plain JS, no build)
  *
  * - Scoring: points from the smaller factor (2×9 & 9×2 both use 2); flair + flying 🎉
  * - Trophies: trophyCountFromScore(), compact strip atop practice panel; flying 🏆 to count + pop, maybeCelebrateTrophy()
- * - Set-of-10: practice strip (Set bar + Right %, timer, avg); 10 dots; when 10/10 done, no auto summary/new set — 🔄 New set; tap dots to re-show that fact
+ * - Set-of-10: strip below answer (Set bar + timer + avg + Right %); 10 dots; 10/10 idle — 🔄 New set; tap dots to review
  * - Table filter: getActiveTables() may be empty; Clear → no tables, practice disabled + hint
  * - Ladder table + bars: renderFullTable(), cellStats (localStorage), showTableChinese, Clear history
  * - Cheat: tiny corner control; fills answer in a peek font, no auto-advance — 🔎 or Enter continues
- * - Tried: totalTried — each valid Check this session (wrong retries count)
+ * - Tried: totalTried — each Check, timeout, or cheat counts once
  * - Practice totals: localStorage mathPracticeState (score / cheat / tried survive reload)
- * - Wrong: up to 2 retries; 3rd wrong shows answer then auto-advance. Correct: short pause then next.
+ * - Wrong: no retries — show answer and auto-advance. 30s per question without finishing → same as wrong (time’s up).
+ * - Correct: full equation + peek-style answer field (green), green set-dot; short pause then next.
  * - Secrets (answer + Check, no score): 0410 → number rain; 1218 → party emoji rain + floor bounce.
  * - Check button: under the answer; pointerdown prevents blur when tapping 🔎 on touch devices.
  * - Optional on-screen keypad (toggle; hidden by default; preference in localStorage).
@@ -370,9 +371,6 @@
   let currentB = 1;
   let currentAnswer = 1;
   let answered = false;
-  /** Wrong Check submissions in a row on this question; 3rd wrong shows the answer. */
-  let wrongAttemptsOnQuestion = 0;
-  const MAX_WRONG_BEFORE_ANSWER = 3;
   /** Chinese lines only on the ladder table */
   let showTableChinese = false;
 
@@ -497,8 +495,6 @@
   let selectedTables = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9]);
 
   const QUESTIONS_PER_SET = 10;
-  /** Time over this (ms) on a correct check → yellow “slow” (if not already red). */
-  const SET_SLOW_MS = 5000;
 
   let slotInSet = 1;
   let setCorrect = 0;
@@ -511,15 +507,18 @@
   let questionTimerIntervalId = null;
   /** True once the clock is running (Q1: after first digit; Q2+: when question appears). */
   let questionTimerStarted = false;
+  /** Wall-clock limit per question; on fire → treat as wrong and reveal answer. */
+  let questionDeadlineTimeoutId = null;
+  const QUESTION_TIME_LIMIT_MS = 30000;
 
   let trophyToastTimer = null;
   let celebrationToastTimer = null;
-  /** True while waiting to auto-advance (correct or after answer reveal). */
+  /** True while waiting to auto-advance (correct or wrong-answer reveal). */
   let waitingAutoAdvance = false;
   /** After cheat: answer shown; 🔎 or Enter advances (no auto timer). */
   let cheatAwaitingContinue = false;
 
-  /** Per finished question this set: null = not yet, ok / warn / bad (green / yellow / red dots). */
+  /** Per finished question this set: null = not yet; ok = correct; warn = peek/cheat only; bad = miss. */
   var setQuestionMarks = new Array(QUESTIONS_PER_SET).fill(null);
   /** Same indices: { a, b } for each finished question (for dot review after set ends). */
   var setQuestionPairs = new Array(QUESTIONS_PER_SET).fill(null);
@@ -563,7 +562,7 @@
   }
 
   /**
-   * @param {{ fail?: boolean, cheat?: boolean, hadRetries?: boolean, elapsedMs?: number }} o
+   * @param {{ fail?: boolean, cheat?: boolean }} o
    */
   function recordSetQuestionOutcome(o) {
     var idx = setTotal - 1;
@@ -573,8 +572,6 @@
     if (o.fail) {
       setQuestionMarks[idx] = "bad";
     } else if (o.cheat) {
-      setQuestionMarks[idx] = "warn";
-    } else if (o.hadRetries || (o.elapsedMs != null && o.elapsedMs > SET_SLOW_MS)) {
       setQuestionMarks[idx] = "warn";
     } else {
       setQuestionMarks[idx] = "ok";
@@ -664,7 +661,8 @@
     }
     waitingAutoAdvance = false;
     cheatAwaitingContinue = false;
-    wrongAttemptsOnQuestion = 0;
+    clearCorrectAnswerHighlight();
+    clearQuestionDeadline();
     slotInSet = 1;
     setCorrect = 0;
     setTotal = 0;
@@ -852,8 +850,9 @@
       answered = false;
       waitingAutoAdvance = false;
       cheatAwaitingContinue = false;
-      wrongAttemptsOnQuestion = 0;
+      clearQuestionDeadline();
       clearCheatRevealUi();
+      clearCorrectAnswerHighlight();
       if (el.answerInput) {
         el.answerInput.disabled = true;
         el.answerInput.value = "";
@@ -1133,6 +1132,15 @@
       el.btnCheat.hidden = answered || noTables;
       el.btnCheat.disabled = answered || noTables;
     }
+    if (el.btnAnswerCheck) {
+      if (cheatAwaitingContinue) {
+        el.btnAnswerCheck.setAttribute("aria-label", "Next question");
+        el.btnAnswerCheck.setAttribute("title", "Next question");
+      } else {
+        el.btnAnswerCheck.setAttribute("aria-label", "Check answer");
+        el.btnAnswerCheck.setAttribute("title", "Check answer");
+      }
+    }
   }
 
   function formatSecondsShort(sec) {
@@ -1194,6 +1202,7 @@
       questionTimerIntervalId = window.setInterval(updateQuestionTimerDisplay, 100);
     }
     updateQuestionTimerDisplay();
+    armQuestionDeadline();
   }
 
   function maybeStartQuestionTimerFromInput() {
@@ -1206,6 +1215,70 @@
     questionStartedAtMs = performance.now();
     updateQuestionTimerDisplay();
     questionTimerIntervalId = window.setInterval(updateQuestionTimerDisplay, 100);
+  }
+
+  function clearQuestionDeadline() {
+    if (questionDeadlineTimeoutId !== null) {
+      window.clearTimeout(questionDeadlineTimeoutId);
+      questionDeadlineTimeoutId = null;
+    }
+  }
+
+  function armQuestionDeadline() {
+    clearQuestionDeadline();
+    if (selectedTables.size === 0) return;
+    if (answered || waitingAutoAdvance || cheatAwaitingContinue) return;
+    questionDeadlineTimeoutId = window.setTimeout(
+      onQuestionTimeExpired,
+      QUESTION_TIME_LIMIT_MS
+    );
+  }
+
+  function onQuestionTimeExpired() {
+    questionDeadlineTimeoutId = null;
+    if (answered || waitingAutoAdvance || cheatAwaitingContinue) return;
+    if (selectedTables.size === 0) return;
+
+    var elapsed = questionTimerStarted
+      ? performance.now() - questionStartedAtMs
+      : QUESTION_TIME_LIMIT_MS;
+    questionFrozenElapsedMs = elapsed;
+    questionTimerStarted = false;
+    clearQuestionTimerTick();
+    updateQuestionTimerDisplay();
+
+    totalTried += 1;
+    updateTriedDisplay();
+    recordPairAttempt(currentA, currentB, false);
+    applyWrongRevealAndScheduleAdvance(
+      "Time's up! " + currentA + " × " + currentB + " = " + currentAnswer + " 🙂"
+    );
+  }
+
+  function applyWrongRevealAndScheduleAdvance(feedbackMsg) {
+    clearQuestionDeadline();
+    clearQuestionTimerTick();
+    questionTimerStarted = false;
+    setTotal += 1;
+    recordSetQuestionOutcome({ fail: true });
+    answered = true;
+    updateQuestionTimerDisplay();
+    updatePracticeButtons();
+    playSoundWrong();
+    el.equation.textContent = currentA + " × " + currentB + " = " + currentAnswer;
+    el.answerInput.value = String(currentAnswer);
+    el.answerInput.readOnly = true;
+    el.answerInput.classList.add("answer-input--cheat-reveal");
+    el.answerInput.classList.remove("answer-input--correct");
+    el.answerInput.disabled = true;
+    setFeedback(false, feedbackMsg);
+    updateSetDisplay();
+    waitingAutoAdvance = true;
+    window.setTimeout(function () {
+      waitingAutoAdvance = false;
+      advanceAfterAttempt();
+    }, 2000);
+    savePracticeState();
   }
 
   function updateSetAvgTimeDisplay() {
@@ -1324,10 +1397,20 @@
     el.answerInput.classList.remove("answer-input--cheat-reveal");
   }
 
+  function clearCorrectAnswerHighlight() {
+    if (el.answerInput) {
+      el.answerInput.classList.remove("answer-input--correct");
+    }
+    if (el.equation) {
+      el.equation.classList.remove("equation--answer-pop");
+    }
+  }
+
   /** After answering or cheating: load next question, or idle at 10/10 (no auto summary / new set). */
   function advanceAfterAttempt() {
+    clearQuestionDeadline();
     clearCheatRevealUi();
-    wrongAttemptsOnQuestion = 0;
+    clearCorrectAnswerHighlight();
     if (setTotal >= QUESTIONS_PER_SET) {
       clearQuestionTimerTick();
       questionTimerStarted = false;
@@ -1417,19 +1500,13 @@
     recordPairAttempt(currentA, currentB, ok);
 
     if (ok) {
+      clearQuestionDeadline();
       freezeQuestionTimer();
-      var hadRetries = wrongAttemptsOnQuestion > 0;
-      var elapsedOk = questionFrozenElapsedMs;
       setCorrectDurationsMs.push(questionFrozenElapsedMs);
-      wrongAttemptsOnQuestion = 0;
       setCorrect += 1;
       setTotal += 1;
-      recordSetQuestionOutcome({
-        fail: false,
-        cheat: false,
-        hadRetries: hadRetries,
-        elapsedMs: elapsedOk,
-      });
+      recordSetQuestionOutcome({ fail: false, cheat: false });
+      el.equation.textContent = currentA + " × " + currentB + " = " + currentAnswer;
       answered = true;
       updatePracticeButtons();
 
@@ -1454,6 +1531,10 @@
       showCelebration("Good job! ⭐ 🎉");
 
       updateSetDisplay();
+      el.answerInput.value = String(currentAnswer);
+      el.answerInput.readOnly = true;
+      el.answerInput.classList.add("answer-input--cheat-reveal");
+      el.answerInput.classList.add("answer-input--correct");
       el.answerInput.disabled = true;
       waitingAutoAdvance = true;
 
@@ -1464,38 +1545,9 @@
       return;
     }
 
-    wrongAttemptsOnQuestion += 1;
-
-    if (wrongAttemptsOnQuestion >= MAX_WRONG_BEFORE_ANSWER) {
-      freezeQuestionTimer();
-      setTotal += 1;
-      recordSetQuestionOutcome({ fail: true });
-      answered = true;
-      updatePracticeButtons();
-      playSoundWrong();
-      el.equation.textContent = `${currentA} × ${currentB} = ${currentAnswer}`;
-      setFeedback(false, `Answer: ${currentAnswer} 🙂`);
-      updateSetDisplay();
-      el.answerInput.disabled = true;
-      waitingAutoAdvance = true;
-
-      window.setTimeout(function () {
-        waitingAutoAdvance = false;
-        advanceAfterAttempt();
-      }, 2000);
-      savePracticeState();
-      return;
-    }
-
-    playSoundWrong();
-    setFeedback(
-      false,
-      wrongAttemptsOnQuestion === 1 ? "Nice try 🙂 Try again!" : "One more try! 💪"
-    );
-    el.answerInput.value = "";
-    el.answerInput.focus();
-    updatePracticeButtons();
-    savePracticeState();
+    freezeQuestionTimer();
+    applyWrongRevealAndScheduleAdvance("Answer: " + currentAnswer + " 🙂");
+    return;
   }
 
   /**
@@ -1510,19 +1562,16 @@
       return;
     }
 
+    clearQuestionDeadline();
     cheatCount += 1;
     updateCheatDisplay();
     savePracticeState();
 
-    wrongAttemptsOnQuestion = 0;
     answered = true;
     cheatAwaitingContinue = true;
     freezeQuestionTimer();
     setTotal += 1;
-    recordSetQuestionOutcome({
-      cheat: true,
-      elapsedMs: questionFrozenElapsedMs,
-    });
+    recordSetQuestionOutcome({ cheat: true });
     setFeedback(false, "Tap 🔎 for next 🙂");
     updateSetDisplay();
 
@@ -1567,6 +1616,8 @@
       return;
     }
 
+    clearQuestionDeadline();
+
     if (cheatAwaitingContinue) {
       advanceAfterAttempt();
       return;
@@ -1576,7 +1627,6 @@
       return;
     }
 
-    wrongAttemptsOnQuestion = 0;
     slotInSet += 1;
     answered = false;
     clearCheatRevealUi();

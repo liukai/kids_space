@@ -1,4 +1,4 @@
-/* Math Game — themes: Classic | Retro (soft computer) | Unicorn (rainbow) */
+/* Times Fun — themes: Classic | Retro (soft computer) | Unicorn (rainbow) */
 
 *,
 *::before,
@@ -298,12 +298,23 @@ html[data-theme="retro"] .feedback-area.try {
   padding-bottom: max(2.5rem, env(safe-area-inset-bottom, 0px));
   position: relative;
   z-index: 1;
+  overflow-x: hidden;
 }
 
 /* Header + theme picker */
 .header {
   text-align: center;
-  margin-bottom: 1rem;
+  margin-bottom: 0.85rem;
+}
+
+@media (max-width: 480px) {
+  .header {
+    margin-bottom: 0.5rem;
+  }
+
+  .theme-row {
+    margin-top: 0.5rem;
+  }
 }
 
 .title {
@@ -384,6 +395,7 @@ html[data-theme="retro"] .feedback-area.try {
 @media (max-width: 640px) {
   .top-panels {
     grid-template-columns: 1fr;
+    gap: 0.65rem;
   }
 }
 
@@ -407,11 +419,11 @@ html[data-theme="retro"] .feedback-area.try {
   margin-bottom: 1rem;
 }
 
-/* Trophies + next-trophy bar — top of practice panel (IDs for script / flying 🏆) */
+/* Trophies + next-trophy bar — compact strip above the question */
 .practice-trophy-strip {
-  margin: 0 0 0.45rem;
-  padding: 0.38rem 0.55rem;
-  padding-right: 2.85rem;
+  margin: 0 0 0.3rem;
+  padding: 0.2rem 0.38rem;
+  padding-right: 2.45rem;
   border-radius: var(--radius-sm);
   border: 1px solid rgba(245, 158, 11, 0.35);
   background: linear-gradient(
@@ -436,81 +448,86 @@ html[data-theme="unicorn"] .practice-trophy-strip {
 
 .trophy-strip-inner {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: 0.45rem 0.9rem;
+  justify-content: space-between;
+  gap: 0.4rem 0.65rem;
+  min-width: 0;
 }
 
-.trophy-strip-earned {
+/* Left: total trophies */
+.trophy-strip-total {
   display: inline-flex;
   align-items: center;
-  gap: 0.28rem;
+  gap: 0.2rem 0.32rem;
   flex-shrink: 0;
-}
-
-.trophy-strip-k {
-  font-size: 1.2rem;
   line-height: 1;
 }
 
+.trophy-strip-total-label {
+  font-size: 0.52rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+html[data-theme="retro"] .trophy-strip-total-label {
+  color: #a8c49a;
+}
+
+.trophy-strip-k {
+  font-size: 0.92rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
 .trophy-strip-num {
-  font-size: 1.32rem;
+  font-size: 0.98rem;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   line-height: 1;
   color: var(--text);
   min-width: 1ch;
+  flex-shrink: 0;
 }
 
-.trophy-strip-next {
-  flex: 1 1 10rem;
-  min-width: 0;
+/* Right: progress bar + points / 20 */
+.trophy-strip-progress {
   display: flex;
-  flex-direction: column;
-  gap: 0.12rem;
-}
-
-.trophy-strip-next-label {
-  font-size: 0.6rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--muted);
-  line-height: 1.2;
-}
-
-html[data-theme="retro"] .trophy-strip-next-label {
-  color: #c4b896;
-}
-
-.trophy-strip-bar-line {
-  display: flex;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: 0.38rem;
+  gap: 0.3rem;
+  flex: 1 1 0;
   min-width: 0;
+  justify-content: flex-end;
 }
 
 .trophy-progress-visual--inline {
-  flex: 1;
+  display: flex;
+  align-items: center;
+  flex: 1 1 0;
   min-width: 0;
-  gap: 0.28rem;
+  max-width: 11rem;
+  gap: 0.22rem;
 }
 
 .practice-trophy-strip .trophy-progress-track--inline {
-  height: 0.48rem;
-  min-height: 8px;
+  height: 0.32rem;
+  min-height: 5px;
   border-width: 1px;
 }
 
 .trophy-progress-goal--inline {
-  font-size: 0.95rem;
+  font-size: 0.78rem;
   line-height: 1;
-  opacity: 0.88;
+  opacity: 0.85;
+  flex-shrink: 0;
 }
 
 .trophy-progress-count--inline {
   flex-shrink: 0;
-  font-size: 0.64rem;
+  font-size: 0.52rem;
   font-weight: 800;
   color: var(--muted);
   text-align: right;
@@ -524,18 +541,25 @@ html[data-theme="retro"] .trophy-progress-count--inline {
 }
 
 @media (max-width: 420px) {
-  .trophy-strip-inner {
-    flex-direction: column;
-    align-items: stretch;
+  .trophy-progress-visual--inline {
+    max-width: none;
   }
 
-  .trophy-strip-next {
-    flex-basis: auto;
+  .trophy-progress-goal--inline {
+    font-size: 0.72rem;
+  }
+
+  .trophy-strip-total-label {
+    letter-spacing: 0.03em;
   }
 }
 
 .practice-panel .feedback-area {
-  padding-right: 2.75rem;
+  padding-right: 0;
+  margin-top: 0.4rem;
+  margin-bottom: 0;
+  min-height: 1.25rem;
+  font-size: clamp(0.92rem, 3.4vw, 1.05rem);
 }
 
 .table-panel {
@@ -918,12 +942,12 @@ html[data-theme="unicorn"] .trophy-progress-fill {
 .equation-wrap {
   position: relative;
   text-align: center;
-  margin: 0.35rem 0 0.4rem;
+  margin: 0.15rem 0 0.3rem;
 }
 
-/* Per-set: progress bar, this-question timer, avg when right, % right — above the question */
+/* Per-set: progress bar, timer, avg, % right — below answer / controls on mobile-first flow */
 .practice-set-strip {
-  margin: 0.15rem 0 0.5rem;
+  margin: 0.55rem 0 0.25rem;
   padding: 0.45rem 0.5rem;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
@@ -1202,23 +1226,169 @@ html[data-theme="retro"] .set-slots-legend {
   line-height: 1.15;
 }
 
-@media (max-width: 520px) {
-  .set-strip-grid {
-    grid-template-columns: 1fr 1fr;
+/* Narrow screens: one row for This Q / Avg / Right + tighter set strip */
+@media (max-width: 640px) {
+  .practice-set-strip {
+    margin: 0.4rem 0 0.2rem;
+    padding: 0.3rem 0.35rem;
   }
 
-  .set-strip-cell:last-of-type {
-    grid-column: 1 / -1;
+  .set-strip-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.18rem 0.3rem;
+    align-items: end;
+  }
+
+  .set-strip-cell--stat .set-strip-head {
+    font-size: 0.48rem;
+    letter-spacing: 0.02em;
+    margin-bottom: 0.03rem;
+    line-height: 1.05;
+    padding: 0 0.06rem;
+  }
+
+  .set-strip-cell--stat .set-strip-value {
+    font-size: clamp(0.65rem, 3.1vw, 0.78rem);
+    line-height: 1.05;
+    font-weight: 800;
+  }
+
+  .set-strip-span .set-strip-head {
+    font-size: 0.54rem;
+  }
+
+  .set-strip-head-row {
+    gap: 0.28rem 0.4rem;
+    margin-bottom: 0.05rem;
+  }
+
+  .set-strip-progress-row {
+    gap: 0.25rem;
+  }
+
+  .set-strip-fraction {
+    font-size: 0.78rem;
+  }
+
+  .practice-set-strip .set-progress-track--strip {
+    height: 0.38rem;
+    min-height: 7px;
+  }
+
+  .practice-set-strip .set-progress-goal {
+    font-size: 0.75rem;
   }
 
   .set-slot-markers {
-    gap: 0.38rem;
+    gap: 0.2rem;
+    margin: 0.22rem 0 0.06rem;
+    min-height: 1rem;
   }
 
   .set-slot-dot,
   button.set-slot-dot {
-    width: 1.08rem;
-    height: 1.08rem;
+    width: 0.74rem;
+    height: 0.74rem;
+    border-width: 1.5px;
+  }
+
+  .set-slots-legend {
+    font-size: 0.45rem;
+    gap: 0.18rem 0.35rem;
+    line-height: 1.2;
+    margin-top: 0.04rem;
+  }
+
+  .practice-set-strip .btn-new-set.btn-set-summary {
+    font-size: 0.55rem;
+    padding: 0.2rem 0.4rem;
+  }
+
+  .stats-panel {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.28rem 0.32rem;
+  }
+
+  .panel.stats-panel {
+    padding: 0.5rem 0.45rem;
+  }
+
+  .stats-panel .stat-block {
+    padding: 0.25rem 0.12rem;
+  }
+
+  .stats-panel .stat-value-big {
+    font-size: 1rem;
+    margin-top: 0.06rem;
+  }
+
+  .stats-panel .stat-block .stat-label {
+    font-size: 0.52rem;
+  }
+
+  .stats-panel .stat-emoji {
+    font-size: 0.8rem;
+  }
+
+  .table-chips {
+    gap: 0.35rem;
+  }
+
+  .table-chip {
+    min-width: 2.65rem;
+    min-height: 2.65rem;
+    padding: 0.38rem 0.5rem;
+    font-size: 0.92rem;
+  }
+
+  .filter-panel .panel-heading {
+    font-size: 1.02rem;
+  }
+
+  .filter-panel .panel-hint {
+    font-size: 0.82rem;
+    margin-bottom: 0.55rem;
+  }
+
+  .practice-panel {
+    margin-bottom: 0.65rem;
+  }
+
+  .numpad {
+    margin-top: 0.45rem;
+    padding-top: 0.35rem;
+  }
+
+  .numpad-grid {
+    gap: 0.3rem;
+    max-width: 100%;
+  }
+
+  .numpad-key {
+    min-height: 2.4rem;
+    font-size: 1.12rem;
+    padding: 0.26rem;
+  }
+
+  .answer-check-row {
+    gap: 0.35rem;
+    margin: 0.38rem 0 0.42rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .set-strip-cell--stat .set-strip-head {
+    font-size: 0.42rem;
+    letter-spacing: 0;
+  }
+
+  .set-strip-cell--stat .set-strip-value {
+    font-size: 0.62rem;
+  }
+
+  .set-slots-legend {
+    font-size: 0.4rem;
+    gap: 0.12rem 0.28rem;
   }
 }
 
@@ -1240,6 +1410,28 @@ html[data-theme="retro"] .set-slots-legend {
 
 .equation.equation--yay {
   animation: equationYay 0.65s ease;
+}
+
+@keyframes equationAnswerPop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.06);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.equation.equation--answer-pop {
+  animation: equationAnswerPop 0.55s ease;
+  color: var(--success);
+}
+
+html[data-theme="retro"] .equation.equation--answer-pop {
+  color: #7efcb0;
+  text-shadow: 0 0 12px rgba(120, 255, 180, 0.35);
 }
 
 .question-points-flair {
@@ -1456,7 +1648,13 @@ html[data-theme="retro"] .question-points-flair--earned {
 }
 
 .answer-row {
-  margin-bottom: 1rem;
+  margin-bottom: 0.65rem;
+}
+
+@media (max-width: 480px) {
+  .answer-row {
+    margin-bottom: 0.5rem;
+  }
 }
 
 .answer-input {
@@ -1476,6 +1674,34 @@ html[data-theme="retro"] .question-points-flair--earned {
 .answer-input:focus {
   border-color: var(--secondary-solid, var(--secondary));
   box-shadow: 0 0 0 4px var(--focus-ring);
+}
+
+.answer-input--correct {
+  border-color: var(--bar-green);
+  background: rgba(76, 175, 122, 0.14);
+  box-shadow: 0 0 0 3px rgba(76, 175, 122, 0.22);
+}
+
+.answer-input--correct:focus {
+  border-color: var(--bar-green);
+  box-shadow: 0 0 0 4px rgba(76, 175, 122, 0.28);
+}
+
+html[data-theme="retro"] .answer-input--correct {
+  border-color: #5ee89a;
+  background: rgba(94, 232, 154, 0.1);
+  box-shadow: 0 0 0 3px rgba(94, 232, 154, 0.2);
+  color: #d2ffe4;
+}
+
+html[data-theme="retro"] .answer-input--correct:focus {
+  box-shadow: 0 0 0 4px rgba(94, 232, 154, 0.28);
+}
+
+html[data-theme="unicorn"] .answer-input--correct {
+  border-color: #34d399;
+  background: rgba(52, 211, 153, 0.12);
+  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.22);
 }
 
 .answer-input--cheat-reveal {
@@ -1499,6 +1725,45 @@ html[data-theme="unicorn"] .answer-input--cheat-reveal {
   color: #6d28d9;
   background: rgba(167, 139, 250, 0.14);
   border-color: rgba(139, 92, 246, 0.4);
+}
+
+/* Correct + revealed answer: peek typography on green success (not purple cheat) */
+.answer-input--correct.answer-input--cheat-reveal {
+  font-family: Georgia, "Times New Roman", "Palatino Linotype", serif;
+  font-style: italic;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  border-color: var(--bar-green);
+  background: rgba(76, 175, 122, 0.14);
+  box-shadow: 0 0 0 3px rgba(76, 175, 122, 0.22);
+  color: var(--text);
+}
+
+.answer-input--correct.answer-input--cheat-reveal:focus {
+  border-color: var(--bar-green);
+  box-shadow: 0 0 0 4px rgba(76, 175, 122, 0.28);
+}
+
+html[data-theme="retro"] .answer-input--correct.answer-input--cheat-reveal {
+  color: #d2ffe4;
+  border-color: #5ee89a;
+  background: rgba(94, 232, 154, 0.12);
+  box-shadow: 0 0 0 3px rgba(94, 232, 154, 0.22);
+}
+
+html[data-theme="retro"] .answer-input--correct.answer-input--cheat-reveal:focus {
+  box-shadow: 0 0 0 4px rgba(94, 232, 154, 0.28);
+}
+
+html[data-theme="unicorn"] .answer-input--correct.answer-input--cheat-reveal {
+  color: #065f46;
+  border-color: #34d399;
+  background: rgba(52, 211, 153, 0.14);
+  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.24);
+}
+
+html[data-theme="unicorn"] .answer-input--correct.answer-input--cheat-reveal:focus {
+  box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.32);
 }
 
 /* ----- Check answer (under the field; digits via keyboard / OS keypad) ----- */
