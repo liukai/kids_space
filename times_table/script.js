@@ -162,23 +162,85 @@
     return `${x}-${y}`;
   }
 
+  const PRACTICE_MODE_KEY = "mathPracticeMode";
+  const CELL_STATS_KEY = "mathCellStats";
+  const CELL_STATS_ADD_KEY = "mathCellStatsAdd";
+  /** multiply | add */
+  let practiceMode = "multiply";
+  var multiplyCellStats = {};
+  var addCellStats = {};
+  /** Points at the active mode’s pair stats (see syncCellStatsRef). */
+  var cellStats = multiplyCellStats;
+
+  function syncCellStatsRef() {
+    cellStats = practiceMode === "add" ? addCellStats : multiplyCellStats;
+  }
+
+  function loadPracticeModeFromStorage() {
+    try {
+      var v = localStorage.getItem(PRACTICE_MODE_KEY);
+      if (v === "add" || v === "multiply") {
+        practiceMode = v;
+      }
+    } catch (err) {
+      /* ignore */
+    }
+  }
+
+  function savePracticeMode() {
+    try {
+      localStorage.setItem(PRACTICE_MODE_KEY, practiceMode);
+    } catch (err) {
+      /* ignore */
+    }
+  }
+
+  function isAddMode() {
+    return practiceMode === "add";
+  }
+
+  function opSymbol() {
+    return isAddMode() ? "+" : "×";
+  }
+
+  function computeAnswer(a, b) {
+    return isAddMode() ? a + b : a * b;
+  }
+
+  function formatEquationFull(a, b, ans) {
+    return a + " " + opSymbol() + " " + b + " = " + ans;
+  }
+
   function loadCellStats() {
+    multiplyCellStats = {};
+    addCellStats = {};
     try {
       const raw = localStorage.getItem(CELL_STATS_KEY);
-      if (!raw) {
-        cellStats = {};
-        return;
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        multiplyCellStats =
+          typeof parsed === "object" && parsed !== null ? parsed : {};
       }
-      const parsed = JSON.parse(raw);
-      cellStats = typeof parsed === "object" && parsed !== null ? parsed : {};
     } catch (err) {
-      cellStats = {};
+      multiplyCellStats = {};
     }
+    try {
+      const raw = localStorage.getItem(CELL_STATS_ADD_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        addCellStats =
+          typeof parsed === "object" && parsed !== null ? parsed : {};
+      }
+    } catch (err) {
+      addCellStats = {};
+    }
+    syncCellStatsRef();
   }
 
   function saveCellStats() {
     try {
-      localStorage.setItem(CELL_STATS_KEY, JSON.stringify(cellStats));
+      localStorage.setItem(CELL_STATS_KEY, JSON.stringify(multiplyCellStats));
+      localStorage.setItem(CELL_STATS_ADD_KEY, JSON.stringify(addCellStats));
     } catch (err) {
       /* ignore */
     }
@@ -224,11 +286,14 @@
   function clearStoredCellHistory() {
     try {
       localStorage.removeItem(CELL_STATS_KEY);
+      localStorage.removeItem(CELL_STATS_ADD_KEY);
       localStorage.removeItem(PRACTICE_STATE_KEY);
     } catch (err) {
       /* ignore */
     }
-    cellStats = {};
+    multiplyCellStats = {};
+    addCellStats = {};
+    syncCellStatsRef();
     totalScore = 0;
     cheatCount = 0;
     totalTried = 0;
@@ -256,11 +321,12 @@
   }
 
   function barAriaLabel(i, j, st) {
+    const sym = opSymbol();
     const total = st.r + st.w;
     if (total === 0) {
-      return `${i}×${j}: no tries yet`;
+      return `${i}${sym}${j}: no tries yet`;
     }
-    return `${i}×${j}: ${st.r} right, ${st.w} wrong`;
+    return `${i}${sym}${j}: ${st.r} right, ${st.w} wrong`;
   }
 
   function buildCorrectnessBar(i, j) {
@@ -299,8 +365,15 @@
     return bar;
   }
 
-  /** Points use the smaller factor (e.g. 2×9 and 9×2 → tier of 2 → 2 pt). */
+  /** Points: multiply — smaller factor tier; add — sum tier. */
   function pointsForQuestion(a, b) {
+    if (isAddMode()) {
+      const s = a + b;
+      if (s <= 6) return 1;
+      if (s <= 10) return 2;
+      if (s <= 14) return 3;
+      return 4;
+    }
     const m = Math.min(a, b);
     if (m <= 1) return 1;
     if (m <= 2) return 2;
@@ -374,11 +447,8 @@
   /** Chinese lines only on the ladder table */
   let showTableChinese = false;
 
-  const CELL_STATS_KEY = "mathCellStats";
   /** Saved score, cheat, tried — survives reload (browser localStorage, not HTTP cookies). */
   const PRACTICE_STATE_KEY = "mathPracticeState";
-  /** Per pair "min-max": { r: right count, w: wrong count } */
-  let cellStats = {};
 
   function initAnswerCheckButton() {
     if (!el.btnAnswerCheck) return;
@@ -551,14 +621,20 @@
     if (!pair) {
       return;
     }
-    var prod = pair.a * pair.b;
-    el.equation.textContent = pair.a + " × " + pair.b + " = " + prod;
+    var prod = computeAnswer(pair.a, pair.b);
+    el.equation.textContent = formatEquationFull(pair.a, pair.b, prod);
     if (el.questionPoints) {
       el.questionPoints.textContent = "";
       el.questionPoints.classList.remove("question-points-flair--earned");
       el.questionPoints.removeAttribute("aria-label");
     }
-    setFeedback(true, "Question " + (slotIndex + 1) + ": " + pair.a + "×" + pair.b + " = " + prod);
+    setFeedback(
+      true,
+      "Question " +
+        (slotIndex + 1) +
+        ": " +
+        formatEquationFull(pair.a, pair.b, prod)
+    );
   }
 
   /**
@@ -603,7 +679,7 @@
         dot.classList.add("set-slot-dot--warn");
         dot.title = canReview
           ? "Show again: question " + (i + 1)
-          : "Slow (>5s) or retries / peek";
+          : "Peek 🙈";
       } else if (st === "ok") {
         dot.classList.add("set-slot-dot--ok");
         dot.title = canReview
@@ -621,7 +697,9 @@
                 (i + 1) +
                 " again: " +
                 pair.a +
-                " times " +
+                " " +
+                opSymbol() +
+                " " +
                 pair.b
             : "Question " + (i + 1) + " done"
         );
@@ -872,11 +950,12 @@
         }
       }
       renderEquation();
-      setFeedback(false, "Pick at least one table above 🙂");
+      setFeedback(false, "Pick at least one number above 🙂");
       if (el.tableFilterWarn) {
         el.tableFilterWarn.hidden = false;
-        el.tableFilterWarn.textContent =
-          "Choose at least one number (1×–9×), or tap 🔢 All.";
+        el.tableFilterWarn.textContent = isAddMode()
+          ? "Choose at least one digit (1–9), or tap 🔢 All."
+          : "Choose at least one number (1×–9×), or tap 🔢 All.";
       }
       updatePracticeButtons();
       updateSetDisplay();
@@ -927,7 +1006,7 @@
     const pair = pool[Math.floor(Math.random() * pool.length)];
     currentA = pair[0];
     currentB = pair[1];
-    currentAnswer = currentA * currentB;
+    currentAnswer = computeAnswer(currentA, currentB);
   }
 
   function updateQuestionPointsLabel() {
@@ -943,7 +1022,7 @@
 
   function renderEquation() {
     if (selectedTables.size === 0) {
-      el.equation.textContent = "— × — = ?";
+      el.equation.textContent = "— " + opSymbol() + " — = ?";
       if (el.questionPoints) {
         el.questionPoints.textContent = "";
         el.questionPoints.classList.remove("question-points-flair--earned");
@@ -951,7 +1030,8 @@
       }
       return;
     }
-    el.equation.textContent = `${currentA} × ${currentB} = ?`;
+    el.equation.textContent =
+      currentA + " " + opSymbol() + " " + currentB + " = ?";
     updateQuestionPointsLabel();
   }
 
@@ -1251,7 +1331,7 @@
     updateTriedDisplay();
     recordPairAttempt(currentA, currentB, false);
     applyWrongRevealAndScheduleAdvance(
-      "Time's up! " + currentA + " × " + currentB + " = " + currentAnswer + " 🙂"
+      "Time's up! " + formatEquationFull(currentA, currentB, currentAnswer) + " 🙂"
     );
   }
 
@@ -1265,7 +1345,7 @@
     updateQuestionTimerDisplay();
     updatePracticeButtons();
     playSoundWrong();
-    el.equation.textContent = currentA + " × " + currentB + " = " + currentAnswer;
+    el.equation.textContent = formatEquationFull(currentA, currentB, currentAnswer);
     el.answerInput.value = String(currentAnswer);
     el.answerInput.readOnly = true;
     el.answerInput.classList.add("answer-input--cheat-reveal");
@@ -1506,7 +1586,7 @@
       setCorrect += 1;
       setTotal += 1;
       recordSetQuestionOutcome({ fail: false, cheat: false });
-      el.equation.textContent = currentA + " × " + currentB + " = " + currentAnswer;
+      el.equation.textContent = formatEquationFull(currentA, currentB, currentAnswer);
       answered = true;
       updatePracticeButtons();
 
@@ -1648,11 +1728,12 @@
 
   function renderTableChips() {
     el.tableChips.innerHTML = "";
+    const chipSuffix = isAddMode() ? "+" : "×";
     for (let n = 1; n <= 9; n++) {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "table-chip";
-      btn.textContent = n + "×";
+      btn.textContent = n + chipSuffix;
       btn.setAttribute("aria-pressed", selectedTables.has(n) ? "true" : "false");
       btn.addEventListener("click", function () {
         const next = new Set(selectedTables);
@@ -1679,28 +1760,33 @@
   }
 
   /**
-   * Ladder: row j is exactly one line — 1×j=…  2×j=…  …  j×j=… (same order as printed 九九表).
+   * Ladder: times mode — 九九 triangle; add mode — same layout with i+j sums.
    */
   function renderFullTable() {
     el.fullTable.innerHTML = "";
+    var sym = opSymbol();
     for (let j = 1; j <= 9; j++) {
       const row = document.createElement("div");
       row.className = "table-row";
       for (let i = 1; i <= j; i++) {
         const item = document.createElement("div");
-        item.className = "table-cell" + (showTableChinese ? "" : " no-cn");
-        const prod = i * j;
-        const cn = getChineseReading(i, j);
+        item.className =
+          "table-cell" +
+          (showTableChinese && !isAddMode() ? "" : " no-cn");
+        const result = computeAnswer(i, j);
         const eq = document.createElement("span");
         eq.className = "eq";
-        eq.textContent = i + "×" + j + "=" + prod;
+        eq.textContent = i + sym + j + "=" + result;
         item.appendChild(eq);
         item.appendChild(buildCorrectnessBar(i, j));
-        if (cn) {
-          const line = document.createElement("span");
-          line.className = "cn";
-          line.textContent = cn;
-          item.appendChild(line);
+        if (!isAddMode()) {
+          const cn = getChineseReading(i, j);
+          if (cn) {
+            const line = document.createElement("span");
+            line.className = "cn";
+            line.textContent = cn;
+            item.appendChild(line);
+          }
         }
         row.appendChild(item);
       }
@@ -1713,11 +1799,94 @@
     el.btnChineseTable.setAttribute("aria-expanded", String(showTableChinese));
   }
 
+  function refreshTableToggleLabel() {
+    if (!el.btnToggleTable || !el.fullTableWrap) return;
+    if (el.fullTableWrap.hidden) {
+      el.btnToggleTable.textContent = isAddMode()
+        ? "📊 Show addition chart"
+        : "📊 Show Table";
+    } else {
+      el.btnToggleTable.textContent = isAddMode()
+        ? "📊 Hide chart"
+        : "📊 Hide Table";
+    }
+  }
+
+  function updateAnswerInputMax() {
+    if (!el.answerInput) return;
+    el.answerInput.max = isAddMode() ? "18" : "81";
+  }
+
+  function updateFilterPanelForMode() {
+    var heading = document.getElementById("filter-heading");
+    var hint = document.getElementById("filter-hint");
+    if (heading) {
+      heading.textContent = isAddMode() ? "Pick numbers" : "Pick tables";
+    }
+    if (hint) {
+      hint.textContent = isAddMode()
+        ? "Practice sums that use at least one of these digits (1–9 + 1–9)."
+        : "Choose which numbers to use in facts (either factor).";
+    }
+    if (el.btnAllTables) {
+      el.btnAllTables.setAttribute(
+        "aria-label",
+        isAddMode()
+          ? "Select all digits 1 through 9 for addition"
+          : "Select all tables (1× through 9×)"
+      );
+    }
+    if (el.tableChips) {
+      el.tableChips.setAttribute(
+        "aria-label",
+        isAddMode()
+          ? "Digits to include in addition practice"
+          : "Numbers to include in multiplication practice"
+      );
+    }
+  }
+
+  function updateTablePanelForMode() {
+    if (el.btnChineseTable) {
+      el.btnChineseTable.hidden = isAddMode();
+    }
+    refreshTableToggleLabel();
+  }
+
+  function applyPracticeModeUI() {
+    document.querySelectorAll(".btn-practice-mode").forEach(function (btn) {
+      var m = btn.getAttribute("data-practice-mode");
+      btn.setAttribute("aria-pressed", m === practiceMode ? "true" : "false");
+    });
+    savePracticeMode();
+    syncCellStatsRef();
+    updateFilterPanelForMode();
+    updateTablePanelForMode();
+    updateAnswerInputMax();
+    renderTableChips();
+    if (el.fullTableWrap && !el.fullTableWrap.hidden) {
+      renderFullTable();
+    }
+    updateChineseTableButton();
+  }
+
+  function setPracticeMode(next) {
+    if (next !== "multiply" && next !== "add") return;
+    if (next === practiceMode) return;
+    if (next === "add") {
+      showTableChinese = false;
+    }
+    practiceMode = next;
+    applyPracticeModeUI();
+    resetCurrentSet();
+  }
+
   function init() {
     initTheme();
+    loadPracticeModeFromStorage();
     loadCellStats();
     loadPracticeState();
-    renderTableChips();
+    applyPracticeModeUI();
     renderFullTable();
     updateChineseTableButton();
     pickRandomQuestion();
@@ -1799,7 +1968,7 @@
     el.btnToggleTable.addEventListener("click", function () {
       const open = el.fullTableWrap.hidden;
       el.fullTableWrap.hidden = !open;
-      el.btnToggleTable.textContent = open ? "📊 Hide Table" : "📊 Show Table";
+      refreshTableToggleLabel();
       el.btnToggleTable.setAttribute("aria-expanded", String(open));
       if (open) {
         renderFullTable();
@@ -1819,6 +1988,15 @@
     }
 
     el.setSummaryContinue.addEventListener("click", closeSetSummaryDialog);
+
+    document.querySelectorAll(".btn-practice-mode").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var m = btn.getAttribute("data-practice-mode");
+        if (m === "multiply" || m === "add") {
+          setPracticeMode(m);
+        }
+      });
+    });
 
     if (el.btnSetSummary) {
       el.btnSetSummary.addEventListener("click", function () {

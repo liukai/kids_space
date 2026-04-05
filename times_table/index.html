@@ -44,6 +44,15 @@
   <div class="app">
     <header class="header">
       <h1 class="title">Times Fun</h1>
+      <div class="mode-row theme-row" role="group" aria-label="Practice mode">
+        <span class="theme-label">Mode</span>
+        <button type="button" class="btn-theme btn-practice-mode" data-practice-mode="multiply" aria-pressed="true">
+          × Times
+        </button>
+        <button type="button" class="btn-theme btn-practice-mode" data-practice-mode="add" aria-pressed="false">
+          + Add
+        </button>
+      </div>
       <div class="theme-row" role="group" aria-label="Look">
         <span class="theme-label">Look</span>
         <button type="button" class="btn-theme" data-set-theme="classic" aria-pressed="true">Classic</button>
@@ -128,7 +137,7 @@
           autocomplete="off"
           placeholder="?"
           min="0"
-          max="999"
+          max="81"
         />
       </div>
 
@@ -285,17 +294,17 @@
       </section>
 
       <section class="panel filter-panel" aria-labelledby="filter-heading">
-        <h2 id="filter-heading" class="panel-heading">Pick Tables</h2>
-        <p class="panel-hint">Choose which numbers to use</p>
+        <h2 id="filter-heading" class="panel-heading">Pick tables</h2>
+        <p id="filter-hint" class="panel-hint">Choose which numbers to use in facts (either factor)</p>
         <div class="filter-actions">
-          <button type="button" class="btn btn-small" id="btn-all-tables" aria-label="Select all tables (1× through 9×)">
+          <button type="button" class="btn btn-small" id="btn-all-tables" aria-label="Select all (1 through 9)">
             🔢 All
           </button>
           <button type="button" class="btn btn-small" id="btn-clear-tables" aria-label="Clear table selection">
             🧹 Clear
           </button>
         </div>
-        <div id="table-chips" class="table-chips" role="group" aria-label="Multiplication tables"></div>
+        <div id="table-chips" class="table-chips" role="group" aria-label="Numbers to include in practice"></div>
         <p id="table-filter-warn" class="table-filter-warn" role="status" aria-live="polite" hidden></p>
       </section>
     </div>

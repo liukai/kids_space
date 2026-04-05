@@ -14,10 +14,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Verify JavaScript syntax
-        run: node --check script.js
+        run: node --check times_table/script.js
 
       - name: Verify required files exist
         run: |
-          test -f index.html
-          test -f styles.css
-          test -f script.js
+          test -f times_table/index.html
+          test -f times_table/styles.css
+          test -f times_table/script.js
