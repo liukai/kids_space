@@ -1199,25 +1199,86 @@
     }
   }
 
+  /** Five Latin vowels; y is treated as a consonant for decoys (see confusion map). */
+  var VOWELS_FOR_DECOYS = "aeiou";
+
+  function isVowelForDecoy(c) {
+    return VOWELS_FOR_DECOYS.indexOf(c) !== -1;
+  }
+
+  /**
+   * Letters early readers often confuse (shape or sound). Only single a–z.
+   * @type {Record<string, string[]>}
+   */
+  var CONSONANT_CONFUSION = {
+    b: ["d", "p"],
+    c: ["k", "s"],
+    d: ["b", "p"],
+    f: ["v", "t"],
+    g: ["j", "k"],
+    h: ["n", "m"],
+    j: ["g", "y"],
+    k: ["c", "g"],
+    l: ["r", "t"],
+    m: ["n", "w"],
+    n: ["m", "h"],
+    p: ["b", "d"],
+    q: ["p", "g", "d"],
+    r: ["l", "w"],
+    s: ["z", "c"],
+    t: ["d", "f"],
+    v: ["f", "b"],
+    w: ["m", "v", "y"],
+    x: ["s", "z"],
+    y: ["j", "w"],
+    z: ["s", "x"],
+  };
+
   function pickQuizWrongLetters(correct) {
     var alpha = "abcdefghijklmnopqrstuvwxyz";
     var wrong = [];
-    var guard = 0;
-    while (wrong.length < 2 && guard < 160) {
-      guard++;
-      var c = alpha[Math.floor(Math.random() * 26)];
-      if (c === correct) continue;
-      if (wrong.indexOf(c) !== -1) continue;
-      wrong.push(c);
-    }
-    while (wrong.length < 2) {
-      var k = 0;
-      var d = alpha[wrong.length % 26];
-      while (d === correct || wrong.indexOf(d) !== -1) {
-        k++;
-        d = alpha[k % 26];
+    var i;
+    var ch;
+    if (isVowelForDecoy(correct)) {
+      var vowPool = [];
+      for (i = 0; i < VOWELS_FOR_DECOYS.length; i++) {
+        ch = VOWELS_FOR_DECOYS[i];
+        if (ch !== correct) vowPool.push(ch);
       }
-      wrong.push(d);
+      shuffleInPlace(vowPool);
+      wrong.push(vowPool[0], vowPool[1]);
+      return wrong;
+    }
+    var confList = CONSONANT_CONFUSION[correct] || [];
+    var confPick = [];
+    for (i = 0; i < confList.length; i++) {
+      ch = confList[i];
+      if (ch === correct) continue;
+      if (isVowelForDecoy(ch)) continue;
+      if (confPick.indexOf(ch) === -1) confPick.push(ch);
+    }
+    shuffleInPlace(confPick);
+    for (i = 0; i < confPick.length && wrong.length < 2; i++) {
+      wrong.push(confPick[i]);
+    }
+    var consPool = [];
+    for (i = 0; i < alpha.length; i++) {
+      ch = alpha[i];
+      if (ch === correct || isVowelForDecoy(ch)) continue;
+      if (wrong.indexOf(ch) !== -1) continue;
+      consPool.push(ch);
+    }
+    shuffleInPlace(consPool);
+    for (i = 0; i < consPool.length && wrong.length < 2; i++) {
+      wrong.push(consPool[i]);
+    }
+    var guard = 0;
+    while (wrong.length < 2 && guard < 30) {
+      guard++;
+      ch = alpha[guard % 26];
+      if (ch === correct || isVowelForDecoy(ch) || wrong.indexOf(ch) !== -1)
+        continue;
+      wrong.push(ch);
     }
     return wrong;
   }
@@ -1397,7 +1458,12 @@
   }
 
   function clearAnswerCelebrate() {
-    if (elCard) elCard.classList.remove("flashcard--answer-ok");
+    if (elCard)
+      elCard.classList.remove(
+        "flashcard--answer-ok",
+        "flashcard--pac-chomp",
+        "flashcard--ghost-bump"
+      );
   }
 
   function onSpellInputLiveTypeAll() {
@@ -1434,9 +1500,11 @@
     }
     if (v.length >= n) {
       elSpellInput.classList.add("spell-input-inline--bad");
+      flashCardWrong();
       setFeedback("Not quite — try again or tap Peek.", "bad");
       return;
     }
+    flashCardWrong();
     setFeedback("Oops — check your letters. Little letters a–z only.", "bad");
   }
 
@@ -1497,7 +1565,7 @@
       bumpWrong(current.word);
       quizGapLastWrongCharRecorded = v;
       refreshReviewPanel();
-      flashCardShake();
+      flashCardWrong();
     }
     setFeedback("Not that letter—try again.", "bad");
   }
@@ -1505,6 +1573,96 @@
   function announceTrophy(level) {
     setFeedback("New trophy unlocked (x" + level + ")", "trophy");
     speakWord("You earned a trophy! Awesome!", true);
+  }
+
+  /** Short arcade SFX (Web Audio). Unlocks after first tap/key like speech. */
+  var sfxAudioCtx = null;
+  function getSfxContext() {
+    try {
+      if (!sfxAudioCtx) {
+        sfxAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (sfxAudioCtx.state === "suspended") {
+        sfxAudioCtx.resume().catch(function () {});
+      }
+    } catch (e) {
+      return null;
+    }
+    return sfxAudioCtx;
+  }
+
+  function wireSfxUnlockOnce() {
+    function wake() {
+      getSfxContext();
+    }
+    document.addEventListener("pointerdown", wake, { once: true, capture: true });
+    document.addEventListener("keydown", wake, { once: true, capture: true });
+  }
+
+  function playSfxOneBlip(freq, delayMs, durSec, volume) {
+    var ctx = getSfxContext();
+    if (!ctx) return;
+    var t0 = ctx.currentTime + delayMs / 1000;
+    var o = ctx.createOscillator();
+    var g = ctx.createGain();
+    o.type = "square";
+    o.frequency.setValueAtTime(freq, t0);
+    g.gain.setValueAtTime(volume, t0);
+    g.gain.exponentialRampToValueAtTime(0.008, t0 + durSec);
+    o.connect(g);
+    g.connect(ctx.destination);
+    o.start(t0);
+    o.stop(t0 + durSec + 0.02);
+  }
+
+  /** Pac “waka” when the word / gap is cleared. */
+  function playSfxPacChomp(isPeek) {
+    var n = isPeek ? 2 : 4;
+    var vol = isPeek ? 0.042 : 0.082;
+    var i;
+    for (i = 0; i < n; i++) {
+      playSfxOneBlip(780 + (i % 3) * 95, i * 68, 0.052, vol);
+    }
+  }
+
+  /** Low buzz when answer is wrong. */
+  function playSfxWrong() {
+    var ctx = getSfxContext();
+    if (!ctx) return;
+    var t = ctx.currentTime;
+    var o = ctx.createOscillator();
+    var g = ctx.createGain();
+    o.type = "sawtooth";
+    o.frequency.setValueAtTime(108, t);
+    o.frequency.linearRampToValueAtTime(62, t + 0.17);
+    g.gain.setValueAtTime(0.068, t);
+    g.gain.exponentialRampToValueAtTime(0.01, t + 0.22);
+    o.connect(g);
+    g.connect(ctx.destination);
+    o.start(t);
+    o.stop(t + 0.24);
+  }
+
+  function runPacChompVisual() {
+    if (!elCard) return;
+    elCard.classList.remove("flashcard--pac-chomp");
+    elCard.offsetWidth;
+    elCard.classList.add("flashcard--pac-chomp");
+    window.setTimeout(function () {
+      if (elCard) elCard.classList.remove("flashcard--pac-chomp");
+    }, 780);
+  }
+
+  function flashCardWrong() {
+    playSfxWrong();
+    if (!elCard) return;
+    elCard.classList.remove("flashcard--ghost-bump");
+    elCard.offsetWidth;
+    elCard.classList.add("flashcard--ghost-bump");
+    flashCardShake();
+    window.setTimeout(function () {
+      if (elCard) elCard.classList.remove("flashcard--ghost-bump");
+    }, 620);
   }
 
   function awardQuizPoints(delta) {
@@ -1622,7 +1780,7 @@
     if (typed !== word) {
       bumpWrong(current.word);
       refreshReviewPanel();
-      flashCardShake();
+      flashCardWrong();
       onSpellInputLiveTypeAll();
       elSpellInput.select();
       return;
@@ -1639,6 +1797,8 @@
       updateScoreUi();
       setFeedback("", null);
     }
+    playSfxPacChomp(cheatUsed);
+    runPacChompVisual();
     showAnswerCelebrate();
     flashCardOk();
     scheduleQuizAdvanceAfterCorrect(true);
@@ -2047,7 +2207,7 @@
         quizGapLastWrongCharRecorded = letter;
       }
       refreshReviewPanel();
-      flashCardShake();
+      flashCardWrong();
       onSpellInputLive();
       elSpellInput.select();
       return;
@@ -2064,6 +2224,8 @@
       updateScoreUi();
       setFeedback("", null);
     }
+    playSfxPacChomp(cheatUsed);
+    runPacChompVisual();
     showAnswerCelebrate();
     flashCardOk();
     scheduleQuizAdvanceAfterCorrect(false);
@@ -2169,6 +2331,7 @@
   function bind() {
     initSpeechSynthesis();
     wireSpeechUserActivationOnce();
+    wireSfxUnlockOnce();
 
     if (elDifficulty) {
       elDifficulty.addEventListener("change", onDifficultyChange);

@@ -719,6 +719,7 @@ body::after {
 }
 
 .flashcard__surface {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -745,6 +746,199 @@ body::after {
   border-radius: var(--radius-card);
   border: 2px solid rgba(51, 228, 255, 0.28);
   box-shadow: var(--shadow-card);
+}
+
+/* Pac-style “eat the word” overlay + ghost miss (wrong answer) */
+.flashcard__fx {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+.flashcard__waka {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 10%;
+  height: 3.25rem;
+  opacity: 0;
+}
+
+.flashcard--pac-chomp .flashcard__waka {
+  animation: waka-show-clear 0.72s ease forwards;
+}
+
+@keyframes waka-show-clear {
+  0% {
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  92% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.flashcard__waka-pellets {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 100%;
+  padding: 0 2.75rem 0 0.75rem;
+  margin: 0 auto;
+  max-width: 16rem;
+}
+
+.flashcard__waka-pellets i {
+  display: block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--pac-yellow-hot);
+  box-shadow: 0 0 8px rgba(255, 204, 0, 0.85);
+  transform: scale(1);
+}
+
+.flashcard--pac-chomp .flashcard__waka-pellets i {
+  animation: pellet-eaten 0.12s ease forwards;
+}
+
+.flashcard--pac-chomp .flashcard__waka-pellets i:nth-child(1) {
+  animation-delay: 0.07s;
+}
+.flashcard--pac-chomp .flashcard__waka-pellets i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.flashcard--pac-chomp .flashcard__waka-pellets i:nth-child(3) {
+  animation-delay: 0.23s;
+}
+.flashcard--pac-chomp .flashcard__waka-pellets i:nth-child(4) {
+  animation-delay: 0.31s;
+}
+.flashcard--pac-chomp .flashcard__waka-pellets i:nth-child(5) {
+  animation-delay: 0.39s;
+}
+.flashcard--pac-chomp .flashcard__waka-pellets i:nth-child(6) {
+  animation-delay: 0.47s;
+}
+.flashcard--pac-chomp .flashcard__waka-pellets i:nth-child(7) {
+  animation-delay: 0.54s;
+}
+
+@keyframes pellet-eaten {
+  to {
+    transform: scale(0);
+    opacity: 0;
+    box-shadow: none;
+  }
+}
+
+.flashcard__waka-pac {
+  position: absolute;
+  left: -8%;
+  top: 50%;
+  margin-top: -1.35rem;
+  width: 2.7rem;
+  height: 2.7rem;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5));
+}
+
+.flashcard--pac-chomp .flashcard__waka-pac {
+  animation: pac-eat-run 0.68s ease-in-out forwards;
+}
+
+@keyframes pac-eat-run {
+  0% {
+    left: -8%;
+  }
+  100% {
+    left: 108%;
+  }
+}
+
+.flashcard__waka-pac-face {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: var(--pac-yellow);
+  box-shadow: inset 0 -6px 0 rgba(0, 0, 0, 0.12);
+  clip-path: polygon(50% 50%, 100% 10%, 100% 90%);
+}
+
+.flashcard--pac-chomp .flashcard__waka-pac-face {
+  animation: pac-mouth-chomp 0.12s ease-in-out infinite alternate;
+}
+
+@keyframes pac-mouth-chomp {
+  to {
+    clip-path: polygon(50% 50%, 100% 0%, 100% 100%);
+  }
+}
+
+.flashcard__ghost-boo {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  background: radial-gradient(
+    circle at 50% 45%,
+    rgba(255, 75, 92, 0.28) 0%,
+    rgba(255, 75, 92, 0.08) 45%,
+    transparent 70%
+  );
+}
+
+.flashcard--ghost-bump .flashcard__ghost-boo {
+  animation: ghost-boo-in 0.58s ease forwards;
+}
+
+@keyframes ghost-boo-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+  70% {
+    opacity: 0.95;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+}
+
+.flashcard__ghost-sprite {
+  font-size: clamp(2.75rem, 16vw, 4rem);
+  line-height: 1;
+  filter: drop-shadow(0 0 18px rgba(255, 75, 92, 0.85))
+    drop-shadow(0 0 8px rgba(51, 228, 255, 0.35));
+  animation: ghost-sprite-shake 0.45s ease;
+}
+
+@keyframes ghost-sprite-shake {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0deg);
+  }
+  25% {
+    transform: translateX(-6px) rotate(-4deg);
+  }
+  75% {
+    transform: translateX(6px) rotate(4deg);
+  }
 }
 
 .flashcard__emoji {
