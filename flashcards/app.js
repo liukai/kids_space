@@ -2535,6 +2535,7 @@
 
   function onSpellKeydown(e) {
     if (e.key !== "Enter") return;
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
     e.preventDefault();
     if (studyMode === "typeall") trySubmitTypeAll();
     else trySubmitSpell();
@@ -2551,6 +2552,7 @@
 
     if (shiftQuestion) {
       if (tag === "TEXTAREA") return;
+      if (e.metaKey || e.ctrlKey) return;
       e.preventDefault();
       toggleKbdShortcutsModal();
       return;
@@ -2570,7 +2572,8 @@
         closeWordPeekModal();
         return;
       }
-      var modPeek = e.ctrlKey && !e.altKey && !e.shiftKey;
+      var modPeek =
+        e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey;
       if (modPeek && wordPeekItem) {
         var sk = String(e.key || "").toLowerCase();
         if (sk === "s") {
@@ -2589,7 +2592,7 @@
       return;
     }
 
-    var mod = e.ctrlKey && !e.altKey && !e.shiftKey;
+    var mod = e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey;
     if (mod) {
       var shortKey = String(e.key || "").toLowerCase();
       if (shortKey === "s" || shortKey === "t" || shortKey === "p") {
@@ -2627,7 +2630,10 @@
       elSpellChoiceWrap &&
       !elSpellChoiceWrap.hidden &&
       elSpellChoiceRow &&
-      elSpellChoiceRow.children.length >= 3
+      elSpellChoiceRow.children.length >= 3 &&
+      !e.ctrlKey &&
+      !e.metaKey &&
+      !e.altKey
     ) {
       var digit = e.key;
       if (digit === "1" || digit === "2" || digit === "3") {
@@ -2658,6 +2664,7 @@
     }
 
     if (e.key !== "Enter") return;
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
     if (tag === "SELECT" || tag === "TEXTAREA") return;
     if (studyMode === "see") {
       if (tag === "INPUT") return;
