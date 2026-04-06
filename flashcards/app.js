@@ -682,7 +682,7 @@
   /**
    * @param {HTMLElement} el
    * @param {string} word
-   * @param {string} baseClasses e.g. "word-rate-pill word-rate-pill--card"
+   * @param {string} baseClasses e.g. "word-rate-pill word-rate-pill--by-word"
    */
   function setWordRatePillForWord(el, word, baseClasses) {
     if (!el) return;
@@ -691,6 +691,7 @@
     var tone = quizRateToneClass(pct != null ? pct : 0, t.total);
     el.textContent = formatQuizRateLabel(t.right, t.total);
     el.className = (baseClasses || "word-rate-pill") + " " + tone;
+    el.setAttribute("aria-label", "Quiz on this word: " + el.textContent);
   }
 
   function findWordItemByText(word) {
@@ -1358,6 +1359,8 @@
   var elCard = document.getElementById("card");
   var elEmoji = document.getElementById("card-emoji");
   var elEnglish = document.getElementById("card-english");
+  var elCardWordRow = document.getElementById("card-word-row");
+  var elQuizWordRow = document.getElementById("quiz-word-row");
   var elMeta = document.getElementById("card-meta");
   var elMetaLine = document.getElementById("card-meta-line");
   var elMetaRate = document.getElementById("card-meta-rate");
@@ -1385,20 +1388,35 @@
     if (!item) {
       elMetaLine.textContent = "";
       elMetaRate.textContent = "";
-      elMetaRate.className = "word-rate-pill word-rate-pill--card word-rate--none";
+      elMetaRate.className =
+        "word-rate-pill word-rate-pill--by-word word-rate--none";
+      elMetaRate.removeAttribute("aria-label");
       return;
     }
     elMetaLine.textContent = describeCardMetaLine(item);
     setWordRatePillForWord(
       elMetaRate,
       item.word,
-      "word-rate-pill word-rate-pill--card"
+      "word-rate-pill word-rate-pill--by-word"
     );
   }
 
   function maybeRefreshCardQuizPill(w) {
     if (!current || current.word !== w) return;
     applyCardMetaForItem(current);
+  }
+
+  function appendCardMetaRateBesideWord() {
+    if (!elMetaRate) return;
+    if (!current) return;
+    if (studyMode === "see" && elCardWordRow) {
+      elCardWordRow.appendChild(elMetaRate);
+    } else if (
+      (studyMode === "quiz" || studyMode === "typeall") &&
+      elQuizWordRow
+    ) {
+      elQuizWordRow.appendChild(elMetaRate);
+    }
   }
 
   var elSpellZone = document.getElementById("spell-zone");
@@ -1470,6 +1488,7 @@
     if (studyMode === "quiz" && current) {
       renderSpellChoices();
       applyCardMetaForItem(current);
+      appendCardMetaRateBesideWord();
       if (quizGapChoiceMode && elSpellChoiceRow && elSpellChoiceRow.firstElementChild) {
         window.setTimeout(function () {
           elSpellChoiceRow.firstElementChild.focus();
@@ -1998,26 +2017,33 @@
     if (!elSpellZone || !elSpellInput) return;
     cheatUsed = false;
     clearSpellInputVisual();
+    if (elQuizWordRow && elQuizWordRow.parentNode !== elSpellZone) {
+      elSpellZone.insertBefore(elQuizWordRow, elSpellZone.firstChild);
+    }
     if (elSpellInline) {
       elSpellInline.hidden = true;
       elSpellInline.textContent = "";
+      if (elQuizWordRow) elQuizWordRow.appendChild(elSpellInline);
     }
     elSpellInput.classList.add("spell-input-full");
     var n = word.length;
     elSpellInput.maxLength = n;
     elSpellInput.value = "";
     elSpellInput.setAttribute("aria-label", "Type the whole word");
-    elSpellZone.appendChild(elSpellInput);
+    if (elQuizWordRow) elQuizWordRow.appendChild(elSpellInput);
+    appendCardMetaRateBesideWord();
     ensureSpellChoiceWrapLast();
   }
 
   function rebuildSpellLine(word, missingIndex) {
     if (!elSpellZone || !elSpellInline || !elSpellInput) return;
+    if (elQuizWordRow && elQuizWordRow.parentNode !== elSpellZone) {
+      elSpellZone.insertBefore(elQuizWordRow, elSpellZone.firstChild);
+    }
+    if (elQuizWordRow) elQuizWordRow.appendChild(elSpellInline);
     if (elSpellInline) elSpellInline.hidden = false;
     elSpellInput.classList.remove("spell-input-full");
     elSpellInput.maxLength = 1;
-    if (elSpellInput.parentNode !== elSpellZone)
-      elSpellZone.appendChild(elSpellInput);
     elSpellInline.textContent = "";
     cheatUsed = false;
     clearSpellInputVisual();
@@ -2032,6 +2058,7 @@
         elSpellInline.appendChild(sp);
       }
     }
+    appendCardMetaRateBesideWord();
     ensureSpellChoiceWrapLast();
   }
 
@@ -2123,6 +2150,7 @@
       if (elChineseAside) elChineseAside.textContent = "";
       applyCardMetaForItem(null);
       if (elSpellZone) elSpellZone.hidden = true;
+      if (elCardWordRow) elCardWordRow.hidden = true;
       hideSpellChoicesUi();
       if (elCheat) elCheat.hidden = true;
       setFeedback("", null);
@@ -2216,6 +2244,10 @@
     updateQuizGapChoiceField();
     updateFavoriteButton();
     updateSetBar();
+    if (elCardWordRow) {
+      elCardWordRow.hidden = studyMode !== "see";
+    }
+    appendCardMetaRateBesideWord();
   }
 
   function advanceToNewCard(fromUserTap, setTurnOutcome) {

@@ -157,9 +157,13 @@
             </div>
           </div>
           <span id="card-emoji" class="flashcard__emoji" aria-hidden="true"></span>
-          <p id="card-english" class="flashcard__word" hidden></p>
+          <div id="card-word-row" class="flashcard__word-row">
+            <p id="card-english" class="flashcard__word" hidden></p>
+            <span id="card-meta-rate" class="word-rate-pill word-rate-pill--by-word"></span>
+          </div>
 
           <div id="spell-zone" class="flashcard__spell" hidden>
+            <div id="quiz-word-row" class="flashcard__word-row flashcard__word-row--quiz"></div>
             <div id="spell-inline" class="spell-inline"></div>
             <input
               id="spell-input"
@@ -185,7 +189,6 @@
 
           <p id="card-meta" class="flashcard__meta flashcard__meta-wrap">
             <span id="card-meta-line" class="flashcard__meta-line"></span>
-            <span id="card-meta-rate" class="word-rate-pill word-rate-pill--card"></span>
           </p>
           <p id="feedback" class="flashcard__feedback" role="status" aria-live="assertive"></p>
         </div>

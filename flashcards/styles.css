@@ -1409,10 +1409,115 @@ body::after {
   opacity: 0.94;
 }
 
-.word-rate-pill--card {
+/* Beside the word on the main card (see / quiz / type) — compact + soft pulse */
+.flashcard__word-row {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem 0.65rem;
   max-width: 100%;
+  margin: 0;
+}
+
+.flashcard__word-row .flashcard__word {
+  margin: 0;
+}
+
+.flashcard__word-row--quiz {
+  width: 100%;
+  justify-content: center;
+  margin-bottom: var(--space-1);
+}
+
+.flashcard__word-row--quiz .spell-inline {
+  flex: 0 1 auto;
+}
+
+/* Type-all: share a row with the rate badge when there is room */
+.flashcard__word-row--quiz .spell-input-inline.spell-input-full {
+  flex: 1 1 10rem;
+  width: auto;
+  max-width: calc(100% - 5rem);
+  min-width: 0;
+}
+
+.word-rate-pill--by-word {
+  flex: 0 0 auto;
+  max-width: min(100%, 11rem);
   overflow: hidden;
   text-overflow: ellipsis;
+  font-size: 0.68rem;
+  padding: 0.22em 0.5em;
+  opacity: 0.97;
+}
+
+.word-rate-pill--by-word.word-rate--full {
+  animation: word-rate-pulse-green 2.1s ease-in-out infinite;
+}
+
+.word-rate-pill--by-word.word-rate--high {
+  animation: word-rate-pulse-amber 2.35s ease-in-out infinite;
+}
+
+.word-rate-pill--by-word.word-rate--low {
+  animation: word-rate-pulse-red 1.95s ease-in-out infinite;
+}
+
+.word-rate-pill--by-word.word-rate--none {
+  animation: none;
+  opacity: 0.72;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .word-rate-pill--by-word.word-rate--full,
+  .word-rate-pill--by-word.word-rate--high,
+  .word-rate-pill--by-word.word-rate--low {
+    animation: none;
+  }
+}
+
+@keyframes word-rate-pulse-green {
+  0%,
+  100% {
+    box-shadow: 0 0 4px rgba(95, 250, 154, 0.2);
+    filter: brightness(1);
+  }
+  50% {
+    box-shadow:
+      0 0 12px rgba(95, 250, 154, 0.55),
+      0 0 22px rgba(74, 222, 128, 0.22);
+    filter: brightness(1.07);
+  }
+}
+
+@keyframes word-rate-pulse-amber {
+  0%,
+  100% {
+    box-shadow: 0 0 4px rgba(255, 204, 51, 0.15);
+    filter: brightness(1);
+  }
+  50% {
+    box-shadow:
+      0 0 12px rgba(255, 204, 51, 0.45),
+      0 0 20px rgba(255, 200, 80, 0.18);
+    filter: brightness(1.08);
+  }
+}
+
+@keyframes word-rate-pulse-red {
+  0%,
+  100% {
+    box-shadow: 0 0 4px rgba(255, 75, 92, 0.2);
+    filter: brightness(1);
+  }
+  50% {
+    box-shadow:
+      0 0 12px rgba(255, 75, 92, 0.45),
+      0 0 18px rgba(255, 120, 130, 0.22);
+    filter: brightness(1.06);
+  }
 }
 
 .word-rate-pill--saved {
