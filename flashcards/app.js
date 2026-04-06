@@ -103,25 +103,62 @@
     return pairs;
   }
 
-  function uniqueSortedDifficulties(items) {
-    var s = {};
+  /**
+   * Order for “up to Gr X” (reading level). Labels match words-embed `gradeLevel`.
+   */
+  var GRADE_ORDER_LIST = [
+    "K",
+    "K-1",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "10",
+  ];
+
+  function gradeRank(g) {
+    var s = String(g != null ? g : "").trim();
+    if (!s) return -1;
+    var idx = GRADE_ORDER_LIST.indexOf(s);
+    if (idx !== -1) return idx;
+    if (/^\d+$/.test(s)) {
+      var n = parseInt(s, 10);
+      var s2 = String(n);
+      idx = GRADE_ORDER_LIST.indexOf(s2);
+      if (idx !== -1) return idx;
+      return 80 + n;
+    }
+    return 400;
+  }
+
+  function gradesPresentSorted(items) {
+    var seen = {};
+    var i;
+    for (i = 0; i < items.length; i++) {
+      var gv = String(items[i].gradeLevel != null ? items[i].gradeLevel : "").trim();
+      if (gv) seen[gv] = true;
+    }
     var list = [];
-    for (var i = 0; i < items.length; i++) {
-      var d = items[i].difficulty;
-      if (!s[d]) {
-        s[d] = true;
-        list.push(d);
-      }
+    var k;
+    for (k in seen) {
+      if (Object.prototype.hasOwnProperty.call(seen, k)) list.push(k);
     }
     list.sort(function (a, b) {
-      return a - b;
+      return gradeRank(a) - gradeRank(b);
     });
     return list;
   }
 
-  function filterByMaxDifficulty(items, maxCap) {
+  function filterByGradeCap(items, cap) {
+    if (cap === "all") return items.slice();
+    var maxR = gradeRank(cap);
     return items.filter(function (w) {
-      return w.difficulty <= maxCap;
+      return gradeRank(w.gradeLevel) <= maxR;
     });
   }
 
@@ -167,7 +204,7 @@
   }
 
   /**
-   * One subtitle line: emoji + type name · level · Chinese (no quiz-mode prose).
+   * One subtitle line: emoji + type · reading grade · Chinese (no quiz-mode prose).
    */
   function buildCardMetaSubtitle(item) {
     if (!item) return "";
@@ -175,8 +212,8 @@
     var label = formatWordTypeLabel(item);
     var em = wordCategoryEmoji(item.type);
     bits.push(label ? em + " " + label : em);
-    var d = item.difficulty;
-    if (typeof d === "number" && !isNaN(d)) bits.push("Lv " + Math.round(d));
+    var gl = String(item.gradeLevel != null ? item.gradeLevel : "").trim();
+    if (gl) bits.push("Gr " + gl);
     if (item.chinese) bits.push(item.chinese);
     return bits.join(" \u00b7 ");
   }
@@ -956,7 +993,9 @@
       title.textContent = w.word;
       var meta = document.createElement("p");
       meta.className = "saved-list__lvl";
-      meta.textContent = "Lv " + w.difficulty;
+      meta.textContent = w.gradeLevel
+        ? "Gr " + String(w.gradeLevel).trim()
+        : "Gr —";
       var rate = document.createElement("span");
       setWordRatePillForWord(
         rate,
@@ -1189,7 +1228,7 @@
   var allWords = [];
   var pool = [];
   var current = null;
-  var maxDifficultyCap = Infinity;
+  var gradeFilterCap = "all";
   var deckScope = "all";
   var wordTypeScope = "all";
   var cardCount = 0;
@@ -1584,7 +1623,7 @@
   var elTrophyToNext = document.getElementById("trophy-to-next");
   var elTrophyBar = document.getElementById("trophy-bar");
   var elTrophyBarFill = document.getElementById("trophy-bar-fill");
-  var elDifficulty = document.getElementById("difficulty-filter");
+  var elGrade = document.getElementById("grade-filter");
   var elWordType = document.getElementById("word-type-filter");
   var elDeckScope = document.getElementById("deck-scope");
   var elStudyMode = document.getElementById("study-mode");
@@ -2635,9 +2674,9 @@
       return;
     }
     pool =
-      maxDifficultyCap === Infinity
+      gradeFilterCap === "all"
         ? allWords.slice()
-        : filterByMaxDifficulty(allWords, maxDifficultyCap);
+        : filterByGradeCap(allWords, gradeFilterCap);
     if (wordTypeScope !== "all") {
       pool = pool.filter(function (w) {
         return w.type === wordTypeScope;
@@ -2653,17 +2692,17 @@
   function applyPoolHint() {
     if (!elDeckHint) return;
     var tail =
-      maxDifficultyCap === Infinity
-        ? "All levels"
-        : "Up to level " + maxDifficultyCap;
+      gradeFilterCap === "all"
+        ? "All grades"
+        : "Up to Gr " + gradeFilterCap;
     var scopeNote = deckScope === "favorites" ? " · Saved deck" : "";
     var typeNote = wordTypeScope !== "all" ? " · One word type" : "";
     if (!pool.length) {
       elDeckHint.textContent =
-        "No words match. Try All types, All levels, or All words deck.";
+        "No words match. Try All types, All grades, or All words deck.";
       if (deckScope === "favorites") {
         elDeckHint.textContent +=
-          " Save stars on words you want, or widen type/level.";
+          " Save stars on words you want, or widen type/grade.";
       }
       return;
     }
@@ -2671,20 +2710,21 @@
       String(pool.length) + " words · " + tail + scopeNote + typeNote;
   }
 
-  function fillDifficultySelect(levels) {
-    if (!elDifficulty) return;
-    while (elDifficulty.firstChild) elDifficulty.removeChild(elDifficulty.firstChild);
-    for (var i = 0; i < levels.length; i++) {
-      var n = levels[i];
-      var opt = document.createElement("option");
-      opt.value = String(n);
-      opt.textContent = "Up to " + n;
-      elDifficulty.appendChild(opt);
-    }
+  function fillGradeSelect(sortedGrades) {
+    if (!elGrade) return;
+    while (elGrade.firstChild) elGrade.removeChild(elGrade.firstChild);
     var allOpt = document.createElement("option");
     allOpt.value = "all";
-    allOpt.textContent = "All levels";
-    elDifficulty.appendChild(allOpt);
+    allOpt.textContent = "All grades";
+    elGrade.appendChild(allOpt);
+    var i;
+    for (i = 0; i < sortedGrades.length; i++) {
+      var g = sortedGrades[i];
+      var opt = document.createElement("option");
+      opt.value = g;
+      opt.textContent = "Up to Gr " + g;
+      elGrade.appendChild(opt);
+    }
   }
 
   function fillWordTypeSelect(options) {
@@ -2705,26 +2745,20 @@
     }
   }
 
-  function parseDifficultyValue(raw) {
-    if (raw === "all") return Infinity;
-    var n = Number(raw);
-    return isNaN(n) ? Infinity : n;
-  }
-
   function persistSelections() {
     savePrefs({
       mode: studyMode,
-      level: elDifficulty ? elDifficulty.value : "all",
+      grade: elGrade ? elGrade.value : "all",
       deck: deckScope,
       wordType: wordTypeScope,
       quizGapChoice: quizGapChoiceMode,
     });
   }
 
-  function onDifficultyChange() {
-    if (!elDifficulty) return;
+  function onGradeChange() {
+    if (!elGrade) return;
     abortActiveSet();
-    maxDifficultyCap = parseDifficultyValue(elDifficulty.value);
+    gradeFilterCap = elGrade.value || "all";
     persistSelections();
     cardCount = 1;
     rebuildPool();
@@ -3188,8 +3222,8 @@
     }
     wireWordPeekListHandlersOnce();
 
-    if (elDifficulty) {
-      elDifficulty.addEventListener("change", onDifficultyChange);
+    if (elGrade) {
+      elGrade.addEventListener("change", onGradeChange);
     }
     if (elDeckScope) {
       elDeckScope.addEventListener("change", onDeckScopeChange);
@@ -3295,26 +3329,24 @@
           return;
         }
         migrateQuizDetailFromLegacy();
-        var levels = uniqueSortedDifficulties(allWords);
-        fillDifficultySelect(levels);
+        var gradeOpts = gradesPresentSorted(allWords);
+        fillGradeSelect(gradeOpts);
         var typeOpts = wordTypeOptionsFromItems(allWords);
         fillWordTypeSelect(typeOpts);
 
         var prefs = loadPrefs();
-        if (prefs && prefs.level) {
-          if (prefs.level === "all") {
-            maxDifficultyCap = Infinity;
-            elDifficulty.value = "all";
-          } else if (levels.indexOf(Number(prefs.level)) !== -1) {
-            maxDifficultyCap = Number(prefs.level);
-            elDifficulty.value = prefs.level;
-          } else {
-            maxDifficultyCap = Infinity;
-            elDifficulty.value = "all";
+        gradeFilterCap = "all";
+        if (elGrade) elGrade.value = "all";
+        if (prefs && prefs.grade) {
+          if (
+            prefs.grade === "all" ||
+            gradeOpts.indexOf(prefs.grade) !== -1
+          ) {
+            gradeFilterCap = prefs.grade;
+            if (elGrade) elGrade.value = prefs.grade;
           }
-        } else {
-          maxDifficultyCap = Infinity;
-          elDifficulty.value = "all";
+        } else if (prefs && prefs.level === "all") {
+          gradeFilterCap = "all";
         }
 
         if (prefs && prefs.mode === "quiz") {
