@@ -577,8 +577,12 @@
   let questionTimerIntervalId = null;
   /** True once the clock is running (Q1: after first digit; Q2+: when question appears). */
   let questionTimerStarted = false;
-  /** Wall-clock limit per question; on fire → treat as wrong and reveal answer. */
-  let questionDeadlineTimeoutId = null;
+  /**
+   * Wall-clock limit per question (time-to-answer). Uses polling + absolute deadline so
+   * Q1 (no display interval yet) and background-tab throttling don’t swallow a lone 30s timeout.
+   */
+  let questionDeadlinePollId = null;
+  let questionDeadlineAtMs = 0;
   const QUESTION_TIME_LIMIT_MS = 30000;
 
   let trophyToastTimer = null;
@@ -1298,26 +1302,42 @@
   }
 
   function clearQuestionDeadline() {
-    if (questionDeadlineTimeoutId !== null) {
-      window.clearTimeout(questionDeadlineTimeoutId);
-      questionDeadlineTimeoutId = null;
+    if (questionDeadlinePollId !== null) {
+      window.clearInterval(questionDeadlinePollId);
+      questionDeadlinePollId = null;
     }
+    questionDeadlineAtMs = 0;
+  }
+
+  function checkQuestionDeadlineNow() {
+    if (questionDeadlineAtMs <= 0) return;
+    if (answered || waitingAutoAdvance || cheatAwaitingContinue) {
+      clearQuestionDeadline();
+      return;
+    }
+    if (selectedTables.size === 0) {
+      clearQuestionDeadline();
+      return;
+    }
+    if (performance.now() < questionDeadlineAtMs) return;
+    onQuestionTimeExpired();
   }
 
   function armQuestionDeadline() {
     clearQuestionDeadline();
     if (selectedTables.size === 0) return;
     if (answered || waitingAutoAdvance || cheatAwaitingContinue) return;
-    questionDeadlineTimeoutId = window.setTimeout(
-      onQuestionTimeExpired,
-      QUESTION_TIME_LIMIT_MS
+    questionDeadlineAtMs = performance.now() + QUESTION_TIME_LIMIT_MS;
+    questionDeadlinePollId = window.setInterval(
+      checkQuestionDeadlineNow,
+      200
     );
   }
 
   function onQuestionTimeExpired() {
-    questionDeadlineTimeoutId = null;
     if (answered || waitingAutoAdvance || cheatAwaitingContinue) return;
     if (selectedTables.size === 0) return;
+    clearQuestionDeadline();
 
     var elapsed = questionTimerStarted
       ? performance.now() - questionStartedAtMs
@@ -1924,6 +1944,15 @@
       document.body.addEventListener("pointerdown", once, { passive: true });
       document.body.addEventListener("keydown", once, { passive: true });
     })();
+
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "visible") {
+        checkQuestionDeadlineNow();
+      }
+    });
+    window.addEventListener("pageshow", function () {
+      checkQuestionDeadlineNow();
+    });
 
     el.answerInput.addEventListener("keydown", function (e) {
       if (e.key === "Enter") {

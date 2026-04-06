@@ -14,10 +14,18 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Verify JavaScript syntax
-        run: node --check times_table/script.js
+        run: |
+          node --check times_table/script.js
+          node --check flashcards/app.js
+          node --check flashcards/words-embed.js
 
       - name: Verify required files exist
         run: |
           test -f times_table/index.html
           test -f times_table/styles.css
           test -f times_table/script.js
+          test -f flashcards/index.html
+          test -f flashcards/styles.css
+          test -f flashcards/app.js
+          test -f flashcards/words.json
+          test -f flashcards/words-embed.js

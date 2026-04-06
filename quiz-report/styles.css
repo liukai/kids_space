@@ -1,0 +1,137 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  font-size: 15px;
+  line-height: 1.4;
+  color: #1a1a1a;
+  background: #f5f5f5;
+}
+
+.report-shell {
+  max-width: 520px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.report-shell__title {
+  margin: 0 0 1rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.report {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.report__header,
+.report__row {
+  display: grid;
+  grid-template-columns: 120px 120px 60px 40px;
+  align-items: center;
+  column-gap: 12px;
+  padding: 10px 14px;
+  min-height: 44px;
+}
+
+.report__header {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #666;
+  background: #fafafa;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.report__row {
+  border-bottom: 1px solid #eee;
+  transition: background-color 0.2s ease;
+}
+
+.report__row:last-child {
+  border-bottom: none;
+}
+
+.report__row:hover {
+  background: #f9fbff;
+}
+
+.report__word {
+  margin: 0;
+  font-weight: 700;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.report__bar-cell {
+  justify-self: start;
+}
+
+.score-bar {
+  display: grid;
+  grid-template-columns: repeat(5, 12px);
+  gap: 4px;
+}
+
+.score-block {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  transition: background-color 0.25s ease;
+}
+
+.score-block--filled {
+  background-color: #4caf50;
+}
+
+.score-block--empty {
+  background-color: #ddd;
+}
+
+.report__pct {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  text-align: left;
+}
+
+.report__action {
+  justify-self: end;
+}
+
+.retry-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 32px;
+  padding: 0;
+  font-size: 1rem;
+  line-height: 1;
+  color: #333;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.retry-btn:hover {
+  background: #f0f0f0;
+  border-color: #bbb;
+}
+
+.retry-btn:focus-visible {
+  outline: 2px solid #4caf50;
+  outline-offset: 2px;
+}
