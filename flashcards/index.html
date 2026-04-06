@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Word flashcards — see or quiz. Works from file:// via words-embed.js." />
+  <title>Word Flashcards</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="site-header">
+      <h1 class="site-header__title">Word Flashcards</h1>
+      <div class="site-header__trophy" id="trophy-panel">
+        <div class="site-header__trophy-row">
+          <span class="site-header__trophy-label">Trophies <strong id="trophy-val">0</strong></span>
+          <span class="site-header__trophy-pts" id="trophy-to-next" aria-live="polite">0 / 20 pts to next trophy</span>
+        </div>
+        <div
+          class="trophy-bar"
+          id="trophy-bar"
+          role="progressbar"
+          aria-valuemin="0"
+          aria-valuemax="20"
+          aria-valuenow="0"
+          aria-label="Points toward next trophy"
+        >
+          <div class="trophy-bar__fill" id="trophy-bar-fill"></div>
+        </div>
+      </div>
+      <p class="site-header__stats" id="score-strip" aria-live="polite">
+        <span class="site-header__stat">Score <strong id="points-val">0</strong></span>
+        <span class="site-header__sep">·</span>
+        <span class="site-header__stat">Streak <strong id="streak-val">0</strong></span>
+      </p>
+    </header>
+
+    <div class="control-bar" role="toolbar" aria-label="Study options">
+      <div class="control-bar__field">
+        <label class="control-bar__label" for="study-mode">Mode</label>
+        <select id="study-mode" class="control-bar__select" autocomplete="off" title="Study mode">
+          <option value="see">See</option>
+          <option value="quiz">Quiz</option>
+          <option value="typeall">Type word</option>
+        </select>
+      </div>
+      <div class="control-bar__field">
+        <label class="control-bar__label" for="difficulty-filter">Level</label>
+        <select id="difficulty-filter" class="control-bar__select" autocomplete="off"></select>
+      </div>
+      <div class="control-bar__field">
+        <label class="control-bar__label" for="word-type-filter">Word type</label>
+        <select
+          id="word-type-filter"
+          class="control-bar__select"
+          autocomplete="off"
+          title="Filter by phonics or topic"
+        ></select>
+      </div>
+      <div class="control-bar__field">
+        <label class="control-bar__label" for="deck-scope">Deck</label>
+        <select id="deck-scope" class="control-bar__select" autocomplete="off" title="Which cards">
+          <option value="all">All words</option>
+          <option value="favorites">Saved</option>
+        </select>
+      </div>
+    </div>
+
+    <div
+      class="set-bar"
+      id="set-bar"
+      role="region"
+      aria-label="Ten-word practice set"
+      hidden
+    >
+      <button type="button" id="btn-start-set" class="btn btn--set-start" disabled>
+        Start 10
+      </button>
+      <p class="set-bar__progress" id="set-bar-progress" aria-live="polite"></p>
+    </div>
+
+    <p class="deck-hint" id="deck-hint" aria-live="polite"></p>
+
+    <main class="main">
+      <section id="card" class="flashcard" aria-label="Current word">
+        <div class="flashcard__toolbar">
+          <button
+            type="button"
+            id="btn-favorite"
+            class="flashcard__tool flashcard__tool--fav"
+            title="Save word"
+            aria-label="Save word"
+            aria-pressed="false"
+          >
+            &#9734;
+          </button>
+          <button type="button" id="btn-speak" class="flashcard__tool" title="Hear word" aria-label="Hear word">
+            &#128266;
+          </button>
+        </div>
+
+        <div class="flashcard__surface">
+          <span id="card-emoji" class="flashcard__emoji" aria-hidden="true"></span>
+          <p id="card-english" class="flashcard__word" hidden></p>
+
+          <div id="spell-zone" class="flashcard__spell" hidden>
+            <div id="spell-typeall-wrap" class="spell-typeall-wrap" hidden>
+              <p id="spell-typeall-hint" class="spell-typeall-hint"></p>
+              <div id="spell-typeall-dots" class="spell-typeall-dots" aria-hidden="true"></div>
+            </div>
+            <div id="spell-inline" class="spell-inline"></div>
+            <input
+              id="spell-input"
+              class="spell-input-inline"
+              type="text"
+              maxlength="1"
+              autocomplete="off"
+              spellcheck="false"
+              autocapitalize="off"
+              inputmode="text"
+              aria-label="Your answer"
+            />
+          </div>
+
+          <p id="card-meta" class="flashcard__meta"></p>
+          <p id="feedback" class="flashcard__feedback" role="status" aria-live="assertive"></p>
+        </div>
+
+        <div class="flashcard__actions">
+          <button
+            type="button"
+            id="btn-cheat"
+            class="btn btn--secondary"
+            hidden
+            aria-label="Peek shows the letter and spells the word"
+          >
+            Peek
+          </button>
+          <button type="button" id="btn-next" class="btn btn--primary">Next</button>
+        </div>
+      </section>
+
+      <p id="load-error" class="load-error" hidden></p>
+
+      <section class="progress-panel" id="review-panel" aria-label="Quiz progress">
+        <button type="button" class="progress-panel__toggle" id="btn-review-toggle" aria-expanded="false">
+          Progress <span class="progress-panel__count">(<span id="review-count">0</span>)</span>
+        </button>
+        <div class="progress-panel__body" id="review-body" hidden>
+          <p class="progress-panel__hint" id="review-empty">Take a quiz to see words here.</p>
+          <div class="progress-grid" aria-label="Words and scores">
+            <div class="progress-grid__head">
+              <span>Word</span>
+              <span>Score</span>
+              <span class="progress-grid__pct-h">%</span>
+            </div>
+            <ul class="progress-grid__list" id="review-list"></ul>
+          </div>
+        </div>
+      </section>
+
+      <div class="history-reset">
+        <button type="button" id="btn-clear-history" class="btn btn--clear-history">
+          Clear quiz history
+        </button>
+      </div>
+
+      <section class="progress-panel progress-panel--favorites" id="favorites-panel" aria-label="Saved words">
+        <button type="button" class="progress-panel__toggle" id="btn-favorites-toggle" aria-expanded="false">
+          Saved words (<span id="favorites-count">0</span>)
+        </button>
+        <div class="progress-panel__body" id="favorites-body" hidden>
+          <p class="progress-panel__hint" id="favorites-empty">
+            Tap Save on a card, then choose Saved in Deck.
+          </p>
+          <ul class="saved-list" id="favorites-list"></ul>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <aside id="chinese-aside" class="chinese-aside" hidden aria-hidden="true"></aside>
+
+  <div class="set-modal" id="set-modal" hidden>
+    <div class="set-modal__backdrop" id="set-modal-backdrop"></div>
+    <div
+      class="set-modal__panel"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="set-modal-title"
+    >
+      <h2 id="set-modal-title" class="set-modal__title">10-card set — finished!</h2>
+      <p id="set-modal-summary" class="set-modal__summary"></p>
+      <ul id="set-modal-list" class="set-modal__list"></ul>
+      <button type="button" id="set-modal-close" class="btn btn--primary">
+        Keep practicing
+      </button>
+    </div>
+  </div>
+
+  <script src="words-embed.js"></script>
+  <script src="app.js" defer></script>
+</body>
+</html>
