@@ -1,0 +1,22 @@
+Pac-Man maze strip — optional PNGs (drop files next to this spec)
+
+1) chomper.png (ship this file)
+   - Role: player sprite on the current pellet column (facing right).
+   - You may upload a large source; run the processor so the repo stays small:
+       ./tools/process-chomper-asset.sh
+     (macOS: uses `sips` to cap longest side at 96 px, keeps alpha.)
+   - Shipped size is typically ~72×96 (portrait) or similar after -Z 96.
+   - Transparent background required.
+
+2) pellet-open.png (optional)
+   - Small dot ~8–12 px for “not yet eaten” state; yellow or pale gold.
+   - If omitted, CSS draws the dot.
+
+3) pellet-eaten.png (optional)
+   - Tiny sparkle/crumb or empty ring for “cleared” — optional; CSS handles eaten state.
+
+4) ghost-bomb.png (optional)
+   - 20–28 px; used only if we later wire bomb flashes to a sprite (currently CSS pulse).
+
+Naming: use filenames above so the app can load them without config changes.
+Only chomper.png is loaded by the current build; add others when you extend sprites.

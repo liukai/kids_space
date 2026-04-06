@@ -643,6 +643,11 @@ body::after {
     0 0 16px rgba(51, 228, 255, 0.12);
 }
 
+/* `display: flex` above beats the UA [hidden] rule — force collapse when hidden */
+.set-bar[hidden] {
+  display: none !important;
+}
+
 .btn--set-start {
   min-height: 48px;
   font-size: 1rem;
@@ -668,6 +673,258 @@ body::after {
   text-align: center;
   line-height: 1.35;
   text-shadow: 0 0 8px rgba(102, 217, 255, 0.25);
+}
+
+/* —— 10-card set: Pac-Man–style pellet strip —— */
+.set-bar__arcade {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: stretch;
+  min-height: 0;
+}
+
+.set-bar__arcade[hidden] {
+  display: none !important;
+}
+
+.set-bar__stats {
+  margin: 0;
+  font-family: inherit;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  text-align: center;
+  color: var(--pac-yellow);
+  text-shadow: 0 0 10px rgba(255, 204, 0, 0.35);
+}
+
+.set-bar__strip-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow-x: hidden;
+  overflow-y: hidden;
+  width: 100%;
+  max-width: 100%;
+  min-height: 4.35rem;
+  max-height: 4.35rem;
+  padding: 0.1rem 6px;
+  box-sizing: border-box;
+}
+
+.set-bar__strip {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  column-gap: 0.06rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Ten slots share row width so ☀️ aren’t bunched on the left with empty space on the right */
+.set-bar__cell {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  min-height: 0;
+  overflow: visible;
+}
+
+/* Active column holds chomper + sun — a touch more flex basis */
+.set-bar__cell:has(.set-bar__chomper) {
+  flex: 1.35 1 0;
+  min-width: 2.15rem;
+  z-index: 3;
+  justify-content: center;
+  gap: 0.04rem;
+}
+
+.set-bar__cell:has(.set-pellet--todo),
+.set-bar__cell:has(.set-pellet--current) {
+  padding: 0;
+}
+
+.set-pellet {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0;
+  flex-shrink: 0;
+  min-width: 0.85rem;
+  min-height: 1rem;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.set-pellet__glyph {
+  display: block;
+  font-size: 0.78rem;
+  line-height: 1;
+  user-select: none;
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease,
+    filter 0.2s ease;
+}
+
+.set-pellet--todo .set-pellet__glyph {
+  opacity: 0.95;
+  display: inline-block;
+  padding: 0 0.03rem;
+  filter: drop-shadow(0 0 4px rgba(255, 200, 80, 0.55));
+  animation: set-pellet-float 2.4s ease-in-out infinite;
+}
+
+.set-pellet--current .set-pellet__glyph {
+  transform: scale(1.14);
+  filter:
+    drop-shadow(0 0 7px rgba(51, 228, 255, 0.9))
+    drop-shadow(0 0 2px rgba(255, 255, 255, 0.45));
+}
+
+.set-pellet--current.set-pellet--wrong .set-pellet__glyph {
+  transform: scale(1.1);
+  animation: set-pellet-wrong-pulse 0.75s ease-in-out infinite;
+}
+
+.set-pellet--eaten .set-pellet__glyph {
+  animation: set-pellet-chomp 0.16s ease-out 1 forwards;
+}
+
+.set-pellet--eaten.set-pellet--great .set-pellet__glyph {
+  filter: drop-shadow(0 0 4px rgba(255, 220, 100, 0.5));
+}
+
+.set-pellet--eaten.set-pellet--hurt .set-pellet__glyph {
+  filter:
+    drop-shadow(0 0 4px rgba(255, 120, 90, 0.45))
+    grayscale(0.25);
+}
+
+.set-pellet--eaten.set-pellet--peek .set-pellet__glyph {
+  filter: drop-shadow(0 0 5px rgba(100, 190, 255, 0.55));
+}
+
+.set-pellet--eaten.set-pellet--skip .set-pellet__glyph {
+  opacity: 0.35;
+  filter: grayscale(1) brightness(0.65);
+}
+
+@keyframes set-pellet-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes set-pellet-chomp {
+  0% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.38);
+    opacity: 0.32;
+  }
+}
+
+@keyframes set-pellet-wrong-pulse {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 8px #ff3333) drop-shadow(0 0 2px #990000);
+  }
+  50% {
+    filter: drop-shadow(0 0 16px #ff1a1a) drop-shadow(0 0 6px #cc0000);
+  }
+}
+
+.set-bar__chomper {
+  position: relative;
+  flex-shrink: 0;
+  width: 28px;
+  height: 36px;
+  margin-right: -2px;
+  z-index: 2;
+  pointer-events: none;
+  transform-origin: center center;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.45));
+  /* scale() set inline in JS so it always applies (some engines flake on scale(var(--x))) */
+  transition: transform 0.12s ease;
+}
+
+.set-bar__chomper-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: none;
+}
+
+.set-bar__chomper.has-sprite .set-bar__chomper-img {
+  display: block;
+}
+
+.set-bar__chomper.has-sprite .set-bar__chomper-pac {
+  display: none;
+}
+
+/* CSS Pac wedge fallback (mouth opens toward right / pellets) */
+.set-bar__chomper-pac {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    var(--pac-yellow) 0 82%,
+    transparent 82% 100%
+  );
+  transform: rotate(-28deg);
+  animation: set-chomper-munch 0.45s steps(2, end) infinite;
+}
+
+@keyframes set-chomper-munch {
+  0%,
+  100% {
+    transform: rotate(-24deg);
+  }
+  50% {
+    transform: rotate(-40deg);
+  }
+}
+
+@keyframes set-bar-bomb-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-3px);
+  }
+  75% {
+    transform: translateX(3px);
+  }
+}
+
+.set-bar--bomb-pulse {
+  animation: set-bar-bomb-shake 0.38s ease-out 1;
+  box-shadow:
+    inset 0 0 22px rgba(255, 126, 185, 0.12),
+    0 0 16px rgba(255, 80, 80, 0.45);
 }
 
 .set-modal {
@@ -722,11 +979,39 @@ body::after {
 }
 
 .set-modal__summary {
-  margin: 0 0 var(--space-2);
+  margin: 0 0 var(--space-1);
   font-size: 1.05rem;
   color: #c8ffd4;
   text-align: center;
   line-height: 1.4;
+}
+
+.set-modal__chomper-block {
+  margin: 0 0 var(--space-1);
+  text-align: center;
+}
+
+.set-modal__chomper-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  padding: 0.2rem 0;
+  min-height: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.set-modal__chomper-stage .set-bar__chomper {
+  filter: drop-shadow(0 6px 20px rgba(0, 0, 0, 0.55));
+}
+
+.set-modal__chomper-meta {
+  margin: 0.15rem 0 0;
+  font-size: 0.85rem;
+  line-height: 1.3;
+  color: #9ee8ff;
+  text-align: center;
 }
 
 .set-modal__list {

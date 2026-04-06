@@ -16,6 +16,22 @@
   var TROPHY_EVERY = 20;
   /** Quiz / type-all: fixed queue of this many cards when “Start 10” is used. */
   var SET_LEN = 10;
+  /** Optional PNG for the pellet-strip chomper (see assets/set-maze/ASSET-SPEC.txt). */
+  var SET_MAZE_CHOMPER_SRC = "assets/set-maze/chomper.png";
+  /** Pellet “food” in the strip (sun); chomper moves left → right eating these. */
+  var SET_PELLET_GLYPH = "\u2600\uFE0F";
+  /** Chomper visual scale in the strip: starts at MIN, reaches MAX after SET_LEN correct (curve in `chomperScaleFromCorrectCount`). */
+  var CHOMPER_SCALE_MIN = 0.5;
+  var CHOMPER_SCALE_MAX = 2;
+
+  function chomperImageAbsUrl() {
+    if (typeof URL === "undefined" || !document.baseURI) return SET_MAZE_CHOMPER_SRC;
+    try {
+      return new URL(SET_MAZE_CHOMPER_SRC, document.baseURI).href;
+    } catch (err) {
+      return SET_MAZE_CHOMPER_SRC;
+    }
+  }
 
   /** Quiz points per correct answer = word difficulty from JSON (min 1). */
   function quizPointsForItem(item) {
@@ -826,7 +842,12 @@
     saveQuizDetail(d);
     quizStreak = 0;
     saveStreak(0);
-    if (setModeActive) setHadWrongOnCard = true;
+    if (setModeActive) {
+      setHadWrongOnCard = true;
+      setBombCount++;
+      pulseSetBarForBomb();
+      updateSetBar();
+    }
     updateScoreUi();
     maybeRefreshCardQuizPill(w);
     updateCoverageStatsUi();
@@ -1190,9 +1211,9 @@
 
   var QUIZ_FOCUS_DELAY_MS = 1150;
   /** How long to show “+points” / celebration before auto-advancing (so it isn’t a sub-second flash). */
-  var QUIZ_SUCCESS_HOLD_GAP_MS = 2200;
-  var QUIZ_SUCCESS_HOLD_TYPEALL_MS = 3000;
-  var QUIZ_SUCCESS_HOLD_PEEK_MS = 1800;
+  var QUIZ_SUCCESS_HOLD_GAP_MS = 700;
+  var QUIZ_SUCCESS_HOLD_TYPEALL_MS = 1100;
+  var QUIZ_SUCCESS_HOLD_PEEK_MS = 500;
   /** Pending auto-speak timeout — must clear so we never speak twice (e.g. Next before delay fires). */
   var pronounceAfterCardTimer = null;
   var quizAdvanceTimer = null;
@@ -1253,13 +1274,20 @@
   var setQueueIndex = 0;
   var setRows = [];
   var setHadWrongOnCard = false;
+  /** Wrong guesses during the active 10-card set (Pac “bomb” counter). */
+  var setBombCount = 0;
 
   var elSetBar = document.getElementById("set-bar");
   var elBtnStartSet = document.getElementById("btn-start-set");
   var elSetProgress = document.getElementById("set-bar-progress");
+  var elSetStrip = document.getElementById("set-bar-strip");
+  var elSetStats = document.getElementById("set-bar-stats");
+  var elSetArcade = document.getElementById("set-bar-arcade");
   var elSetModal = document.getElementById("set-modal");
   var elSetModalSummary = document.getElementById("set-modal-summary");
   var elSetModalList = document.getElementById("set-modal-list");
+  var elSetModalChomperStage = document.getElementById("set-modal-chomper-stage");
+  var elSetModalChomperMeta = document.getElementById("set-modal-chomper-meta");
   var elSetModalClose = document.getElementById("set-modal-close");
   var elSetModalBackdrop = document.getElementById("set-modal-backdrop");
   var elKbdShortcutsModal = document.getElementById("kbd-shortcuts-modal");
@@ -1466,16 +1494,153 @@
     setQueueIndex = 0;
     setRows = [];
     setHadWrongOnCard = false;
+    setBombCount = 0;
     updateSetBar();
+  }
+
+  function pulseSetBarForBomb() {
+    if (!elSetBar) return;
+    elSetBar.classList.remove("set-bar--bomb-pulse");
+    void elSetBar.offsetWidth;
+    elSetBar.classList.add("set-bar--bomb-pulse");
+    window.setTimeout(function () {
+      if (elSetBar) elSetBar.classList.remove("set-bar--bomb-pulse");
+    }, 400);
+  }
+
+  function countSetCorrectSoFar() {
+    var n = 0;
+    for (var i = 0; i < setRows.length; i++) {
+      if (setRows[i].kind === "correct") n++;
+    }
+    return n;
+  }
+
+  function chomperScaleFromCorrectCount(n) {
+    if (n < 0) n = 0;
+    if (n > SET_LEN) n = SET_LEN;
+    var lo = CHOMPER_SCALE_MIN;
+    var hi = CHOMPER_SCALE_MAX;
+    var t = n / SET_LEN;
+    return lo + (hi - lo) * Math.pow(t, 0.82);
+  }
+
+  function appendPelletSunGlyph(pellet) {
+    var glyph = document.createElement("span");
+    glyph.className = "set-pellet__glyph";
+    glyph.textContent = SET_PELLET_GLYPH;
+    glyph.setAttribute("aria-hidden", "true");
+    pellet.appendChild(glyph);
+  }
+
+  function makeChomperFigure(scale) {
+    var wrap = document.createElement("span");
+    wrap.className = "set-bar__chomper";
+    var sc =
+      typeof scale === "number" && !isNaN(scale) && scale > 0 ? scale : CHOMPER_SCALE_MIN;
+    wrap.style.transform = "scale(" + sc + ")";
+    wrap.style.transformOrigin = "center center";
+    var img = document.createElement("img");
+    img.className = "set-bar__chomper-img";
+    img.alt = "";
+    img.decoding = "async";
+    try {
+      img.setAttribute("fetchpriority", "high");
+    } catch (e1) {}
+    img.loading = "eager";
+    var pac = document.createElement("span");
+    pac.className = "set-bar__chomper-pac";
+    pac.setAttribute("aria-hidden", "true");
+    function applySpriteState() {
+      if (img.naturalWidth > 0) wrap.classList.add("has-sprite");
+      else wrap.classList.remove("has-sprite");
+    }
+    img.onload = applySpriteState;
+    img.onerror = function () {
+      wrap.classList.remove("has-sprite");
+    };
+    wrap.appendChild(img);
+    wrap.appendChild(pac);
+    img.src = chomperImageAbsUrl();
+    if (img.complete) applySpriteState();
+    return wrap;
+  }
+
+  function makeChomperNode(correctSoFar) {
+    var n =
+      typeof correctSoFar === "number" && !isNaN(correctSoFar) ? correctSoFar : 0;
+    return makeChomperFigure(chomperScaleFromCorrectCount(n));
+  }
+
+  function renderSetPelletStrip() {
+    if (!elSetStrip || !elSetStats) return;
+    if (!isTypingMode()) return;
+    if (!setModeActive) {
+      elSetStrip.replaceChildren();
+      elSetStats.textContent = "";
+      return;
+    }
+    elSetStrip.replaceChildren();
+    elSetStrip.setAttribute("dir", "ltr");
+    var correctSoFar = countSetCorrectSoFar();
+    var i;
+    for (i = 0; i < SET_LEN; i++) {
+      var cell = document.createElement("div");
+      cell.className = "set-bar__cell";
+      cell.setAttribute("role", "listitem");
+      var pellet = document.createElement("span");
+      pellet.className = "set-pellet";
+      if (i < setRows.length) {
+        var outcome = setRows[i];
+        pellet.classList.add("set-pellet--eaten");
+        appendPelletSunGlyph(pellet);
+        if (outcome.kind === "skip") {
+          pellet.classList.add("set-pellet--skip");
+        } else if (outcome.kind === "correct") {
+          if (outcome.peek) pellet.classList.add("set-pellet--peek");
+          else if (outcome.firstTry) pellet.classList.add("set-pellet--great");
+          else pellet.classList.add("set-pellet--hurt");
+        }
+      } else if (i === setQueueIndex) {
+        pellet.classList.add("set-pellet--current");
+        appendPelletSunGlyph(pellet);
+        if (setHadWrongOnCard) pellet.classList.add("set-pellet--wrong");
+        cell.appendChild(makeChomperNode(correctSoFar));
+      } else {
+        pellet.classList.add("set-pellet--todo");
+        appendPelletSunGlyph(pellet);
+      }
+      cell.appendChild(pellet);
+      elSetStrip.appendChild(cell);
+    }
+    var eaten = 0;
+    var firstT = 0;
+    var skips = 0;
+    for (i = 0; i < setRows.length; i++) {
+      if (setRows[i].kind === "correct") {
+        eaten++;
+        if (setRows[i].firstTry) firstT++;
+      } else if (setRows[i].kind === "skip") skips++;
+    }
+    var parts = [
+      "Eaten " + eaten + "/" + SET_LEN,
+      "Bombs " + setBombCount,
+      "Card " + (setQueueIndex + 1),
+    ];
+    if (skips) parts.push("Skipped " + skips);
+    if (firstT) parts.push("First-try " + firstT);
+    elSetStats.textContent = parts.join(" · ");
   }
 
   function updateSetBar() {
     if (!elSetBar) return;
     if (!isTypingMode()) {
       elSetBar.hidden = true;
+      if (elSetArcade) elSetArcade.hidden = true;
       return;
     }
     elSetBar.hidden = false;
+    if (elSetArcade) elSetArcade.hidden = !setModeActive;
     if (elBtnStartSet) {
       elBtnStartSet.hidden = setModeActive;
       elBtnStartSet.disabled = pool.length < 1;
@@ -1486,13 +1651,10 @@
           "10-word set: scores still count · tap Start when you’re ready.";
       } else {
         elSetProgress.textContent =
-          "Card " +
-          (setQueueIndex + 1) +
-          " / " +
-          SET_LEN +
-          " · Skip passes this card (no points).";
+          "Skip passes this card (no pellet / no points).";
       }
     }
+    renderSetPelletStrip();
   }
 
   function openSetSummaryModal(rows) {
@@ -1519,8 +1681,28 @@
       correct +
       " · Points this set: " +
       points +
+      " · Bombs (wrong guesses): " +
+      setBombCount +
       (skipped ? " · Skipped: " + skipped : "") +
       ".";
+    var summaryChomperScale = chomperScaleFromCorrectCount(correct);
+    if (elSetModalChomperStage) {
+      elSetModalChomperStage.replaceChildren();
+      /* Report shows chomper at base / original size (1×); numbers below state run scale. */
+      elSetModalChomperStage.appendChild(makeChomperFigure(1));
+    }
+    if (elSetModalChomperMeta) {
+      elSetModalChomperMeta.textContent =
+        "Above: original-size chomper (1×). This run you reached " +
+        summaryChomperScale.toFixed(2) +
+        "\u00d7 · In play it grows " +
+        CHOMPER_SCALE_MIN +
+        "\u00d7 \u2192 " +
+        CHOMPER_SCALE_MAX +
+        "\u00d7 when you get all " +
+        SET_LEN +
+        " correct (not skips).";
+    }
     elSetModalList.textContent = "";
     for (i = 0; i < rows.length; i++) {
       var row = rows[i];
@@ -1555,6 +1737,8 @@
 
   function closeSetSummaryModal() {
     if (elSetModal) elSetModal.hidden = true;
+    if (elSetModalChomperStage) elSetModalChomperStage.replaceChildren();
+    if (elSetModalChomperMeta) elSetModalChomperMeta.textContent = "";
   }
 
   function startSetOfTen() {
@@ -1567,6 +1751,7 @@
     setRows = [];
     setModeActive = true;
     setHadWrongOnCard = false;
+    setBombCount = 0;
     advancingQuiz = false;
     current = setQueue[0];
     prepareRound();

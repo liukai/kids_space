@@ -130,6 +130,12 @@
       <button type="button" id="btn-start-set" class="btn btn--set-start" disabled>
         Start 10
       </button>
+      <div class="set-bar__arcade" id="set-bar-arcade" hidden>
+        <p class="set-bar__stats" id="set-bar-stats" aria-live="polite"></p>
+        <div class="set-bar__strip-wrap">
+          <div class="set-bar__strip" id="set-bar-strip" role="list"></div>
+        </div>
+      </div>
       <p class="set-bar__progress" id="set-bar-progress" aria-live="polite"></p>
     </div>
 
@@ -283,6 +289,14 @@
     >
       <h2 id="set-modal-title" class="set-modal__title">10-card set — finished!</h2>
       <p id="set-modal-summary" class="set-modal__summary"></p>
+      <div class="set-modal__chomper-block">
+        <div
+          class="set-modal__chomper-stage"
+          id="set-modal-chomper-stage"
+          aria-hidden="true"
+        ></div>
+        <p class="set-modal__chomper-meta" id="set-modal-chomper-meta"></p>
+      </div>
       <ul id="set-modal-list" class="set-modal__list"></ul>
       <button type="button" id="set-modal-close" class="btn btn--primary">
         Keep practicing
