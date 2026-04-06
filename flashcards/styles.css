@@ -237,6 +237,53 @@ body::after {
   opacity: 0.75;
 }
 
+.site-header__coverage {
+  margin: 0.5rem 0 0;
+  padding: 0 0.25rem;
+  font-size: 0.82rem;
+  font-weight: 400;
+  line-height: 1.35;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  opacity: 0.92;
+}
+
+.site-header__coverage .coverage-num {
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+.site-header__coverage .coverage-num--seen {
+  color: var(--crt-blue);
+  text-shadow: 0 0 10px rgba(51, 214, 255, 0.35);
+}
+
+.site-header__coverage .coverage-num--quiz {
+  color: var(--crt-amber);
+  text-shadow: 0 0 10px rgba(255, 204, 51, 0.28);
+}
+
+.site-header__coverage .coverage-num--typed {
+  color: var(--ghost-pink);
+  text-shadow: 0 0 10px rgba(255, 126, 185, 0.3);
+}
+
+.site-header__coverage .coverage-num--right {
+  color: var(--crt-green-dim);
+  text-shadow: 0 0 10px rgba(95, 255, 154, 0.28);
+}
+
+.site-header__coverage .coverage-num--wrong {
+  color: var(--crt-red);
+  opacity: 0.92;
+  text-shadow: 0 0 10px rgba(255, 107, 122, 0.28);
+}
+
+.site-header__coverage .coverage-num--flashed {
+  color: var(--crt-amber-hot);
+  text-shadow: 0 0 10px rgba(255, 238, 136, 0.25);
+}
+
 /* —— Keyboard shortcuts help (Shift + ?) —— */
 .kbd-shortcuts-modal {
   position: fixed;
@@ -1455,6 +1502,28 @@ body::after {
 
 .flashcard__meta-line {
   display: block;
+}
+
+/* Subtitle under the word: emoji + Lv + Chinese — quiet, low visual noise */
+.flashcard__meta--condensed {
+  margin: 0.35rem 0 0;
+  font-size: 0.72rem;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  opacity: 0.88;
+  line-height: 1.35;
+}
+
+.flashcard__surface .flashcard__spell + .flashcard__meta--condensed {
+  /* Legacy: meta after spell-zone — no extra gap when repositioned */
+  margin-top: 0.25rem;
+}
+
+.flashcard__spell > .flashcard__meta--condensed {
+  margin: 0.35rem 0 0.15rem;
+  width: 100%;
+  max-width: 18rem;
 }
 
 .word-peek-modal__meta {

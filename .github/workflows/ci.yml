@@ -27,5 +27,4 @@ jobs:
           test -f flashcards/index.html
           test -f flashcards/styles.css
           test -f flashcards/app.js
-          test -f flashcards/words.json
           test -f flashcards/words-embed.js

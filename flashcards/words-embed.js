@@ -1,4 +1,5 @@
-// Auto-generated from words.json — run: node flashcards/tools/sync-embed.mjs
+// Flashcard word list (source of truth). Edit this file, or run this script to refresh IPA/respelling from its built-in map.
+//   python3 flashcards/tools/merge-pronunciations.py
 window.__FLASHCARD_WORDS__ = [
   {
     "word": "cat",
@@ -57,7 +58,7 @@ window.__FLASHCARD_WORDS__ = [
   },
   {
     "word": "cup",
-    "emoji": "☕",
+    "emoji": "🥤",
     "chinese": "杯子",
     "type": "cvc",
     "difficulty": 2,
@@ -167,7 +168,7 @@ window.__FLASHCARD_WORDS__ = [
   },
   {
     "word": "sit",
-    "emoji": "🪑",
+    "emoji": "🧘",
     "chinese": "坐",
     "type": "cvc",
     "difficulty": 2,
@@ -244,7 +245,7 @@ window.__FLASHCARD_WORDS__ = [
   },
   {
     "word": "fan",
-    "emoji": "🌀",
+    "emoji": "🪭",
     "chinese": "风扇",
     "type": "cvc",
     "difficulty": 2,
@@ -442,7 +443,7 @@ window.__FLASHCARD_WORDS__ = [
   },
   {
     "word": "chip",
-    "emoji": "🍟",
+    "emoji": "🥔",
     "chinese": "薯片",
     "type": "phonics",
     "difficulty": 5,
@@ -490,7 +491,7 @@ window.__FLASHCARD_WORDS__ = [
     "chinese": "这",
     "type": "sight",
     "difficulty": 2,
-    "wordType": "Sight",
+    "wordType": "Heart word",
     "gradeLevel": "K",
     "ipa": "/ðə/",
     "respelling": "thuh"
@@ -501,18 +502,18 @@ window.__FLASHCARD_WORDS__ = [
     "chinese": "和",
     "type": "sight",
     "difficulty": 2,
-    "wordType": "Sight",
+    "wordType": "Heart word",
     "gradeLevel": "K",
     "ipa": "/ænd/",
     "respelling": "AND"
   },
   {
     "word": "you",
-    "emoji": "👉",
+    "emoji": "🫵",
     "chinese": "你",
     "type": "sight",
     "difficulty": 2,
-    "wordType": "Sight",
+    "wordType": "Heart word",
     "gradeLevel": "K",
     "ipa": "/juː/",
     "respelling": "YOO"
@@ -523,7 +524,7 @@ window.__FLASHCARD_WORDS__ = [
     "chinese": "是",
     "type": "sight",
     "difficulty": 2,
-    "wordType": "Sight",
+    "wordType": "Heart word",
     "gradeLevel": "K",
     "ipa": "/ɪz/",
     "respelling": "IZ"
@@ -534,7 +535,7 @@ window.__FLASHCARD_WORDS__ = [
     "chinese": "它",
     "type": "sight",
     "difficulty": 2,
-    "wordType": "Sight",
+    "wordType": "Heart word",
     "gradeLevel": "K",
     "ipa": "/ɪt/",
     "respelling": "IT"
@@ -545,7 +546,7 @@ window.__FLASHCARD_WORDS__ = [
     "chinese": "在里面",
     "type": "sight",
     "difficulty": 2,
-    "wordType": "Sight",
+    "wordType": "Heart word",
     "gradeLevel": "K",
     "ipa": "/ɪn/",
     "respelling": "IN"
@@ -556,7 +557,7 @@ window.__FLASHCARD_WORDS__ = [
     "chinese": "在上面",
     "type": "sight",
     "difficulty": 2,
-    "wordType": "Sight",
+    "wordType": "Heart word",
     "gradeLevel": "K",
     "ipa": "/ɑːn/",
     "respelling": "ON"
@@ -567,29 +568,29 @@ window.__FLASHCARD_WORDS__ = [
     "chinese": "到",
     "type": "sight",
     "difficulty": 2,
-    "wordType": "Sight",
+    "wordType": "Heart word",
     "gradeLevel": "K",
     "ipa": "/tuː/",
     "respelling": "TOO"
   },
   {
     "word": "we",
-    "emoji": "👫",
+    "emoji": "🧑‍🤝‍🧑",
     "chinese": "我们",
     "type": "sight",
     "difficulty": 2,
-    "wordType": "Sight",
+    "wordType": "Heart word",
     "gradeLevel": "K",
     "ipa": "/wiː/",
     "respelling": "WEE"
   },
   {
     "word": "go",
-    "emoji": "🏃",
+    "emoji": "🚶",
     "chinese": "去",
     "type": "sight",
     "difficulty": 2,
-    "wordType": "Sight",
+    "wordType": "Heart word",
     "gradeLevel": "K",
     "ipa": "/ɡoʊ/",
     "respelling": "GOH"
@@ -600,7 +601,7 @@ window.__FLASHCARD_WORDS__ = [
     "chinese": "我",
     "type": "sight",
     "difficulty": 2,
-    "wordType": "Sight",
+    "wordType": "Heart word",
     "gradeLevel": "K",
     "ipa": "/miː/",
     "respelling": "MEE"
@@ -611,18 +612,18 @@ window.__FLASHCARD_WORDS__ = [
     "chinese": "他们",
     "type": "sight",
     "difficulty": 3,
-    "wordType": "Sight",
+    "wordType": "Heart word",
     "gradeLevel": "1",
     "ipa": "/ðeɪ/",
     "respelling": "THAY"
   },
   {
     "word": "have",
-    "emoji": "🙌",
+    "emoji": "📦",
     "chinese": "有",
     "type": "sight",
     "difficulty": 3,
-    "wordType": "Sight",
+    "wordType": "Heart word",
     "gradeLevel": "1",
     "ipa": "/hæv/",
     "respelling": "HAV"
@@ -633,18 +634,18 @@ window.__FLASHCARD_WORDS__ = [
     "chinese": "说",
     "type": "sight",
     "difficulty": 3,
-    "wordType": "Sight",
+    "wordType": "Heart word",
     "gradeLevel": "1",
     "ipa": "/sɛd/",
     "respelling": "SED"
   },
   {
     "word": "from",
-    "emoji": "➡️",
+    "emoji": "📤",
     "chinese": "从",
     "type": "sight",
     "difficulty": 3,
-    "wordType": "Sight",
+    "wordType": "Heart word",
     "gradeLevel": "1",
     "ipa": "/frʌm/",
     "respelling": "FRUM"
@@ -655,7 +656,7 @@ window.__FLASHCARD_WORDS__ = [
     "chinese": "什么",
     "type": "sight",
     "difficulty": 3,
-    "wordType": "Sight",
+    "wordType": "Heart word",
     "gradeLevel": "1",
     "ipa": "/wʌt/",
     "respelling": "WUT"
@@ -666,7 +667,7 @@ window.__FLASHCARD_WORDS__ = [
     "chinese": "什么时候",
     "type": "sight",
     "difficulty": 3,
-    "wordType": "Sight",
+    "wordType": "Heart word",
     "gradeLevel": "1",
     "ipa": "/wɛn/",
     "respelling": "WEN"
@@ -677,7 +678,7 @@ window.__FLASHCARD_WORDS__ = [
     "chinese": "哪里",
     "type": "sight",
     "difficulty": 3,
-    "wordType": "Sight",
+    "wordType": "Heart word",
     "gradeLevel": "1",
     "ipa": "/wer/",
     "respelling": "WAIR"
@@ -688,7 +689,7 @@ window.__FLASHCARD_WORDS__ = [
     "chinese": "为什么",
     "type": "sight",
     "difficulty": 3,
-    "wordType": "Sight",
+    "wordType": "Heart word",
     "gradeLevel": "1",
     "ipa": "/waɪ/",
     "respelling": "WY"
@@ -699,18 +700,18 @@ window.__FLASHCARD_WORDS__ = [
     "chinese": "如何",
     "type": "sight",
     "difficulty": 3,
-    "wordType": "Sight",
+    "wordType": "Heart word",
     "gradeLevel": "1",
     "ipa": "/haʊ/",
     "respelling": "HOW"
   },
   {
     "word": "because",
-    "emoji": "🤔",
+    "emoji": "💡",
     "chinese": "因为",
     "type": "sight",
     "difficulty": 5,
-    "wordType": "Sight",
+    "wordType": "Heart word",
     "gradeLevel": "2",
     "ipa": "/bɪˈkɔːz/",
     "respelling": "bih-KAWZ"
@@ -721,7 +722,7 @@ window.__FLASHCARD_WORDS__ = [
     "chinese": "之前",
     "type": "sight",
     "difficulty": 5,
-    "wordType": "Sight",
+    "wordType": "Heart word",
     "gradeLevel": "2",
     "ipa": "/bɪˈfɔːr/",
     "respelling": "bee-FOR"
@@ -732,7 +733,7 @@ window.__FLASHCARD_WORDS__ = [
     "chinese": "之后",
     "type": "sight",
     "difficulty": 5,
-    "wordType": "Sight",
+    "wordType": "Heart word",
     "gradeLevel": "2",
     "ipa": "/ˈæftər/",
     "respelling": "AF-ter"
@@ -743,7 +744,7 @@ window.__FLASHCARD_WORDS__ = [
     "chinese": "再次",
     "type": "sight",
     "difficulty": 5,
-    "wordType": "Sight",
+    "wordType": "Heart word",
     "gradeLevel": "2",
     "ipa": "/əˈɡɛn/",
     "respelling": "uh-GEN"
@@ -754,18 +755,18 @@ window.__FLASHCARD_WORDS__ = [
     "chinese": "每个",
     "type": "sight",
     "difficulty": 5,
-    "wordType": "Sight",
+    "wordType": "Heart word",
     "gradeLevel": "2",
     "ipa": "/ˈɛvri/",
     "respelling": "EV-ree"
   },
   {
     "word": "could",
-    "emoji": "🤝",
+    "emoji": "🔮",
     "chinese": "可以",
     "type": "sight",
     "difficulty": 5,
-    "wordType": "Sight",
+    "wordType": "Heart word",
     "gradeLevel": "2",
     "ipa": "/kʊd/",
     "respelling": "KOOD"
@@ -776,7 +777,7 @@ window.__FLASHCARD_WORDS__ = [
     "chinese": "应该",
     "type": "sight",
     "difficulty": 5,
-    "wordType": "Sight",
+    "wordType": "Heart word",
     "gradeLevel": "2",
     "ipa": "/ʃʊd/",
     "respelling": "SHOOD"
@@ -787,7 +788,7 @@ window.__FLASHCARD_WORDS__ = [
     "chinese": "会",
     "type": "sight",
     "difficulty": 5,
-    "wordType": "Sight",
+    "wordType": "Heart word",
     "gradeLevel": "2",
     "ipa": "/wʊd/",
     "respelling": "WOOD"

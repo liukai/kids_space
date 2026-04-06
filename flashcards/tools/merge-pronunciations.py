@@ -1,11 +1,32 @@
 #!/usr/bin/env python3
-"""Merge IPA + respelling into words.json (American-style approximations for learners)."""
+"""Merge IPA + respelling into words-embed.js (American-style approximations for learners)."""
 
 import json
 import pathlib
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-WORDS = ROOT / "words.json"
+EMBED = ROOT / "words-embed.js"
+
+BANNER = (
+    "// Flashcard word list (source of truth). Edit this file, or run this script "
+    "to refresh IPA/respelling from its built-in map.\n"
+    "//   python3 flashcards/tools/merge-pronunciations.py\n"
+)
+
+
+def _read_embed_array(path: pathlib.Path) -> list:
+    text = path.read_text(encoding="utf-8")
+    marker = "window.__FLASHCARD_WORDS__ = "
+    i = text.find(marker)
+    if i == -1:
+        raise ValueError(f"{path}: missing {marker!r}")
+    raw = text[i + len(marker) :].strip()
+    return json.loads(raw)
+
+
+def _write_embed_array(path: pathlib.Path, data: list) -> None:
+    body = json.dumps(data, ensure_ascii=False, indent=2) + "\n"
+    path.write_text(BANNER + "window.__FLASHCARD_WORDS__ = " + body, encoding="utf-8")
 
 # IPA without brackets in data — UI adds slashes. Respelling: simple syllable caps style.
 PRON = {
@@ -115,7 +136,7 @@ PRON = {
 
 
 def main() -> None:
-    data = json.loads(WORDS.read_text(encoding="utf-8"))
+    data = _read_embed_array(EMBED)
     for row in data:
         w = row.get("word", "")
         if w in PRON:
@@ -125,10 +146,8 @@ def main() -> None:
         else:
             row.setdefault("ipa", "")
             row.setdefault("respelling", "")
-    WORDS.write_text(
-        json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
-    )
-    print("Updated", WORDS, "—", len(data), "rows")
+    _write_embed_array(EMBED, data)
+    print("Updated", EMBED, "—", len(data), "rows")
 
 
 if __name__ == "__main__":
