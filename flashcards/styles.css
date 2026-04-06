@@ -894,18 +894,15 @@ body::after {
   text-shadow: 0 0 10px rgba(255, 204, 51, 0.35);
 }
 
+/*
+ * One button per row — the app shell is max ~28rem, so three columns were always squeezed
+ * (especially on phones). Stack so each choice is full width and easy to tap.
+ */
 .spell-choice-row {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: 1fr;
+  gap: 14px;
   width: 100%;
-}
-
-@media (max-width: 22rem) {
-  .spell-choice-row {
-    grid-template-columns: 1fr;
-    gap: 14px;
-  }
 }
 
 .spell-input-inline--gap-choose {
@@ -919,10 +916,12 @@ body::after {
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 10px;
   min-height: 58px;
-  padding: 10px 12px;
+  padding: 12px 18px;
   margin: 0;
+  width: 100%;
+  box-sizing: border-box;
   font-family: inherit;
   font-weight: 400;
   line-height: 1;
@@ -938,28 +937,32 @@ body::after {
   touch-action: manipulation;
 }
 
+/* Key hint: soft cyan glow — readable but quieter than the big letter */
 .spell-choice-btn__num {
   flex-shrink: 0;
-  min-width: 1.65rem;
-  padding: 6px 8px;
-  font-size: 1.05rem;
+  min-width: 2rem;
+  padding: 5px 10px;
+  font-size: 0.9rem;
   font-weight: 400;
   text-align: center;
-  letter-spacing: 0.04em;
-  color: var(--crt-amber-hot);
-  background: rgba(0, 0, 0, 0.55);
-  border: 2px solid rgba(255, 204, 51, 0.55);
+  letter-spacing: 0.06em;
+  color: rgba(190, 238, 255, 0.95);
+  background: rgba(51, 228, 255, 0.07);
+  border: 1px solid rgba(51, 228, 255, 0.38);
   border-radius: var(--radius-pill);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 14px rgba(51, 228, 255, 0.14);
+  text-shadow: 0 0 10px rgba(51, 228, 255, 0.28);
 }
 
 .spell-choice-btn__colon {
   flex-shrink: 0;
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 400;
   color: var(--muted);
-  margin: 0 1px;
-  opacity: 0.85;
+  margin: 0 2px;
+  opacity: 0.7;
 }
 
 .spell-choice-btn__letter {
