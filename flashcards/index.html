@@ -39,6 +39,12 @@
         <span class="site-header__stat">Score <strong id="points-val">0</strong></span>
         <span class="site-header__sep">·</span>
         <span class="site-header__stat">Streak <strong id="streak-val">0</strong></span>
+        <span class="site-header__sep">·</span>
+        <span
+          class="site-header__stat site-header__kbd-hint"
+          title="Show keyboard shortcuts (Shift+?)"
+          >Shortcuts <kbd class="kbd-chip kbd-chip--tiny">?</kbd>
+          <span class="site-header__kbd-hint-sub">(Shift)</span></span>
       </p>
     </header>
 
@@ -202,7 +208,9 @@
           Progress <span class="progress-panel__count">(<span id="review-count">0</span>)</span>
         </button>
         <div class="progress-panel__body" id="review-body" hidden>
-          <p class="progress-panel__hint" id="review-empty">Take a quiz to see words here.</p>
+          <p class="progress-panel__hint" id="review-empty">
+            Take a quiz to see words here. Tap a word to open it like See mode (save, hear).
+          </p>
           <div class="progress-grid" aria-label="Words and scores">
             <div class="progress-grid__head">
               <span>Word</span>
@@ -226,7 +234,7 @@
         </button>
         <div class="progress-panel__body" id="favorites-body" hidden>
           <p class="progress-panel__hint" id="favorites-empty">
-            Tap Save on a card, then choose Saved in Deck.
+            Tap Save on a card, then choose Saved in Deck. Tap a saved word for details, sound, and save.
           </p>
           <ul class="saved-list" id="favorites-list"></ul>
         </div>
@@ -249,6 +257,64 @@
       <ul id="set-modal-list" class="set-modal__list"></ul>
       <button type="button" id="set-modal-close" class="btn btn--primary">
         Keep practicing
+      </button>
+    </div>
+  </div>
+
+  <div class="word-peek-modal" id="word-peek-modal" hidden>
+    <div class="word-peek-modal__backdrop" id="word-peek-modal-backdrop"></div>
+    <div
+      class="word-peek-modal__panel flashcard word-peek-modal__flashcard"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="word-peek-word"
+    >
+      <div class="flashcard__toolbar word-peek-modal__toolbar">
+        <button
+          type="button"
+          id="word-peek-favorite"
+          class="flashcard__tool flashcard__tool--fav"
+          title="Save word"
+          aria-label="Save word"
+          aria-pressed="false"
+          disabled
+        >
+          &#9734;
+        </button>
+        <button
+          type="button"
+          id="word-peek-speak"
+          class="flashcard__tool"
+          title="Hear word"
+          aria-label="Hear word"
+        >
+          &#128266;
+        </button>
+      </div>
+      <div class="flashcard__surface word-peek-modal__surface">
+        <span id="word-peek-emoji" class="flashcard__emoji" aria-hidden="true"></span>
+        <p id="word-peek-word" class="flashcard__word"></p>
+        <p id="word-peek-meta" class="flashcard__meta"></p>
+      </div>
+      <button type="button" id="word-peek-close" class="btn btn--primary word-peek-modal__close">
+        Close
+      </button>
+    </div>
+  </div>
+
+  <div class="kbd-shortcuts-modal" id="kbd-shortcuts-modal" hidden>
+    <div class="kbd-shortcuts-modal__backdrop" id="kbd-shortcuts-modal-backdrop"></div>
+    <div
+      class="kbd-shortcuts-modal__panel"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="kbd-shortcuts-title"
+    >
+      <h2 id="kbd-shortcuts-title" class="kbd-shortcuts-modal__title">Keyboard shortcuts</h2>
+      <ul class="kbd-shortcuts-modal__list" id="kbd-shortcuts-list"></ul>
+      <p class="kbd-shortcuts-modal__footnote" id="kbd-shortcuts-footnote"></p>
+      <button type="button" id="kbd-shortcuts-close" class="btn btn--primary">
+        Close
       </button>
     </div>
   </div>

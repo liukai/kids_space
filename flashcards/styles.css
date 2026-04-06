@@ -227,6 +227,190 @@ body::after {
   color: var(--muted);
 }
 
+.site-header__kbd-hint {
+  white-space: nowrap;
+  font-size: 0.92rem;
+}
+
+.site-header__kbd-hint-sub {
+  font-size: 0.85em;
+  opacity: 0.75;
+}
+
+/* —— Keyboard shortcuts help (Shift + ?) —— */
+.kbd-shortcuts-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10060;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2);
+}
+
+.kbd-shortcuts-modal[hidden] {
+  display: none !important;
+}
+
+.kbd-shortcuts-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+}
+
+.kbd-shortcuts-modal__panel {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 26rem;
+  max-height: min(90vh, 36rem);
+  overflow: auto;
+  padding: var(--space-3);
+  border-radius: var(--radius-card);
+  border: 4px solid var(--ghost-orange);
+  background: linear-gradient(165deg, #12182a 0%, #070b14 100%);
+  box-shadow:
+    0 0 0 2px rgba(255, 156, 45, 0.4),
+    0 0 36px rgba(255, 156, 45, 0.15),
+    0 16px 48px rgba(0, 0, 0, 0.65);
+}
+
+.kbd-shortcuts-modal__title {
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-marquee);
+  font-size: 0.55rem;
+  font-weight: 400;
+  line-height: 1.9;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--pac-yellow);
+  text-shadow:
+    0 0 14px rgba(255, 204, 0, 0.55),
+    2px 2px 0 rgba(255, 126, 185, 0.35);
+}
+
+.kbd-shortcuts-modal__list {
+  list-style: none;
+  margin: 0 0 var(--space-2);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.kbd-shortcuts-modal__item {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+  gap: var(--space-2);
+  align-items: start;
+  padding: 8px var(--space-1);
+  border-radius: var(--radius-pill);
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 156, 45, 0.22);
+}
+
+.kbd-shortcuts-modal__keys {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-width: 6.5rem;
+}
+
+.kbd-shortcuts-modal__plus {
+  font-size: 0.85rem;
+  color: var(--muted);
+  user-select: none;
+}
+
+.kbd-shortcuts-modal__desc {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.38;
+  color: var(--ink);
+}
+
+.kbd-shortcuts-modal__footnote {
+  margin: 0 0 var(--space-2);
+  font-size: 0.88rem;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+/* Word detail popup (progress / saved lists) — see-mode style */
+.word-peek-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10058;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2);
+}
+
+.word-peek-modal[hidden] {
+  display: none !important;
+}
+
+.word-peek-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+}
+
+.word-peek-modal__flashcard {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 24rem;
+  margin: 0;
+}
+
+.word-peek-modal__surface {
+  min-height: 7.5rem;
+}
+
+.word-peek-modal__surface .flashcard__word {
+  margin-bottom: var(--space-1);
+}
+
+.word-peek-modal__close {
+  width: 100%;
+  margin-top: var(--space-2);
+}
+
+.saved-list__item--action {
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.08s ease;
+}
+
+.saved-list__item--action:hover {
+  border-color: rgba(255, 204, 51, 0.55);
+  background: rgba(20, 32, 28, 0.95);
+}
+
+.saved-list__item--action:focus {
+  outline: none;
+}
+
+.saved-list__item--action:focus-visible {
+  border-color: var(--crt-amber);
+  box-shadow: 0 0 0 2px rgba(255, 204, 51, 0.35);
+}
+
+.progress-grid__row--action {
+  cursor: pointer;
+}
+
+.progress-grid__row--action:focus {
+  outline: none;
+}
+
+.progress-grid__row--action:focus-visible {
+  border-color: rgba(95, 250, 138, 0.55);
+  box-shadow: 0 0 0 2px rgba(95, 250, 138, 0.25);
+}
+
 /* —— Control bar (2×2 narrow, one row on wide screens) —— */
 .control-bar {
   display: grid;

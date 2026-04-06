@@ -149,6 +149,30 @@
     return bits.join(" · ");
   }
 
+  /** Meta line for the word-detail popup (see-style, not tied to study mode). */
+  function describeWordPeekMeta(item) {
+    if (!item) return "";
+    var bits = [];
+    if (item.wordType) bits.push(item.wordType);
+    bits.push("Lv " + item.difficulty);
+    var en = getQuizEntry(item.word);
+    if (en.quizzed > 0) {
+      bits.push(
+        "Quiz: " +
+          en.right +
+          " right · " +
+          en.wrong +
+          " wrong · " +
+          en.quizzed +
+          " rounds"
+      );
+    } else {
+      bits.push("No quiz stats yet");
+    }
+    if (item.chinese) bits.push(item.chinese);
+    return bits.join(" · ");
+  }
+
   function randomMissingIndex(word) {
     if (!word.length) return 0;
     return Math.floor(Math.random() * word.length);
@@ -643,6 +667,34 @@
     return d[w] || { quizzed: 0, right: 0, wrong: 0 };
   }
 
+  function findWordItemByText(word) {
+    var lc = String(word || "")
+      .trim()
+      .toLowerCase();
+    if (!lc) return null;
+    var i;
+    for (i = 0; i < allWords.length; i++) {
+      if (allWords[i].word === lc) return allWords[i];
+    }
+    return {
+      word: lc,
+      emoji: "",
+      chinese: "",
+      type: "",
+      wordType: "",
+      gradeLevel: "",
+      difficulty: EASY_DIFFICULTY_MAX,
+    };
+  }
+
+  function findWordItemByEntryKey(entryKey) {
+    var i;
+    for (i = 0; i < allWords.length; i++) {
+      if (wordEntryKey(allWords[i]) === entryKey) return allWords[i];
+    }
+    return null;
+  }
+
   var favoriteSet = {};
 
   function loadFavoritesIntoMemory() {
@@ -692,7 +744,10 @@
     for (var j = 0; j < rows.length; j++) {
       var w = rows[j];
       var li = document.createElement("li");
-      li.className = "saved-list__item";
+      li.className = "saved-list__item saved-list__item--action";
+      li.setAttribute("role", "button");
+      li.setAttribute("tabindex", "0");
+      li.dataset.entryKey = wordEntryKey(w);
       var title = document.createElement("p");
       title.className = "saved-list__word";
       title.textContent = w.word;
@@ -747,7 +802,10 @@
     for (var i = 0; i < rows.length; i++) {
       var r = rows[i];
       var li = document.createElement("li");
-      li.className = "progress-grid__row";
+      li.className = "progress-grid__row progress-grid__row--action";
+      li.setAttribute("role", "button");
+      li.setAttribute("tabindex", "0");
+      li.dataset.word = r.word;
 
       var attempts = r.right + r.wrong;
       var pctGreen = 0;
@@ -947,6 +1005,165 @@
   var elSetModalList = document.getElementById("set-modal-list");
   var elSetModalClose = document.getElementById("set-modal-close");
   var elSetModalBackdrop = document.getElementById("set-modal-backdrop");
+  var elKbdShortcutsModal = document.getElementById("kbd-shortcuts-modal");
+  var elKbdShortcutsBackdrop = document.getElementById(
+    "kbd-shortcuts-modal-backdrop"
+  );
+  var elKbdShortcutsClose = document.getElementById("kbd-shortcuts-close");
+  var elKbdShortcutsList = document.getElementById("kbd-shortcuts-list");
+  var elKbdShortcutsFootnote = document.getElementById(
+    "kbd-shortcuts-footnote"
+  );
+  var elWordPeekModal = document.getElementById("word-peek-modal");
+  var elWordPeekBackdrop = document.getElementById("word-peek-modal-backdrop");
+  var elWordPeekClose = document.getElementById("word-peek-close");
+  var elWordPeekFavorite = document.getElementById("word-peek-favorite");
+  var elWordPeekSpeak = document.getElementById("word-peek-speak");
+  var elWordPeekEmoji = document.getElementById("word-peek-emoji");
+  var elWordPeekWord = document.getElementById("word-peek-word");
+  var elWordPeekMeta = document.getElementById("word-peek-meta");
+  var wordPeekItem = null;
+
+  function kbdShortcutsAppendPlus(keysEl) {
+    var plus = document.createElement("span");
+    plus.className = "kbd-shortcuts-modal__plus";
+    plus.textContent = "+";
+    keysEl.appendChild(plus);
+  }
+
+  function kbdShortcutsAppendKeyRow(keysEl, parts) {
+    var i;
+    for (i = 0; i < parts.length; i++) {
+      if (i > 0) kbdShortcutsAppendPlus(keysEl);
+      var k = document.createElement("kbd");
+      k.className = "kbd-chip";
+      k.textContent = parts[i];
+      keysEl.appendChild(k);
+    }
+  }
+
+  function appendKbdShortcutsRow(listEl, keyParts, desc) {
+    var li = document.createElement("li");
+    li.className = "kbd-shortcuts-modal__item";
+    var keysWrap = document.createElement("div");
+    keysWrap.className = "kbd-shortcuts-modal__keys";
+    kbdShortcutsAppendKeyRow(keysWrap, keyParts);
+    var p = document.createElement("p");
+    p.className = "kbd-shortcuts-modal__desc";
+    p.textContent = desc;
+    li.appendChild(keysWrap);
+    li.appendChild(p);
+    listEl.appendChild(li);
+  }
+
+  function fillKbdShortcutsModalOnce() {
+    if (!elKbdShortcutsList || elKbdShortcutsList.dataset.filled) return;
+    elKbdShortcutsList.dataset.filled = "1";
+    appendKbdShortcutsRow(
+      elKbdShortcutsList,
+      ["Shift", "?"],
+      "Show or hide this list (Shift + the key that types “?”)."
+    );
+    appendKbdShortcutsRow(
+      elKbdShortcutsList,
+      ["Esc"],
+      "Close this list when it is open."
+    );
+    appendKbdShortcutsRow(
+      elKbdShortcutsList,
+      ["Enter"],
+      "See mode: next card. Quiz / Type word: submit (or move focus to the letter box if it is empty)."
+    );
+    appendKbdShortcutsRow(
+      elKbdShortcutsList,
+      ["1", "2", "3"],
+      "Quiz with Pick letter on: choose the matching big button."
+    );
+    appendKbdShortcutsRow(
+      elKbdShortcutsList,
+      ["A–Z"],
+      "Same Pick-letter mode: type the missing letter when focus is not in a different text field."
+    );
+    appendKbdShortcutsRow(
+      elKbdShortcutsList,
+      ["Ctrl", "S"],
+      "Save or unsave this word (star)."
+    );
+    appendKbdShortcutsRow(
+      elKbdShortcutsList,
+      ["Ctrl", "T"],
+      "Hear the word (speaker). If a new browser tab opens, use the speaker button."
+    );
+    appendKbdShortcutsRow(
+      elKbdShortcutsList,
+      ["Ctrl", "P"],
+      "Peek, when the Peek button shows. If the print dialog opens, use Peek on screen."
+    );
+    if (elKbdShortcutsFootnote) {
+      elKbdShortcutsFootnote.textContent =
+        "These use the Control (Ctrl) key — same key on Windows, Mac, and Linux.";
+    }
+  }
+
+  function isKbdShortcutsModalOpen() {
+    return elKbdShortcutsModal && !elKbdShortcutsModal.hidden;
+  }
+
+  function openKbdShortcutsModal() {
+    if (!elKbdShortcutsModal) return;
+    closeWordPeekModal();
+    elKbdShortcutsModal.hidden = false;
+    if (elKbdShortcutsClose) elKbdShortcutsClose.focus();
+  }
+
+  function closeKbdShortcutsModal() {
+    if (elKbdShortcutsModal) elKbdShortcutsModal.hidden = true;
+  }
+
+  function toggleKbdShortcutsModal() {
+    if (isKbdShortcutsModalOpen()) closeKbdShortcutsModal();
+    else openKbdShortcutsModal();
+  }
+
+  function isWordPeekModalOpen() {
+    return elWordPeekModal && !elWordPeekModal.hidden;
+  }
+
+  function updateWordPeekFavoriteButton() {
+    if (!elWordPeekFavorite) return;
+    if (!wordPeekItem) {
+      elWordPeekFavorite.disabled = true;
+      return;
+    }
+    elWordPeekFavorite.disabled = false;
+    var onF = !!favoriteSet[wordEntryKey(wordPeekItem)];
+    elWordPeekFavorite.classList.toggle("flashcard__tool--on", onF);
+    elWordPeekFavorite.textContent = onF ? "\u2B50" : "\u2606";
+    elWordPeekFavorite.setAttribute("aria-pressed", onF ? "true" : "false");
+    elWordPeekFavorite.setAttribute(
+      "aria-label",
+      onF ? "Remove from saved words" : "Save word"
+    );
+  }
+
+  function closeWordPeekModal() {
+    wordPeekItem = null;
+    if (elWordPeekModal) elWordPeekModal.hidden = true;
+    if (elWordPeekFavorite) elWordPeekFavorite.disabled = true;
+  }
+
+  function openWordPeekModal(item) {
+    if (!item || !elWordPeekModal) return;
+    closeKbdShortcutsModal();
+    wordPeekItem = item;
+    if (elWordPeekEmoji) elWordPeekEmoji.textContent = item.emoji || "";
+    if (elWordPeekWord) elWordPeekWord.textContent = item.word || "";
+    if (elWordPeekMeta) elWordPeekMeta.textContent = describeWordPeekMeta(item);
+    elWordPeekModal.hidden = false;
+    updateWordPeekFavoriteButton();
+    if (elWordPeekSpeak) elWordPeekSpeak.disabled = false;
+    if (elWordPeekClose) elWordPeekClose.focus();
+  }
 
   function abortActiveSet() {
     if (!setModeActive) {
@@ -1040,6 +1257,8 @@
       li.appendChild(tag);
       elSetModalList.appendChild(li);
     }
+    closeKbdShortcutsModal();
+    closeWordPeekModal();
     elSetModal.hidden = false;
   }
 
@@ -2123,29 +2342,46 @@
     renderCard(false);
   }
 
-  function onFavoriteTap(e) {
-    if (e) e.preventDefault();
-    if (setModeActive) abortActiveSet();
-    if (!current) return;
-    var k = wordEntryKey(current);
+  function toggleFavoriteKey(k) {
     var wasOn = !!favoriteSet[k];
     if (wasOn) delete favoriteSet[k];
     else favoriteSet[k] = true;
     persistFavorites();
     updateFavoriteButton();
     refreshFavoritePanel();
+    if (isWordPeekModalOpen()) updateWordPeekFavoriteButton();
     if (deckScope === "favorites") {
       rebuildPool();
       applyPoolHint();
       if (!pool.length) {
         current = null;
-      } else if (wasOn) {
+      } else if (wasOn && current && wordEntryKey(current) === k) {
         current = shufflePickDifferent(pool, null);
         prepareRound();
       }
       renderCard(true);
     }
     updateSetBar();
+  }
+
+  function onFavoriteTap(e) {
+    if (e) e.preventDefault();
+    if (setModeActive) abortActiveSet();
+    if (!current) return;
+    toggleFavoriteKey(wordEntryKey(current));
+  }
+
+  function onWordPeekFavoriteTap(e) {
+    if (e) e.preventDefault();
+    if (!wordPeekItem) return;
+    if (setModeActive) abortActiveSet();
+    toggleFavoriteKey(wordEntryKey(wordPeekItem));
+  }
+
+  function onWordPeekSpeak(e) {
+    if (e) e.preventDefault();
+    if (!wordPeekItem) return;
+    speakWord(wordPeekItem.word, true);
   }
 
   function onHearWord(e) {
@@ -2240,9 +2476,83 @@
   }
 
   function onGlobalKeydown(e) {
-    if (!current) return;
     if (elLoadError && elLoadError.hidden === false) return;
     var tag = (e.target && e.target.tagName) || "";
+
+    var shiftQuestion =
+      e.key === "?" ||
+      (e.key === "/" && e.shiftKey) ||
+      (e.code === "Slash" && e.shiftKey);
+
+    if (shiftQuestion) {
+      if (tag === "TEXTAREA") return;
+      e.preventDefault();
+      toggleKbdShortcutsModal();
+      return;
+    }
+
+    if (isKbdShortcutsModalOpen()) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        closeKbdShortcutsModal();
+      }
+      return;
+    }
+
+    if (isWordPeekModalOpen()) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        closeWordPeekModal();
+        return;
+      }
+      var modPeek = e.ctrlKey && !e.altKey && !e.shiftKey;
+      if (modPeek && wordPeekItem) {
+        var sk = String(e.key || "").toLowerCase();
+        if (sk === "s") {
+          if (tag === "TEXTAREA") return;
+          e.preventDefault();
+          onWordPeekFavoriteTap(null);
+          return;
+        }
+        if (sk === "t") {
+          if (tag === "TEXTAREA") return;
+          e.preventDefault();
+          onWordPeekSpeak(null);
+          return;
+        }
+      }
+      return;
+    }
+
+    var mod = e.ctrlKey && !e.altKey && !e.shiftKey;
+    if (mod) {
+      var shortKey = String(e.key || "").toLowerCase();
+      if (shortKey === "s" || shortKey === "t" || shortKey === "p") {
+        if (tag === "TEXTAREA") return;
+        if (shortKey === "s") {
+          if (!current) return;
+          e.preventDefault();
+          onFavoriteTap(null);
+          return;
+        }
+        if (shortKey === "t") {
+          if (!current || !elSpeak || elSpeak.disabled) return;
+          e.preventDefault();
+          onHearWord(null);
+          return;
+        }
+        if (shortKey === "p") {
+          if (!current || !elCheat || elCheat.hidden || elCheat.disabled) {
+            return;
+          }
+          e.preventDefault();
+          onCheat(null);
+          return;
+        }
+      }
+    }
+
+    if (!current) return;
 
     if (
       studyMode === "quiz" &&
@@ -2343,10 +2653,83 @@
     });
   }
 
+  function wireWordPeekListHandlersOnce() {
+    var favList = document.getElementById("favorites-list");
+    if (favList && !favList.dataset.peekBound) {
+      favList.dataset.peekBound = "1";
+      favList.addEventListener("click", function (e) {
+        var li = e.target && e.target.closest(".saved-list__item");
+        if (!li || !li.dataset.entryKey) return;
+        var item = findWordItemByEntryKey(li.dataset.entryKey);
+        if (!item) {
+          var w0 = li.dataset.entryKey.split("|")[0];
+          if (w0) item = findWordItemByText(w0);
+        }
+        if (item) openWordPeekModal(item);
+      });
+      favList.addEventListener("keydown", function (e) {
+        if (e.key !== "Enter" && e.key !== " ") return;
+        var li = e.target && e.target.closest(".saved-list__item");
+        if (!li || !li.dataset.entryKey) return;
+        if (e.key === " ") e.preventDefault();
+        var item = findWordItemByEntryKey(li.dataset.entryKey);
+        if (!item) {
+          var w1 = li.dataset.entryKey.split("|")[0];
+          if (w1) item = findWordItemByText(w1);
+        }
+        if (item) openWordPeekModal(item);
+      });
+    }
+    var revList = document.getElementById("review-list");
+    if (revList && !revList.dataset.peekBound) {
+      revList.dataset.peekBound = "1";
+      revList.addEventListener("click", function (e) {
+        var li = e.target && e.target.closest(".progress-grid__row");
+        if (!li || li.dataset.word == null || li.dataset.word === "") return;
+        openWordPeekModal(findWordItemByText(li.dataset.word));
+      });
+      revList.addEventListener("keydown", function (e) {
+        if (e.key !== "Enter" && e.key !== " ") return;
+        var li = e.target && e.target.closest(".progress-grid__row");
+        if (!li || li.dataset.word == null || li.dataset.word === "") return;
+        if (e.key === " ") e.preventDefault();
+        openWordPeekModal(findWordItemByText(li.dataset.word));
+      });
+    }
+  }
+
   function bind() {
     initSpeechSynthesis();
     wireSpeechUserActivationOnce();
     wireSfxUnlockOnce();
+
+    fillKbdShortcutsModalOnce();
+    if (elKbdShortcutsClose) {
+      elKbdShortcutsClose.addEventListener("click", function (e) {
+        if (e) e.preventDefault();
+        closeKbdShortcutsModal();
+      });
+    }
+    if (elKbdShortcutsBackdrop) {
+      elKbdShortcutsBackdrop.addEventListener("click", closeKbdShortcutsModal);
+    }
+
+    if (elWordPeekClose) {
+      elWordPeekClose.addEventListener("click", function (e) {
+        if (e) e.preventDefault();
+        closeWordPeekModal();
+      });
+    }
+    if (elWordPeekBackdrop) {
+      elWordPeekBackdrop.addEventListener("click", closeWordPeekModal);
+    }
+    if (elWordPeekFavorite) {
+      elWordPeekFavorite.addEventListener("click", onWordPeekFavoriteTap);
+    }
+    if (elWordPeekSpeak) {
+      elWordPeekSpeak.addEventListener("click", onWordPeekSpeak);
+    }
+    wireWordPeekListHandlersOnce();
 
     if (elDifficulty) {
       elDifficulty.addEventListener("change", onDifficultyChange);
