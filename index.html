@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta
     name="description"
-    content="Kids Space — pick a game: typing practice or times table quiz. No install."
+    content="Kids Space — word flashcards, typing practice, and times table. No install."
   />
   <title>Kids Space — choose a game</title>
   <style>
@@ -16,6 +16,7 @@
       --card: #fffefb;
       --accent-typing: #0d9488;
       --accent-math: #ea580c;
+      --accent-words: #15803d;
       --shadow: 0 8px 30px rgba(28, 25, 23, 0.08);
       --radius: 16px;
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, sans-serif;
@@ -80,6 +81,13 @@
     .games a.math:focus-visible {
       outline-color: var(--accent-math);
     }
+    .games a.words:focus-visible {
+      outline-color: var(--accent-words);
+    }
+    .badge-words {
+      background: rgba(21, 128, 61, 0.15);
+      color: #166534;
+    }
     .game-title {
       font-size: 1.2rem;
       font-weight: 650;
@@ -135,6 +143,18 @@
 
     <nav aria-label="Games">
       <ul class="games">
+        <li>
+          <a class="words" href="flashcards/index.html">
+            <p class="game-title">
+              <span class="emoji" aria-hidden="true">🃏</span>
+              Word flashcards
+              <span class="badge badge-words">See · quiz · type</span>
+            </p>
+            <p class="game-desc">
+              Hear words, fill one-letter gaps, or spell the whole word — scores, streaks, and optional 10-card sets.
+            </p>
+          </a>
+        </li>
         <li>
           <a href="typing_practice/index.html">
             <p class="game-title">
