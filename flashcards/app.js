@@ -201,6 +201,12 @@
    */
   var LS_TYPING_EN_VOICE = "typingPracticeEnVoiceURI";
 
+  /** Chrome often won’t speak until the user has interacted with the page; auto-speak timers fire too early. */
+  var speechUserEverActivated = false;
+  var speechActivationWired = false;
+  /** { kind: 'word' | 'letters', text: string } — replay after first tap/key. */
+  var pendingSpeech = null;
+
   function listEnglishVoices() {
     if (!window.speechSynthesis) return [];
     try {
@@ -250,6 +256,11 @@
       if (l.indexOf("en-us") === 0 || l === "en_us") us.push(pool0[i]);
     }
     var pool = us.length ? us : pool0;
+    var localPrefer = [];
+    for (i = 0; i < pool.length; i++) {
+      if (pool[i].localService !== false) localPrefer.push(pool[i]);
+    }
+    if (localPrefer.length) pool = localPrefer;
     var keys = [
       "samantha",
       "aaron",
@@ -316,20 +327,88 @@
     }
   }
 
-  /** Chrome / Firefox often stay silent with u.voice set; Safari tolerates it better. */
-  function shouldBindExplicitSpeechVoice() {
-    var ua = typeof navigator !== "undefined" ? navigator.userAgent || "" : "";
-    if (/Firefox\//i.test(ua)) return false;
-    if (/Chrome|Chromium|OPR|EdgA|EdgiOS|CriOS|FxiOS|Edg\//i.test(ua)) {
-      return false;
+  /**
+   * Chrome often returns an empty voice list on the first getVoices() call; speaking then
+   * can do nothing. Waits for voiceschanged (with a timeout) then runs fn — same idea as
+   * typing_practice voice pickers.
+   */
+  function runWhenSpeechVoicesReady(fn) {
+    if (!window.speechSynthesis || typeof fn !== "function") return;
+    try {
+      speechSynthesis.getVoices();
+    } catch (e) {}
+    var list = speechSynthesis.getVoices() || [];
+    if (list.length > 0) {
+      fn();
+      return;
     }
-    return true;
+    var done = false;
+    var tMax = window.setTimeout(function () {
+      finish();
+    }, 2800);
+    function finish() {
+      if (done) return;
+      done = true;
+      try {
+        window.clearTimeout(tMax);
+      } catch (e2) {}
+      try {
+        speechSynthesis.removeEventListener("voiceschanged", onVc);
+      } catch (e3) {}
+      fn();
+    }
+    function onVc() {
+      var again = speechSynthesis.getVoices() || [];
+      if (again.length > 0) finish();
+    }
+    try {
+      speechSynthesis.addEventListener("voiceschanged", onVc);
+    } catch (e4) {
+      window.setTimeout(fn, 0);
+    }
   }
 
+  function wireSpeechUserActivationOnce() {
+    if (speechActivationWired) return;
+    speechActivationWired = true;
+    function onFirstInteraction() {
+      if (speechUserEverActivated) return;
+      speechUserEverActivated = true;
+      document.removeEventListener("pointerdown", onFirstInteraction, true);
+      document.removeEventListener("keydown", onFirstInteractionDrill, true);
+      try {
+        speechSynthesis.getVoices();
+      } catch (e) {}
+      if (pendingSpeech && window.speechSynthesis) {
+        var p = pendingSpeech;
+        pendingSpeech = null;
+        if (p.kind === "letters") speakWordLetters(p.text, true);
+        else speakWord(p.text, true);
+      }
+    }
+    function onFirstInteractionDrill(e) {
+      var ign =
+        e &&
+        (e.metaKey ||
+          e.ctrlKey ||
+          e.altKey ||
+          (e.key && e.key.length > 1 && e.key !== " "));
+      if (ign) return;
+      onFirstInteraction();
+    }
+    document.addEventListener("pointerdown", onFirstInteraction, {
+      capture: true,
+      passive: true,
+    });
+    document.addEventListener("keydown", onFirstInteractionDrill, {
+      capture: true,
+      passive: true,
+    });
+  }
+
+  /** Match typing_practice: set explicit en voice when available (Chrome is reliable with this). */
   function applyEnglishVoice(u) {
     if (!u) return;
-    u.lang = "en-US";
-    if (!shouldBindExplicitSpeechVoice()) return;
     var v = resolveEnglishVoice();
     if (v) {
       try {
@@ -338,49 +417,96 @@
       } catch (e) {
         u.lang = "en-US";
       }
+    } else {
+      u.lang = "en-US";
     }
   }
 
-  var SPEAK_AFTER_CANCEL_MS = 50;
+  /** Slightly after cancel() so Chrome/Edge don’t drop the utterance. */
+  var SPEAK_AFTER_CANCEL_MS = 120;
 
-  function speakWord(text) {
+  function speakWord(text, userInitiated) {
     if (!text || !window.speechSynthesis) return;
+    userInitiated = userInitiated === true;
+    wireSpeechUserActivationOnce();
+    if (userInitiated) {
+      pendingSpeech = null;
+    } else if (!speechUserEverActivated) {
+      pendingSpeech = { kind: "word", text: text };
+    }
     try {
-      speechSynthesis.getVoices();
       if (speechSynthesis.paused) speechSynthesis.resume();
     } catch (e) {}
-    speechSynthesis.cancel();
-    window.setTimeout(function () {
-      try {
-        var u = new SpeechSynthesisUtterance(text);
-        applyEnglishVoice(u);
-        u.rate = 0.9;
-        u.volume = 1;
-        u.pitch = 1;
-        speechSynthesis.speak(u);
-      } catch (e) {}
-    }, SPEAK_AFTER_CANCEL_MS);
+    try {
+      if (speechSynthesis.speaking || speechSynthesis.pending) {
+        speechSynthesis.cancel();
+      }
+    } catch (e1) {}
+    runWhenSpeechVoicesReady(function () {
+      window.setTimeout(function () {
+        try {
+          var u = new SpeechSynthesisUtterance(text);
+          applyEnglishVoice(u);
+          u.rate = 0.9;
+          u.volume = 1;
+          u.pitch = 1;
+          u.onerror = function () {
+            try {
+              var u2 = new SpeechSynthesisUtterance(text);
+              u2.lang = "en-US";
+              u2.rate = 0.9;
+              u2.volume = 1;
+              u2.pitch = 1;
+              speechSynthesis.speak(u2);
+            } catch (e3) {}
+          };
+          speechSynthesis.speak(u);
+        } catch (e2) {}
+      }, SPEAK_AFTER_CANCEL_MS);
+    });
   }
 
   /** Letter-by-letter (after peek/cheat only — not on normal quiz hear). */
-  function speakWordLetters(word) {
+  function speakWordLetters(word, userInitiated) {
     if (!word || !window.speechSynthesis) return;
+    userInitiated = userInitiated === true;
+    wireSpeechUserActivationOnce();
+    if (userInitiated) {
+      pendingSpeech = null;
+    } else if (!speechUserEverActivated) {
+      pendingSpeech = { kind: "letters", text: word };
+    }
     var spaced = word.toLowerCase().split("").join(" ");
     try {
-      speechSynthesis.getVoices();
       if (speechSynthesis.paused) speechSynthesis.resume();
     } catch (e) {}
-    speechSynthesis.cancel();
-    window.setTimeout(function () {
-      try {
-        var u = new SpeechSynthesisUtterance(spaced);
-        applyEnglishVoice(u);
-        u.rate = 0.78;
-        u.volume = 1;
-        u.pitch = 1;
-        speechSynthesis.speak(u);
-      } catch (e) {}
-    }, SPEAK_AFTER_CANCEL_MS);
+    try {
+      if (speechSynthesis.speaking || speechSynthesis.pending) {
+        speechSynthesis.cancel();
+      }
+    } catch (e1) {}
+    runWhenSpeechVoicesReady(function () {
+      window.setTimeout(function () {
+        try {
+          var u = new SpeechSynthesisUtterance(spaced);
+          applyEnglishVoice(u);
+          u.rate = 0.78;
+          u.volume = 1;
+          u.pitch = 1;
+          u.onerror = function () {
+            try {
+              var u2 = new SpeechSynthesisUtterance(spaced);
+              u2.lang = "en-US";
+              u2.rate = 0.78;
+              u2.volume = 1;
+              u2.pitch = 1;
+              speechSynthesis.speak(u2);
+            } catch (e3) {}
+          };
+          speechSynthesis.speak(u);
+        } catch (e2) {}
+      }, SPEAK_AFTER_CANCEL_MS);
+    });
   }
 
   function isHttpProto() {
@@ -768,20 +894,20 @@
       pronounceAfterCardTimer = null;
     }
     if (studyMode === "quiz" || studyMode === "typeall") {
-      if (fromUserTap) speakWord(current.word);
+      if (fromUserTap) speakWord(current.word, true);
       else {
         pronounceAfterCardTimer = window.setTimeout(function () {
           pronounceAfterCardTimer = null;
-          if (current && isTypingMode()) speakWord(current.word);
+          if (current && isTypingMode()) speakWord(current.word, false);
         }, 140);
       }
       return;
     }
-    if (fromUserTap) speakWord(current.word);
+    if (fromUserTap) speakWord(current.word, true);
     else {
       pronounceAfterCardTimer = window.setTimeout(function () {
         pronounceAfterCardTimer = null;
-        if (current) speakWord(current.word);
+        if (current) speakWord(current.word, false);
       }, 100);
     }
   }
@@ -1276,7 +1402,7 @@
 
   function announceTrophy(level) {
     setFeedback("New trophy unlocked (x" + level + ")", "trophy");
-    speakWord("You earned a trophy! Awesome!");
+    speakWord("You earned a trophy! Awesome!", true);
   }
 
   function awardQuizPoints(delta) {
@@ -1777,7 +1903,7 @@
   function onHearWord(e) {
     if (e) e.preventDefault();
     if (!current) return;
-    speakWord(current.word);
+    speakWord(current.word, true);
   }
 
   function onNextCard(e) {
@@ -1798,11 +1924,11 @@
       var letter = current.word.charAt(missingIndex);
       elSpellInput.value = letter;
       onSpellInputLive();
-      speakWordLetters(current.word);
+      speakWordLetters(current.word, true);
     } else {
       elSpellInput.value = current.word;
       onSpellInputLiveTypeAll();
-      speakWordLetters(current.word);
+      speakWordLetters(current.word, true);
     }
     elSpellInput.focus();
   }
@@ -1918,6 +2044,7 @@
 
   function bind() {
     initSpeechSynthesis();
+    wireSpeechUserActivationOnce();
 
     if (elDifficulty) {
       elDifficulty.addEventListener("change", onDifficultyChange);
