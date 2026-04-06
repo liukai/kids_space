@@ -78,29 +78,32 @@
     return out;
   }
 
-  /** Unique { value: type slug, label: wordType } sorted by label. */
+  /** Unique { value: "type|wordType", label: wordType } so phonics splits Blend vs Digraph. */
   function wordTypeOptionsFromItems(items) {
-    var byType = {};
+    var seen = {};
+    var pairs = [];
     var i;
-    var k;
     for (i = 0; i < items.length; i++) {
       var w = items[i];
       var t = w.type != null ? String(w.type).trim() : "";
       if (!t) continue;
-      if (!byType[t]) {
-        byType[t] = w.wordType ? String(w.wordType) : t;
-      }
-    }
-    var pairs = [];
-    for (k in byType) {
-      if (Object.prototype.hasOwnProperty.call(byType, k)) {
-        pairs.push({ value: k, label: byType[k] });
-      }
+      var wt = w.wordType ? String(w.wordType).trim() : t;
+      var key = t + "|" + wt;
+      if (seen[key]) continue;
+      seen[key] = true;
+      pairs.push({ value: key, label: wt });
     }
     pairs.sort(function (a, b) {
       return a.label.localeCompare(b.label);
     });
     return pairs;
+  }
+
+  function typeSlugFromWordTypeOptionValue(val) {
+    var s = String(val || "");
+    var bar = s.indexOf("|");
+    if (bar === -1) return s;
+    return s.slice(0, bar);
   }
 
   /**
@@ -173,6 +176,7 @@
       phonics: "\ud83d\udd0a",
       sight: "\u2764\ufe0f",
       advanced: "\ud83c\udf93",
+      basic: "\ud83d\udce6",
       "basic-food": "\ud83c\udf4e",
       "basic-things": "\ud83d\udce6",
       "basic-nature": "\ud83c\udf3f",
@@ -210,7 +214,7 @@
     if (!item) return "";
     var bits = [];
     var label = formatWordTypeLabel(item);
-    var em = wordCategoryEmoji(item.type);
+    var em = wordCategoryEmoji(String(item.type != null ? item.type : "").trim());
     bits.push(label ? em + " " + label : em);
     var gl = String(item.gradeLevel != null ? item.gradeLevel : "").trim();
     if (gl) bits.push("Gr " + gl);
@@ -2678,9 +2682,18 @@
         ? allWords.slice()
         : filterByGradeCap(allWords, gradeFilterCap);
     if (wordTypeScope !== "all") {
-      pool = pool.filter(function (w) {
-        return w.type === wordTypeScope;
-      });
+      var bar = wordTypeScope.indexOf("|");
+      if (bar !== -1) {
+        var typ = wordTypeScope.slice(0, bar);
+        var wtyp = wordTypeScope.slice(bar + 1);
+        pool = pool.filter(function (w) {
+          return w.type === typ && String(w.wordType) === wtyp;
+        });
+      } else {
+        pool = pool.filter(function (w) {
+          return w.type === wordTypeScope;
+        });
+      }
     }
     if (deckScope === "favorites") {
       pool = pool.filter(function (w) {
@@ -2740,7 +2753,10 @@
       var o = options[i];
       var opt = document.createElement("option");
       opt.value = o.value;
-      opt.textContent = wordCategoryEmoji(o.value) + " " + o.label;
+      opt.textContent =
+        wordCategoryEmoji(typeSlugFromWordTypeOptionValue(o.value)) +
+        " " +
+        o.label;
       elWordType.appendChild(opt);
     }
   }
