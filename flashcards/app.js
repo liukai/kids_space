@@ -14,15 +14,18 @@
   var LS_STREAK = "flashcardQuizStreak_v1";
   var LS_FAVORITES = "flashcardFavorites_v1";
   var TROPHY_EVERY = 20;
-  /** Quiz / type-all: fixed queue of this many cards when “Start 10” is used. */
-  var SET_LEN = 10;
+  /** Quiz / type-all: chomper strip refills after this many correct answers in a row (per session). */
+  var QUIZ_CYCLE_LEN = 10;
   /** Optional PNG for the pellet-strip chomper (see assets/set-maze/ASSET-SPEC.txt). */
   var SET_MAZE_CHOMPER_SRC = "assets/set-maze/chomper.png";
   /** Pellet “food” in the strip (sun); chomper moves left → right eating these. */
   var SET_PELLET_GLYPH = "\u2600\uFE0F";
-  /** Chomper visual scale in the strip: starts at MIN, reaches MAX after SET_LEN correct (curve in `chomperScaleFromCorrectCount`). */
+  /** Filled trail slots: clean correct ✖️ vs peek or skip ⭕. */
+  var MAZE_MARK_CROSS = "\u2716\uFE0F";
+  var MAZE_MARK_CIRCLE = "\u2B55\uFE0F";
+  /** Chomper visual scale from clean-correct trail marks only (✖), not skip/peek (⭕); curve in `chomperScaleFromCorrectCount`. */
   var CHOMPER_SCALE_MIN = 0.5;
-  var CHOMPER_SCALE_MAX = 2;
+  var CHOMPER_SCALE_MAX = 1.5;
 
   function chomperImageAbsUrl() {
     if (typeof URL === "undefined" || !document.baseURI) return SET_MAZE_CHOMPER_SRC;
@@ -39,6 +42,21 @@
     var d = item.difficulty;
     if (typeof d === "number" && !isNaN(d) && d > 0) return Math.round(d);
     return EASY_DIFFICULTY_MAX;
+  }
+
+  /** Match progress / favorites rows to the deck entry (first match by orthography). */
+  function findWordItem(word) {
+    if (!word || !allWords || !allWords.length) return null;
+    var i;
+    for (i = 0; i < allWords.length; i++) {
+      if (allWords[i].word === word) return allWords[i];
+    }
+    return null;
+  }
+
+  function formatQuizPointsLabel(item) {
+    var n = quizPointsForItem(item);
+    return n === 1 ? "1 pt" : String(n) + " pts";
   }
 
   function normalizeWordList(raw) {
@@ -234,6 +252,7 @@
     bits.push(label ? em + " " + label : em);
     var gl = String(item.gradeLevel != null ? item.gradeLevel : "").trim();
     if (gl) bits.push("Gr " + gl);
+    bits.push(formatQuizPointsLabel(item));
     if (item.chinese) bits.push(item.chinese);
     return bits.join(" \u00b7 ");
   }
@@ -276,24 +295,6 @@
       arr[j] = t;
     }
     return arr;
-  }
-
-  /** Fill SET_LEN slots by cycling a shuffled pool (fair mix when deck is small). */
-  function buildSetQueue(pool) {
-    var out = [];
-    if (!pool.length) return out;
-    var bag = [];
-    var k = 0;
-    while (out.length < SET_LEN) {
-      if (k >= bag.length) {
-        bag = pool.slice();
-        shuffleInPlace(bag);
-        k = 0;
-      }
-      out.push(bag[k]);
-      k++;
-    }
-    return out;
   }
 
   /**
@@ -842,11 +843,12 @@
     saveQuizDetail(d);
     quizStreak = 0;
     saveStreak(0);
-    if (setModeActive) {
-      setHadWrongOnCard = true;
-      setBombCount++;
-      pulseSetBarForBomb();
-      updateSetBar();
+    if (isTypingMode()) {
+      cycleHadWrongOnCard = true;
+      quizCycleBombCount++;
+      pulseCycleMazeForBomb();
+      updateQuizCycleUi();
+      playCycleSunMissAnimation();
     }
     updateScoreUi();
     maybeRefreshCardQuizPill(w);
@@ -1018,9 +1020,10 @@
       title.textContent = w.word;
       var meta = document.createElement("p");
       meta.className = "saved-list__lvl";
-      meta.textContent = w.gradeLevel
-        ? "Gr " + String(w.gradeLevel).trim()
-        : "Gr —";
+      meta.textContent =
+        (w.gradeLevel ? "Gr " + String(w.gradeLevel).trim() : "Gr —") +
+        " · " +
+        formatQuizPointsLabel(w);
       var rate = document.createElement("span");
       setWordRatePillForWord(
         rate,
@@ -1109,7 +1112,9 @@
 
       var wEl = document.createElement("p");
       wEl.className = "progress-row__word";
-      wEl.textContent = r.word;
+      var itemForPts = findWordItem(r.word);
+      wEl.textContent =
+        r.word + (itemForPts ? " · " + formatQuizPointsLabel(itemForPts) : "");
 
       var bar = document.createElement("div");
       bar.className = "progress-row__bar";
@@ -1200,7 +1205,7 @@
     quizStreak = 0;
     updateScoreUi();
     refreshReviewPanel();
-    abortActiveSet();
+    resetQuizCycle();
     if (current) {
       applyCardMetaForItem(current);
       applyPronunciationToCard(current);
@@ -1269,27 +1274,26 @@
   var quizStreak = 0;
   var advancingQuiz = false;
 
-  var setModeActive = false;
-  var setQueue = [];
-  var setQueueIndex = 0;
-  var setRows = [];
-  var setHadWrongOnCard = false;
-  /** Wrong guesses during the active 10-card set (Pac “bomb” counter). */
-  var setBombCount = 0;
+  /** Eaten suns in the current strip (0 .. QUIZ_CYCLE_LEN-1 while playing). */
+  var quizCycleEaten = 0;
+  /** Parallel to filled slots: "ok" = ✖️, "soft" = peek / skip ⭕. */
+  var quizCycleMarks = [];
+  var cycleHadWrongOnCard = false;
+  /** Wrong guesses since the last strip refill (Pac “bomb” counter). */
+  var quizCycleBombCount = 0;
+  var cycleCelebrateTimer = null;
+  var cycleSunAnimTimer = null;
+  /** Bumped to invalidate pending nom rAF / timeout (e.g. wrong answer after correct). */
+  var cycleSunAnimGeneration = 0;
+  /** Persisted: show chomper strip in quiz / type word (toggle). */
+  var quizCycleMazeEnabled = true;
 
-  var elSetBar = document.getElementById("set-bar");
-  var elBtnStartSet = document.getElementById("btn-start-set");
-  var elSetProgress = document.getElementById("set-bar-progress");
-  var elSetStrip = document.getElementById("set-bar-strip");
-  var elSetStats = document.getElementById("set-bar-stats");
-  var elSetArcade = document.getElementById("set-bar-arcade");
-  var elSetModal = document.getElementById("set-modal");
-  var elSetModalSummary = document.getElementById("set-modal-summary");
-  var elSetModalList = document.getElementById("set-modal-list");
-  var elSetModalChomperStage = document.getElementById("set-modal-chomper-stage");
-  var elSetModalChomperMeta = document.getElementById("set-modal-chomper-meta");
-  var elSetModalClose = document.getElementById("set-modal-close");
-  var elSetModalBackdrop = document.getElementById("set-modal-backdrop");
+  var elCycleMazeOuter = document.getElementById("cycle-maze-outer");
+  var elCycleMazeToggle = document.getElementById("cycle-maze-toggle");
+  var elCycleMaze = document.getElementById("cycle-maze");
+  var elCycleStrip = document.getElementById("cycle-maze-strip");
+  var elCycleChomperSlot = document.getElementById("cycle-maze-chomper-slot");
+  var elCycleStats = document.getElementById("cycle-maze-stats");
   var elKbdShortcutsModal = document.getElementById("kbd-shortcuts-modal");
   var elKbdShortcutsBackdrop = document.getElementById(
     "kbd-shortcuts-modal-backdrop"
@@ -1484,44 +1488,140 @@
     if (elWordPeekClose) elWordPeekClose.focus();
   }
 
-  function abortActiveSet() {
-    if (!setModeActive) {
-      updateSetBar();
-      return;
+  function clearCycleSunAnimTimer() {
+    if (cycleSunAnimTimer !== null) {
+      window.clearTimeout(cycleSunAnimTimer);
+      cycleSunAnimTimer = null;
     }
-    setModeActive = false;
-    setQueue = [];
-    setQueueIndex = 0;
-    setRows = [];
-    setHadWrongOnCard = false;
-    setBombCount = 0;
-    updateSetBar();
   }
 
-  function pulseSetBarForBomb() {
-    if (!elSetBar) return;
-    elSetBar.classList.remove("set-bar--bomb-pulse");
-    void elSetBar.offsetWidth;
-    elSetBar.classList.add("set-bar--bomb-pulse");
+  function bumpCycleSunAnimGeneration() {
+    cycleSunAnimGeneration++;
+    return cycleSunAnimGeneration;
+  }
+
+  function clearCycleMazeSunAnimState() {
+    clearCycleSunAnimTimer();
+    bumpCycleSunAnimGeneration();
+    if (elCycleMaze) {
+      elCycleMaze.classList.remove("cycle-maze--nom", "cycle-maze--miss");
+      elCycleMaze.style.removeProperty("--cycle-sun-dx");
+      elCycleMaze.style.removeProperty("--cycle-sun-dy");
+    }
+  }
+
+  function resetQuizCycle() {
+    quizCycleEaten = 0;
+    quizCycleMarks = [];
+    cycleHadWrongOnCard = false;
+    quizCycleBombCount = 0;
+    if (elCycleMaze) {
+      elCycleMaze.classList.remove(
+        "cycle-maze--celebrate",
+        "cycle-maze--bomb-pulse",
+        "cycle-maze--chomper-glow"
+      );
+    }
+    clearCycleMazeSunAnimState();
+    if (cycleCelebrateTimer !== null) {
+      window.clearTimeout(cycleCelebrateTimer);
+      cycleCelebrateTimer = null;
+    }
+    updateQuizCycleUi();
+  }
+
+  function pulseCycleMazeForBomb() {
+    if (!elCycleMaze || !quizCycleMazeEnabled || elCycleMaze.hidden) return;
+    elCycleMaze.classList.remove("cycle-maze--bomb-pulse");
+    void elCycleMaze.offsetWidth;
+    elCycleMaze.classList.add("cycle-maze--bomb-pulse");
     window.setTimeout(function () {
-      if (elSetBar) elSetBar.classList.remove("set-bar--bomb-pulse");
+      if (elCycleMaze) elCycleMaze.classList.remove("cycle-maze--bomb-pulse");
     }, 400);
   }
 
-  function countSetCorrectSoFar() {
-    var n = 0;
-    for (var i = 0; i < setRows.length; i++) {
-      if (setRows[i].kind === "correct") n++;
+  /** Correct: active sun flies into fixed chomper; chomper pops larger. */
+  function pulseCycleMazeForCorrect() {
+    if (
+      !isTypingMode() ||
+      !quizCycleMazeEnabled ||
+      !elCycleMaze ||
+      elCycleMaze.hidden
+    )
+      return;
+    playCycleSunNomAnimation();
+  }
+
+  function playCycleSunNomAnimation() {
+    if (!elCycleMaze || !quizCycleMazeEnabled || elCycleMaze.hidden) return;
+    if (!isTypingMode()) return;
+    var gen = bumpCycleSunAnimGeneration();
+    function run() {
+      if (!elCycleMaze || elCycleMaze.hidden) return;
+      if (gen !== cycleSunAnimGeneration) return;
+      elCycleMaze.classList.remove("cycle-maze--miss", "cycle-maze--nom");
+      void elCycleMaze.offsetWidth;
+      var glyph =
+        elCycleStrip &&
+        elCycleStrip.querySelector(".set-pellet--current .set-pellet__glyph");
+      var chomp =
+        elCycleChomperSlot &&
+        elCycleChomperSlot.querySelector(".set-bar__chomper");
+      if (glyph && chomp) {
+        var gr = glyph.getBoundingClientRect();
+        var cr = chomp.getBoundingClientRect();
+        var dx =
+          cr.left + cr.width / 2 - (gr.left + gr.width / 2);
+        var dy =
+          cr.top + cr.height / 2 - (gr.top + gr.height / 2);
+        elCycleMaze.style.setProperty("--cycle-sun-dx", dx + "px");
+        elCycleMaze.style.setProperty("--cycle-sun-dy", dy + "px");
+      } else {
+        elCycleMaze.style.removeProperty("--cycle-sun-dx");
+        elCycleMaze.style.removeProperty("--cycle-sun-dy");
+      }
+      if (gen !== cycleSunAnimGeneration) return;
+      elCycleMaze.classList.add("cycle-maze--nom");
+      clearCycleSunAnimTimer();
+      cycleSunAnimTimer = window.setTimeout(function () {
+        cycleSunAnimTimer = null;
+        if (gen !== cycleSunAnimGeneration) return;
+        if (elCycleMaze) {
+          elCycleMaze.classList.remove("cycle-maze--nom");
+          elCycleMaze.style.removeProperty("--cycle-sun-dx");
+          elCycleMaze.style.removeProperty("--cycle-sun-dy");
+        }
+      }, 520);
     }
-    return n;
+    window.requestAnimationFrame(function () {
+      window.requestAnimationFrame(run);
+    });
+  }
+
+  /** Wrong: current sun fades out (chomper does not grow). */
+  function playCycleSunMissAnimation() {
+    if (!elCycleMaze || !quizCycleMazeEnabled || elCycleMaze.hidden) return;
+    if (!isTypingMode()) return;
+    var gen = bumpCycleSunAnimGeneration();
+    elCycleMaze.classList.remove("cycle-maze--nom");
+    elCycleMaze.style.removeProperty("--cycle-sun-dx");
+    elCycleMaze.style.removeProperty("--cycle-sun-dy");
+    void elCycleMaze.offsetWidth;
+    elCycleMaze.classList.add("cycle-maze--miss");
+    clearCycleSunAnimTimer();
+    cycleSunAnimTimer = window.setTimeout(function () {
+      cycleSunAnimTimer = null;
+      if (gen !== cycleSunAnimGeneration) return;
+      if (elCycleMaze) elCycleMaze.classList.remove("cycle-maze--miss");
+    }, 400);
   }
 
   function chomperScaleFromCorrectCount(n) {
     if (n < 0) n = 0;
-    if (n > SET_LEN) n = SET_LEN;
+    if (n > QUIZ_CYCLE_LEN) n = QUIZ_CYCLE_LEN;
     var lo = CHOMPER_SCALE_MIN;
     var hi = CHOMPER_SCALE_MAX;
-    var t = n / SET_LEN;
+    var t = n / QUIZ_CYCLE_LEN;
     return lo + (hi - lo) * Math.pow(t, 0.82);
   }
 
@@ -1529,6 +1629,15 @@
     var glyph = document.createElement("span");
     glyph.className = "set-pellet__glyph";
     glyph.textContent = SET_PELLET_GLYPH;
+    glyph.setAttribute("aria-hidden", "true");
+    pellet.appendChild(glyph);
+  }
+
+  /** @param {"ok"|"soft"} kind */
+  function appendCycleMarkGlyph(pellet, kind) {
+    var glyph = document.createElement("span");
+    glyph.className = "set-pellet__glyph";
+    glyph.textContent = kind === "soft" ? MAZE_MARK_CIRCLE : MAZE_MARK_CROSS;
     glyph.setAttribute("aria-hidden", "true");
     pellet.appendChild(glyph);
   }
@@ -1566,197 +1675,138 @@
     return wrap;
   }
 
-  function makeChomperNode(correctSoFar) {
+  /** Clean-correct (✖) marks in the strip — skip/peek (⭕) advance the trail but do not grow the chomper. */
+  function quizCycleOkMarkCount() {
+    var n = 0;
+    var i;
+    for (i = 0; i < quizCycleMarks.length; i++) {
+      if (quizCycleMarks[i] === "ok") n++;
+    }
+    return n;
+  }
+
+  /** @param {number} okCount 0..QUIZ_CYCLE_LEN from `quizCycleOkMarkCount` or equivalent */
+  function makeChomperNode(okCount) {
     var n =
-      typeof correctSoFar === "number" && !isNaN(correctSoFar) ? correctSoFar : 0;
+      typeof okCount === "number" && !isNaN(okCount) ? okCount : 0;
     return makeChomperFigure(chomperScaleFromCorrectCount(n));
   }
 
-  function renderSetPelletStrip() {
-    if (!elSetStrip || !elSetStats) return;
+  function renderQuizCycleStrip() {
+    if (!elCycleStrip || !elCycleStats) return;
     if (!isTypingMode()) return;
-    if (!setModeActive) {
-      elSetStrip.replaceChildren();
-      elSetStats.textContent = "";
-      return;
+    elCycleStrip.replaceChildren();
+    elCycleStrip.setAttribute("dir", "ltr");
+    if (elCycleChomperSlot) {
+      elCycleChomperSlot.replaceChildren();
+      var pop = document.createElement("div");
+      pop.className = "cycle-maze__chomper-pop";
+      pop.appendChild(makeChomperNode(quizCycleOkMarkCount()));
+      elCycleChomperSlot.appendChild(pop);
     }
-    elSetStrip.replaceChildren();
-    elSetStrip.setAttribute("dir", "ltr");
-    var correctSoFar = countSetCorrectSoFar();
     var i;
-    for (i = 0; i < SET_LEN; i++) {
+    for (i = 0; i < QUIZ_CYCLE_LEN; i++) {
       var cell = document.createElement("div");
-      cell.className = "set-bar__cell";
+      cell.className = "cycle-maze__cell";
       cell.setAttribute("role", "listitem");
       var pellet = document.createElement("span");
       pellet.className = "set-pellet";
-      if (i < setRows.length) {
-        var outcome = setRows[i];
+      if (i < quizCycleEaten) {
         pellet.classList.add("set-pellet--eaten");
-        appendPelletSunGlyph(pellet);
-        if (outcome.kind === "skip") {
-          pellet.classList.add("set-pellet--skip");
-        } else if (outcome.kind === "correct") {
-          if (outcome.peek) pellet.classList.add("set-pellet--peek");
-          else if (outcome.firstTry) pellet.classList.add("set-pellet--great");
-          else pellet.classList.add("set-pellet--hurt");
+        var mk = quizCycleMarks[i];
+        if (mk === "soft") {
+          pellet.classList.add("set-pellet--maze-soft");
+          appendCycleMarkGlyph(pellet, "soft");
+        } else {
+          pellet.classList.add("set-pellet--maze-cross");
+          appendCycleMarkGlyph(pellet, "ok");
         }
-      } else if (i === setQueueIndex) {
+      } else if (i === quizCycleEaten) {
+        cell.classList.add("cycle-maze__cell--current");
         pellet.classList.add("set-pellet--current");
         appendPelletSunGlyph(pellet);
-        if (setHadWrongOnCard) pellet.classList.add("set-pellet--wrong");
-        cell.appendChild(makeChomperNode(correctSoFar));
+        if (cycleHadWrongOnCard) pellet.classList.add("set-pellet--wrong");
       } else {
         pellet.classList.add("set-pellet--todo");
         appendPelletSunGlyph(pellet);
       }
       cell.appendChild(pellet);
-      elSetStrip.appendChild(cell);
+      elCycleStrip.appendChild(cell);
     }
-    var eaten = 0;
-    var firstT = 0;
-    var skips = 0;
-    for (i = 0; i < setRows.length; i++) {
-      if (setRows[i].kind === "correct") {
-        eaten++;
-        if (setRows[i].firstTry) firstT++;
-      } else if (setRows[i].kind === "skip") skips++;
-    }
-    var parts = [
-      "Eaten " + eaten + "/" + SET_LEN,
-      "Bombs " + setBombCount,
-      "Card " + (setQueueIndex + 1),
-    ];
-    if (skips) parts.push("Skipped " + skips);
-    if (firstT) parts.push("First-try " + firstT);
-    elSetStats.textContent = parts.join(" · ");
+    elCycleStats.textContent =
+      "Treat trail " +
+      quizCycleEaten +
+      "/" +
+      QUIZ_CYCLE_LEN +
+      " · Bombs " +
+      quizCycleBombCount;
   }
 
-  function updateSetBar() {
-    if (!elSetBar) return;
-    if (!isTypingMode()) {
-      elSetBar.hidden = true;
-      if (elSetArcade) elSetArcade.hidden = true;
+  function updateQuizCycleUi() {
+    if (!elCycleMaze || !elCycleMazeOuter) return;
+    if (!isTypingMode() || !current) {
+      elCycleMazeOuter.hidden = true;
       return;
     }
-    elSetBar.hidden = false;
-    if (elSetArcade) elSetArcade.hidden = !setModeActive;
-    if (elBtnStartSet) {
-      elBtnStartSet.hidden = setModeActive;
-      elBtnStartSet.disabled = pool.length < 1;
+    elCycleMazeOuter.hidden = false;
+    if (elCycleMazeToggle) {
+      elCycleMazeToggle.checked = quizCycleMazeEnabled;
+      elCycleMazeToggle.setAttribute(
+        "aria-checked",
+        quizCycleMazeEnabled ? "true" : "false"
+      );
     }
-    if (elSetProgress) {
-      if (!setModeActive) {
-        elSetProgress.textContent =
-          "10-word set: scores still count · tap Start when you’re ready.";
-      } else {
-        elSetProgress.textContent =
-          "Skip passes this card (no pellet / no points).";
-      }
+    if (!quizCycleMazeEnabled) {
+      elCycleMaze.hidden = true;
+      return;
     }
-    renderSetPelletStrip();
+    elCycleMaze.hidden = false;
+    renderQuizCycleStrip();
   }
 
-  function openSetSummaryModal(rows) {
-    if (!elSetModal || !elSetModalSummary || !elSetModalList) return;
-    var correct = 0;
-    var firstTry = 0;
-    var points = 0;
-    var skipped = 0;
-    var i;
-    for (i = 0; i < rows.length; i++) {
-      var r = rows[i];
-      if (r.kind === "correct") {
-        correct++;
-        if (r.firstTry) firstTry++;
-        points += r.points | 0;
-      } else if (r.kind === "skip") skipped++;
-    }
-    elSetModalSummary.textContent =
-      "First try (no peek, no miss): " +
-      firstTry +
-      " / " +
-      SET_LEN +
-      " · Solved: " +
-      correct +
-      " · Points this set: " +
-      points +
-      " · Bombs (wrong guesses): " +
-      setBombCount +
-      (skipped ? " · Skipped: " + skipped : "") +
-      ".";
-    var summaryChomperScale = chomperScaleFromCorrectCount(correct);
-    if (elSetModalChomperStage) {
-      elSetModalChomperStage.replaceChildren();
-      /* Report shows chomper at base / original size (1×); numbers below state run scale. */
-      elSetModalChomperStage.appendChild(makeChomperFigure(1));
-    }
-    if (elSetModalChomperMeta) {
-      elSetModalChomperMeta.textContent =
-        "Above: original-size chomper (1×). This run you reached " +
-        summaryChomperScale.toFixed(2) +
-        "\u00d7 · In play it grows " +
-        CHOMPER_SCALE_MIN +
-        "\u00d7 \u2192 " +
-        CHOMPER_SCALE_MAX +
-        "\u00d7 when you get all " +
-        SET_LEN +
-        " correct (not skips).";
-    }
-    elSetModalList.textContent = "";
-    for (i = 0; i < rows.length; i++) {
-      var row = rows[i];
-      var li = document.createElement("li");
-      li.className = "set-modal__item";
-      var label = document.createElement("span");
-      label.className = "set-modal__word";
-      label.textContent = row.word || "—";
-      var tag = document.createElement("span");
-      tag.className = "set-modal__tag";
-      if (row.kind === "skip") {
-        tag.textContent = "skipped";
-        tag.classList.add("set-modal__tag--skip");
-      } else if (row.peek) {
-        tag.textContent = "peek";
-        tag.classList.add("set-modal__tag--peek");
-      } else if (row.firstTry) {
-        tag.textContent = "first try!";
-        tag.classList.add("set-modal__tag--great");
-      } else {
-        tag.textContent = "got it";
-        tag.classList.add("set-modal__tag--ok");
-      }
-      li.appendChild(label);
-      li.appendChild(tag);
-      elSetModalList.appendChild(li);
-    }
-    closeKbdShortcutsModal();
-    closeWordPeekModal();
-    elSetModal.hidden = false;
+  function onCycleMazeToggleChange() {
+    if (!elCycleMazeToggle) return;
+    quizCycleMazeEnabled = !!elCycleMazeToggle.checked;
+    elCycleMazeToggle.setAttribute(
+      "aria-checked",
+      quizCycleMazeEnabled ? "true" : "false"
+    );
+    persistSelections();
+    updateQuizCycleUi();
   }
 
-  function closeSetSummaryModal() {
-    if (elSetModal) elSetModal.hidden = true;
-    if (elSetModalChomperStage) elSetModalChomperStage.replaceChildren();
-    if (elSetModalChomperMeta) elSetModalChomperMeta.textContent = "";
+  function triggerQuizCycleCelebrate() {
+    if (!elCycleMaze || !quizCycleMazeEnabled || elCycleMaze.hidden) return;
+    elCycleMaze.classList.remove("cycle-maze--celebrate");
+    void elCycleMaze.offsetWidth;
+    elCycleMaze.classList.add("cycle-maze--celebrate");
+    if (cycleCelebrateTimer !== null) {
+      window.clearTimeout(cycleCelebrateTimer);
+    }
+    cycleCelebrateTimer = window.setTimeout(function () {
+      cycleCelebrateTimer = null;
+      if (elCycleMaze) elCycleMaze.classList.remove("cycle-maze--celebrate");
+    }, 780);
   }
 
-  function startSetOfTen() {
+  /**
+   * Advance trail one slot. mark "ok" = ✖️ (clean correct), "soft" = ⭕ (peek or skip).
+   */
+  function bumpQuizCycle(mark) {
     if (!isTypingMode()) return;
-    rebuildPool();
-    if (pool.length < 1) return;
-    setQueue = buildSetQueue(pool);
-    if (!setQueue.length) return;
-    setQueueIndex = 0;
-    setRows = [];
-    setModeActive = true;
-    setHadWrongOnCard = false;
-    setBombCount = 0;
-    advancingQuiz = false;
-    current = setQueue[0];
-    prepareRound();
-    renderCard(true);
-    updateSetBar();
+    quizCycleMarks.push(mark === "soft" ? "soft" : "ok");
+    quizCycleEaten++;
+    if (quizCycleEaten >= QUIZ_CYCLE_LEN) {
+      triggerQuizCycleCelebrate();
+      quizCycleEaten = 0;
+      quizCycleMarks = [];
+      quizCycleBombCount = 0;
+    }
+  }
+
+  function maybeBumpQuizCycleOnSkip() {
+    if (!isTypingMode() || advancingQuiz) return;
+    bumpQuizCycle("soft");
   }
 
   function scheduleQuizAdvanceAfterCorrect(isTypeAll) {
@@ -1771,23 +1821,8 @@
     hideSpellChoicesUi();
     quizAdvanceTimer = window.setTimeout(function () {
       quizAdvanceTimer = null;
-      if (!setModeActive) {
-        advanceToNewCard(true);
-        return;
-      }
-      var pts = 0;
-      if (!cheatUsed) {
-        pts = isTypeAll
-          ? quizPointsForItem(current) * 2
-          : quizPointsForItem(current);
-      }
-      advanceToNewCard(true, {
-        kind: "correct",
-        word: current.word,
-        firstTry: !setHadWrongOnCard && !cheatUsed,
-        points: pts,
-        peek: cheatUsed,
-      });
+      if (isTypingMode()) bumpQuizCycle(cheatUsed ? "soft" : "ok");
+      advanceToNewCard(true);
     }, delay);
   }
 
@@ -2315,11 +2350,6 @@
     );
   }
 
-  /** Big green “you did it” UI on the card. */
-  function showAnswerCelebrate() {
-    if (elCard) elCard.classList.add("flashcard--answer-ok");
-  }
-
   function clearAnswerCelebrate() {
     if (elCard)
       elCard.classList.remove(
@@ -2327,6 +2357,9 @@
         "flashcard--pac-chomp",
         "flashcard--ghost-bump"
       );
+    if (elCycleMaze)
+      elCycleMaze.classList.remove("cycle-maze--chomper-glow");
+    clearCycleMazeSunAnimState();
   }
 
   function onSpellInputLiveTypeAll() {
@@ -2339,13 +2372,11 @@
     elSpellInput.value = v;
     clearSpellInputVisual();
     if (v !== word) {
-      if (elCard) elCard.classList.remove("flashcard--answer-ok");
+      if (elCycleMaze) elCycleMaze.classList.remove("cycle-maze--chomper-glow");
     }
     if (cheatUsed) {
       elSpellInput.classList.add("spell-input-inline--ok");
-      if (v === word && v.length > 0) {
-        if (elCard) elCard.classList.add("flashcard--answer-ok");
-      }
+      if (v === word && v.length > 0) pulseCycleMazeForCorrect();
       setFeedback("Peek showed the word — press Next (no points).", "muted");
       return;
     }
@@ -2387,7 +2418,7 @@
     var need = current.word.charAt(missingIndex);
 
     if (!v) {
-      if (elCard) elCard.classList.remove("flashcard--answer-ok");
+      if (elCycleMaze) elCycleMaze.classList.remove("cycle-maze--chomper-glow");
       quizGapLastWrongCharRecorded = null;
       setFeedback(
         quizGapChoiceMode
@@ -2400,7 +2431,7 @@
 
     if (cheatUsed) {
       elSpellInput.classList.add("spell-input-inline--ok");
-      showAnswerCelebrate();
+      pulseCycleMazeForCorrect();
       if (v === need) {
         window.setTimeout(function () {
           trySubmitSpell();
@@ -2418,7 +2449,7 @@
       return;
     }
 
-    if (elCard) elCard.classList.remove("flashcard--answer-ok");
+    if (elCycleMaze) elCycleMaze.classList.remove("cycle-maze--chomper-glow");
     elSpellInput.classList.add("spell-input-inline--bad");
     if (quizGapLastWrongCharRecorded !== v) {
       if (!quizAttemptCountedForCard) {
@@ -2507,16 +2538,6 @@
     o.stop(t + 0.24);
   }
 
-  function runPacChompVisual() {
-    if (!elCard) return;
-    elCard.classList.remove("flashcard--pac-chomp");
-    elCard.offsetWidth;
-    elCard.classList.add("flashcard--pac-chomp");
-    window.setTimeout(function () {
-      if (elCard) elCard.classList.remove("flashcard--pac-chomp");
-    }, 1280);
-  }
-
   function flashCardWrong() {
     playSfxWrong();
     if (!elCard) return;
@@ -2549,16 +2570,6 @@
     elCard.classList.add("flashcard--shake");
     window.setTimeout(function () {
       elCard.classList.remove("flashcard--shake");
-    }, 480);
-  }
-
-  function flashCardOk() {
-    if (!elCard) return;
-    elCard.classList.remove("flashcard--ok-pulse");
-    elCard.offsetWidth;
-    elCard.classList.add("flashcard--ok-pulse");
-    window.setTimeout(function () {
-      elCard.classList.remove("flashcard--ok-pulse");
     }, 480);
   }
 
@@ -2628,7 +2639,7 @@
     cheatUsed = false;
     quizAttemptCountedForCard = false;
     quizGapLastWrongCharRecorded = null;
-    setHadWrongOnCard = false;
+    cycleHadWrongOnCard = false;
     if (studyMode === "quiz" && current) {
       missingIndex = randomMissingIndex(current.word);
     }
@@ -2670,9 +2681,7 @@
       setFeedback("", null);
     }
     playSfxPacChomp(cheatUsed);
-    runPacChompVisual();
-    showAnswerCelebrate();
-    flashCardOk();
+    pulseCycleMazeForCorrect();
     scheduleQuizAdvanceAfterCorrect(true);
   }
 
@@ -2715,7 +2724,7 @@
       hideSpellChoicesUi();
       if (elCheat) elCheat.hidden = true;
       setFeedback("", null);
-      updateSetBar();
+      updateQuizCycleUi();
       syncPrimaryActionButton();
       return;
     }
@@ -2802,7 +2811,7 @@
     }
     updateQuizGapChoiceField();
     updateFavoriteButton();
-    updateSetBar();
+    updateQuizCycleUi();
     if (elCardWordRow) {
       elCardWordRow.hidden = studyMode !== "see";
     }
@@ -2811,46 +2820,10 @@
     syncPrimaryActionButton();
   }
 
-  function advanceToNewCard(fromUserTap, setTurnOutcome) {
+  function advanceToNewCard(fromUserTap) {
     clearQuizAdvanceTimer();
     advancingQuiz = false;
-    if (setModeActive) {
-      var outcome =
-        arguments.length >= 2 && setTurnOutcome != null
-          ? setTurnOutcome
-          : {
-              kind: "skip",
-              word: current ? current.word : "—",
-            };
-      setRows.push(outcome);
-      setQueueIndex += 1;
-      if (setQueueIndex >= SET_LEN) {
-        openSetSummaryModal(setRows.slice());
-        abortActiveSet();
-        if (!pool.length) {
-          current = null;
-          advancingQuiz = false;
-          prepareRound();
-          renderCard(!!fromUserTap);
-          return;
-        }
-        current = shufflePickDifferent(pool, null);
-        advancingQuiz = false;
-        cardCount++;
-        prepareRound();
-        renderCard(!!fromUserTap);
-        return;
-      }
-      current = setQueue[setQueueIndex];
-      advancingQuiz = false;
-      cardCount++;
-      prepareRound();
-      renderCard(!!fromUserTap);
-      return;
-    }
-
     if (!pool.length) return;
-    advancingQuiz = false;
     cardCount++;
     current = shufflePickDifferent(pool, current);
     prepareRound();
@@ -2953,12 +2926,13 @@
       deck: deckScope,
       wordType: wordTypeScope,
       quizGapChoice: quizGapChoiceMode,
+      showCycleMaze: quizCycleMazeEnabled,
     });
   }
 
   function onGradeChange() {
     if (!elGrade) return;
-    abortActiveSet();
+    resetQuizCycle();
     gradeFilterCap = elGrade.value || "all";
     persistSelections();
     cardCount = 1;
@@ -2971,7 +2945,7 @@
 
   function onDeckScopeChange() {
     if (!elDeckScope) return;
-    abortActiveSet();
+    resetQuizCycle();
     deckScope = elDeckScope.value === "favorites" ? "favorites" : "all";
     persistSelections();
     cardCount = 1;
@@ -2984,7 +2958,7 @@
 
   function onWordTypeChange() {
     if (!elWordType) return;
-    abortActiveSet();
+    resetQuizCycle();
     wordTypeScope = elWordType.value || "all";
     persistSelections();
     cardCount = 1;
@@ -2997,7 +2971,7 @@
 
   function onStudyModeChange() {
     if (!elStudyMode) return;
-    abortActiveSet();
+    resetQuizCycle();
     var v = elStudyMode.value;
     if (v === "quiz") studyMode = "quiz";
     else if (v === "typeall") studyMode = "typeall";
@@ -3027,12 +3001,11 @@
       }
       renderCard(true);
     }
-    updateSetBar();
+    updateQuizCycleUi();
   }
 
   function onFavoriteTap(e) {
     if (e) e.preventDefault();
-    if (setModeActive) abortActiveSet();
     if (!current) return;
     toggleFavoriteKey(wordEntryKey(current));
   }
@@ -3040,7 +3013,6 @@
   function onWordPeekFavoriteTap(e) {
     if (e) e.preventDefault();
     if (!wordPeekItem) return;
-    if (setModeActive) abortActiveSet();
     toggleFavoriteKey(wordEntryKey(wordPeekItem));
   }
 
@@ -3058,11 +3030,8 @@
 
   function onNextCard(e) {
     if (e) e.preventDefault();
-    if (setModeActive && isTypingMode()) {
-      advanceToNewCard(true);
-      return;
-    }
     if (!pool.length) return;
+    maybeBumpQuizCycleOnSkip();
     advanceToNewCard(true);
   }
 
@@ -3123,9 +3092,7 @@
       setFeedback("", null);
     }
     playSfxPacChomp(cheatUsed);
-    runPacChompVisual();
-    showAnswerCelebrate();
-    flashCardOk();
+    pulseCycleMazeForCorrect();
     scheduleQuizAdvanceAfterCorrect(false);
   }
 
@@ -3236,6 +3203,7 @@
       if (elLoadError && elLoadError.hidden === false) return;
       if (!current || !pool.length) return;
       e.preventDefault();
+      maybeBumpQuizCycleOnSkip();
       advanceToNewCard(true);
       return;
     }
@@ -3438,6 +3406,9 @@
     if (elQuizGapChoiceToggle) {
       elQuizGapChoiceToggle.addEventListener("change", onQuizGapChoiceModeChange);
     }
+    if (elCycleMazeToggle) {
+      elCycleMazeToggle.addEventListener("change", onCycleMazeToggleChange);
+    }
     if (elFavorite) elFavorite.addEventListener("click", onFavoriteTap);
     var btnClearHistory = document.getElementById("btn-clear-history");
     if (btnClearHistory) {
@@ -3448,21 +3419,6 @@
     }
     if (elSpeak) elSpeak.addEventListener("click", onHearWord);
     if (elNext) elNext.addEventListener("click", onNextCard);
-    if (elBtnStartSet) {
-      elBtnStartSet.addEventListener("click", function (e) {
-        if (e) e.preventDefault();
-        startSetOfTen();
-      });
-    }
-    if (elSetModalClose) {
-      elSetModalClose.addEventListener("click", function (e) {
-        if (e) e.preventDefault();
-        closeSetSummaryModal();
-      });
-    }
-    if (elSetModalBackdrop) {
-      elSetModalBackdrop.addEventListener("click", closeSetSummaryModal);
-    }
     if (elCheat) elCheat.addEventListener("click", onCheat);
     if (elSpellInput) {
       elSpellInput.addEventListener("keydown", onSpellKeydown);
@@ -3589,6 +3545,15 @@
           quizGapChoiceMode = true;
           if (elQuizGapChoiceToggle) elQuizGapChoiceToggle.checked = true;
           syncQuizGapSwitchAria();
+        }
+
+        quizCycleMazeEnabled = !(prefs && prefs.showCycleMaze === false);
+        if (elCycleMazeToggle) {
+          elCycleMazeToggle.checked = quizCycleMazeEnabled;
+          elCycleMazeToggle.setAttribute(
+            "aria-checked",
+            quizCycleMazeEnabled ? "true" : "false"
+          );
         }
 
         rebuildPool();

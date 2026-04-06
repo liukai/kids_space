@@ -121,25 +121,6 @@
       </div>
     </div>
 
-    <div
-      class="set-bar"
-      id="set-bar"
-      role="region"
-      aria-label="Ten-word practice set"
-      hidden
-    >
-      <button type="button" id="btn-start-set" class="btn btn--set-start" disabled>
-        Start 10
-      </button>
-      <div class="set-bar__arcade" id="set-bar-arcade" hidden>
-        <p class="set-bar__stats" id="set-bar-stats" aria-live="polite"></p>
-        <div class="set-bar__strip-wrap">
-          <div class="set-bar__strip" id="set-bar-strip" role="list"></div>
-        </div>
-      </div>
-      <p class="set-bar__progress" id="set-bar-progress" aria-live="polite"></p>
-    </div>
-
     <p class="deck-hint" id="deck-hint" aria-live="polite"></p>
 
     <main class="main">
@@ -190,6 +171,48 @@
               <span class="flashcard__pron-label">Say</span>
               <span id="card-pron-respell" class="flashcard__pron-respell"></span>
             </span>
+          </div>
+
+          <div
+            id="cycle-maze-outer"
+            class="cycle-maze-outer"
+            hidden
+          >
+            <div class="cycle-maze-outer__bar">
+              <label class="cycle-maze-toggle">
+                <input
+                  type="checkbox"
+                  id="cycle-maze-toggle"
+                  class="cycle-maze-toggle__input sr-only"
+                  role="switch"
+                  checked
+                  autocomplete="off"
+                  aria-checked="true"
+                  aria-label="Show eat trail (chomper and suns)"
+                />
+                <span class="cycle-maze-toggle__track" aria-hidden="true"></span>
+                <span class="cycle-maze-toggle__text">Trail</span>
+              </label>
+            </div>
+            <div
+              id="cycle-maze"
+              class="cycle-maze"
+              role="region"
+              aria-label="Chomper eats one sun each time you get a word right. Ten rights refill the row."
+              hidden
+            >
+              <p class="cycle-maze__stats" id="cycle-maze-stats" aria-live="polite"></p>
+              <div class="cycle-maze__strip-wrap">
+                <div class="cycle-maze__stage">
+                  <div
+                    class="cycle-maze__chomper-slot"
+                    id="cycle-maze-chomper-slot"
+                    aria-hidden="true"
+                  ></div>
+                  <div class="cycle-maze__strip" id="cycle-maze-strip" role="list"></div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div id="spell-zone" class="flashcard__spell" hidden>
@@ -279,31 +302,6 @@
   </div>
 
   <aside id="chinese-aside" class="chinese-aside" hidden aria-hidden="true"></aside>
-
-  <div class="set-modal" id="set-modal" hidden>
-    <div class="set-modal__backdrop" id="set-modal-backdrop"></div>
-    <div
-      class="set-modal__panel"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="set-modal-title"
-    >
-      <h2 id="set-modal-title" class="set-modal__title">10-card set — finished!</h2>
-      <p id="set-modal-summary" class="set-modal__summary"></p>
-      <div class="set-modal__chomper-block">
-        <div
-          class="set-modal__chomper-stage"
-          id="set-modal-chomper-stage"
-          aria-hidden="true"
-        ></div>
-        <p class="set-modal__chomper-meta" id="set-modal-chomper-meta"></p>
-      </div>
-      <ul id="set-modal-list" class="set-modal__list"></ul>
-      <button type="button" id="set-modal-close" class="btn btn--primary">
-        Keep practicing
-      </button>
-    </div>
-  </div>
 
   <div class="word-peek-modal" id="word-peek-modal" hidden>
     <div class="word-peek-modal__backdrop" id="word-peek-modal-backdrop"></div>
