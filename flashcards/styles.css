@@ -768,17 +768,17 @@ body::after {
 }
 
 .flashcard--pac-chomp .flashcard__waka {
-  animation: waka-show-clear 0.72s ease forwards;
+  animation: waka-show-clear 1.22s ease forwards;
 }
 
 @keyframes waka-show-clear {
   0% {
     opacity: 0;
   }
-  8% {
+  6% {
     opacity: 1;
   }
-  92% {
+  93% {
     opacity: 1;
   }
   100% {
@@ -807,29 +807,29 @@ body::after {
 }
 
 .flashcard--pac-chomp .flashcard__waka-pellets i {
-  animation: pellet-eaten 0.12s ease forwards;
+  animation: pellet-eaten 0.18s ease forwards;
 }
 
 .flashcard--pac-chomp .flashcard__waka-pellets i:nth-child(1) {
-  animation-delay: 0.07s;
+  animation-delay: 0.1s;
 }
 .flashcard--pac-chomp .flashcard__waka-pellets i:nth-child(2) {
-  animation-delay: 0.15s;
+  animation-delay: 0.22s;
 }
 .flashcard--pac-chomp .flashcard__waka-pellets i:nth-child(3) {
-  animation-delay: 0.23s;
+  animation-delay: 0.34s;
 }
 .flashcard--pac-chomp .flashcard__waka-pellets i:nth-child(4) {
-  animation-delay: 0.31s;
+  animation-delay: 0.46s;
 }
 .flashcard--pac-chomp .flashcard__waka-pellets i:nth-child(5) {
-  animation-delay: 0.39s;
+  animation-delay: 0.58s;
 }
 .flashcard--pac-chomp .flashcard__waka-pellets i:nth-child(6) {
-  animation-delay: 0.47s;
+  animation-delay: 0.7s;
 }
 .flashcard--pac-chomp .flashcard__waka-pellets i:nth-child(7) {
-  animation-delay: 0.54s;
+  animation-delay: 0.82s;
 }
 
 @keyframes pellet-eaten {
@@ -851,7 +851,7 @@ body::after {
 }
 
 .flashcard--pac-chomp .flashcard__waka-pac {
-  animation: pac-eat-run 0.68s ease-in-out forwards;
+  animation: pac-eat-run 1s ease-in-out forwards;
 }
 
 @keyframes pac-eat-run {
@@ -873,7 +873,7 @@ body::after {
 }
 
 .flashcard--pac-chomp .flashcard__waka-pac-face {
-  animation: pac-mouth-chomp 0.12s ease-in-out infinite alternate;
+  animation: pac-mouth-chomp 0.16s ease-in-out infinite alternate;
 }
 
 @keyframes pac-mouth-chomp {
@@ -1099,10 +1099,10 @@ body::after {
   width: 100%;
 }
 
+/* Pick-letter mode: gap still tappable / typeable (keyboard or on-screen). */
 .spell-input-inline--gap-choose {
-  caret-color: transparent;
-  cursor: default;
-  pointer-events: none;
+  caret-color: var(--pac-yellow-hot);
+  cursor: text;
 }
 
 .spell-choice-btn {

@@ -1142,10 +1142,10 @@
       !cheatUsed &&
       !advancingQuiz;
     if (choicesOn) {
-      elSpellInput.readOnly = true;
-      elSpellInput.setAttribute("inputmode", "none");
+      elSpellInput.readOnly = false;
+      elSpellInput.setAttribute("inputmode", "text");
       elSpellInput.classList.add("spell-input-inline--gap-choose");
-      elSpellInput.tabIndex = -1;
+      elSpellInput.tabIndex = 0;
     } else {
       elSpellInput.readOnly = false;
       elSpellInput.setAttribute("inputmode", "text");
@@ -1299,7 +1299,7 @@
     }
     if (elSpellChoiceHint)
       elSpellChoiceHint.textContent =
-        "Each button shows number : letter — tap it or press that number on the keyboard";
+        "Tap a choice, press 1–3, or type the missing letter on the keyboard";
     var need = current.word.charAt(missingIndex);
     var wrong = pickQuizWrongLetters(need);
     var opts = shuffleInPlace([need, wrong[0], wrong[1]]);
@@ -1528,7 +1528,7 @@
       quizGapLastWrongCharRecorded = null;
       setFeedback(
         quizGapChoiceMode
-          ? "Tap a button (number : letter) or press 1, 2, or 3 on the keyboard."
+          ? "Tap a choice, press 1–3, or type the missing letter."
           : "Type one letter in the box.",
         "muted"
       );
@@ -1619,9 +1619,10 @@
   function playSfxPacChomp(isPeek) {
     var n = isPeek ? 2 : 4;
     var vol = isPeek ? 0.042 : 0.082;
+    var stepMs = isPeek ? 95 : 102;
     var i;
     for (i = 0; i < n; i++) {
-      playSfxOneBlip(780 + (i % 3) * 95, i * 68, 0.052, vol);
+      playSfxOneBlip(780 + (i % 3) * 95, i * stepMs, 0.055, vol);
     }
   }
 
@@ -1650,7 +1651,7 @@
     elCard.classList.add("flashcard--pac-chomp");
     window.setTimeout(function () {
       if (elCard) elCard.classList.remove("flashcard--pac-chomp");
-    }, 780);
+    }, 1280);
   }
 
   function flashCardWrong() {
@@ -2191,7 +2192,7 @@
     if (!letter) {
       setFeedback(
         quizGapChoiceMode
-          ? "Choose a letter first — tap the button or press the matching number (1, 2, or 3)."
+          ? "Choose a letter — tap, press 1–3, or type it on the keyboard."
           : "Fill the gap before Next.",
         "muted"
       );
@@ -2263,6 +2264,20 @@
           e.preventDefault();
           btn.click();
         }
+        return;
+      }
+      var letterKey = e.key;
+      if (
+        letterKey &&
+        letterKey.length === 1 &&
+        /[a-zA-Z]/.test(letterKey)
+      ) {
+        if (tag === "SELECT" || tag === "TEXTAREA") return;
+        if (tag === "INPUT") return;
+        var lk = letterKey.toLowerCase();
+        e.preventDefault();
+        elSpellInput.value = lk;
+        onSpellInputLive();
         return;
       }
     }
