@@ -1067,13 +1067,12 @@
   var elWordPeekPronunciation = document.getElementById(
     "word-peek-pronunciation"
   );
-  var elWordPeekPronLineIpa = document.getElementById(
-    "word-peek-pron-line-ipa"
+  var elWordPeekPronIpaSeg = document.getElementById("word-peek-pron-ipa-seg");
+  var elWordPeekPronMid = document.getElementById("word-peek-pron-mid");
+  var elWordPeekPronRespellSeg = document.getElementById(
+    "word-peek-pron-respell-seg"
   );
   var elWordPeekPronIpa = document.getElementById("word-peek-pron-ipa");
-  var elWordPeekPronLineRespell = document.getElementById(
-    "word-peek-pron-line-respell"
-  );
   var elWordPeekPronRespell = document.getElementById(
     "word-peek-pron-respell"
   );
@@ -1223,9 +1222,10 @@
       );
     fillPronunciationUi(
       elWordPeekPronunciation,
-      elWordPeekPronLineIpa,
+      elWordPeekPronIpaSeg,
+      elWordPeekPronMid,
+      elWordPeekPronRespellSeg,
       elWordPeekPronIpa,
-      elWordPeekPronLineRespell,
       elWordPeekPronRespell,
       item
     );
@@ -1393,9 +1393,10 @@
   var elMetaLine = document.getElementById("card-meta-line");
   var elMetaRate = document.getElementById("card-meta-rate");
   var elCardPronunciation = document.getElementById("card-pronunciation");
-  var elCardPronLineIpa = document.getElementById("card-pron-line-ipa");
+  var elCardPronIpaSeg = document.getElementById("card-pron-ipa-seg");
+  var elCardPronMid = document.getElementById("card-pron-mid");
+  var elCardPronRespellSeg = document.getElementById("card-pron-respell-seg");
   var elCardPronIpa = document.getElementById("card-pron-ipa");
-  var elCardPronLineRespell = document.getElementById("card-pron-line-respell");
   var elCardPronRespell = document.getElementById("card-pron-respell");
   var elDeckHint = document.getElementById("deck-hint");
   var elPointsVal = document.getElementById("points-val");
@@ -1416,12 +1417,21 @@
   var elCheat = document.getElementById("btn-cheat");
   var elLoadError = document.getElementById("load-error");
 
-  function fillPronunciationUi(wrap, lineIpa, textIpa, lineResp, textResp, item) {
+  function fillPronunciationUi(
+    wrap,
+    segIpa,
+    mid,
+    segResp,
+    textIpa,
+    textResp,
+    item
+  ) {
     if (!wrap) return;
     if (!item) {
       wrap.hidden = true;
-      if (lineIpa) lineIpa.hidden = true;
-      if (lineResp) lineResp.hidden = true;
+      if (segIpa) segIpa.hidden = true;
+      if (mid) mid.hidden = true;
+      if (segResp) segResp.hidden = true;
       if (textIpa) textIpa.textContent = "";
       if (textResp) textResp.textContent = "";
       return;
@@ -1430,29 +1440,32 @@
     var resp = String(item.respelling != null ? item.respelling : "").trim();
     if (!ipa && !resp) {
       wrap.hidden = true;
-      if (lineIpa) lineIpa.hidden = true;
-      if (lineResp) lineResp.hidden = true;
+      if (segIpa) segIpa.hidden = true;
+      if (mid) mid.hidden = true;
+      if (segResp) segResp.hidden = true;
       if (textIpa) textIpa.textContent = "";
       if (textResp) textResp.textContent = "";
       return;
     }
     wrap.hidden = false;
-    if (lineIpa && textIpa) {
-      lineIpa.hidden = !ipa;
+    if (segIpa && textIpa) {
+      segIpa.hidden = !ipa;
       textIpa.textContent = ipa;
     }
-    if (lineResp && textResp) {
-      lineResp.hidden = !resp;
+    if (segResp && textResp) {
+      segResp.hidden = !resp;
       textResp.textContent = resp;
     }
+    if (mid) mid.hidden = !(ipa && resp);
   }
 
   function applyPronunciationToCard(item) {
     fillPronunciationUi(
       elCardPronunciation,
-      elCardPronLineIpa,
+      elCardPronIpaSeg,
+      elCardPronMid,
+      elCardPronRespellSeg,
       elCardPronIpa,
-      elCardPronLineRespell,
       elCardPronRespell,
       item
     );

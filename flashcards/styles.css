@@ -1143,37 +1143,45 @@ body::after {
 }
 
 .flashcard__pronunciation {
-  margin: 0.4rem auto 0;
-  padding: 0.32rem 0.65rem;
+  margin: 0.3rem auto 0;
+  padding: 0.2rem 0.5rem;
   max-width: 100%;
   box-sizing: border-box;
   border-radius: var(--radius-pill);
   background: rgba(6, 12, 22, 0.55);
   border: 1px solid rgba(51, 228, 255, 0.14);
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.22rem;
-}
-
-.flashcard__pron-line {
-  display: flex;
+  flex-direction: row;
   flex-wrap: wrap;
   align-items: baseline;
   justify-content: center;
-  gap: 0.35rem 0.55rem;
-  font-size: 0.82rem;
-  line-height: 1.3;
+  gap: 0.2rem 0.4rem;
+  font-size: 0.78rem;
+  line-height: 1.25;
   text-align: center;
 }
 
+.flashcard__pron-seg {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.18rem 0.28rem;
+}
+
+.flashcard__pron-mid {
+  color: var(--muted);
+  opacity: 0.55;
+  user-select: none;
+  font-weight: 400;
+}
+
 .flashcard__pron-label {
-  font-size: 0.55rem;
+  font-size: 0.5rem;
   font-weight: 400;
   text-transform: uppercase;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   color: var(--muted);
-  opacity: 0.88;
+  opacity: 0.85;
   flex: 0 0 auto;
 }
 
@@ -1187,21 +1195,21 @@ body::after {
     ui-serif,
     Georgia,
     serif;
-  font-size: 0.86rem;
+  font-size: 0.8rem;
   color: #a8dff8;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   font-weight: 400;
 }
 
 .flashcard__pron-respell {
-  font-size: 0.84rem;
+  font-size: 0.78rem;
   color: var(--crt-amber-hot);
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   font-weight: 400;
 }
 
 .word-peek-modal__pron {
-  margin: 0.35rem 0 0.2rem;
+  margin: 0.28rem 0 0.12rem;
 }
 
 .flashcard__spell {
