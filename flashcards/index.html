@@ -183,7 +183,10 @@
             </div>
           </div>
 
-          <p id="card-meta" class="flashcard__meta"></p>
+          <p id="card-meta" class="flashcard__meta flashcard__meta-wrap">
+            <span id="card-meta-line" class="flashcard__meta-line"></span>
+            <span id="card-meta-rate" class="word-rate-pill word-rate-pill--card"></span>
+          </p>
           <p id="feedback" class="flashcard__feedback" role="status" aria-live="assertive"></p>
         </div>
 
@@ -294,7 +297,10 @@
       <div class="flashcard__surface word-peek-modal__surface">
         <span id="word-peek-emoji" class="flashcard__emoji" aria-hidden="true"></span>
         <p id="word-peek-word" class="flashcard__word"></p>
-        <p id="word-peek-meta" class="flashcard__meta"></p>
+        <div id="word-peek-meta" class="flashcard__meta word-peek-modal__meta">
+          <span id="word-peek-meta-line" class="flashcard__meta-line"></span>
+          <span id="word-peek-meta-rate" class="word-rate-pill word-rate-pill--peek"></span>
+        </div>
       </div>
       <button type="button" id="word-peek-close" class="btn btn--primary word-peek-modal__close">
         Close

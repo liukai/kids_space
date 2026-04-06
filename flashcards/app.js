@@ -128,7 +128,9 @@
     return studyMode === "quiz" || studyMode === "typeall";
   }
 
-  function describeCardMeta(item) {
+  /** Main card meta line (quiz rate shown separately as a small pill). */
+  function describeCardMetaLine(item) {
+    if (!item) return "";
     var bits = [];
     if (item.wordType) bits.push(item.wordType);
     bits.push("Lv " + item.difficulty);
@@ -136,12 +138,8 @@
       bits.push(
         quizGapChoiceMode ? "gap · pick letter" : "gap · type letter"
       );
-      var en = getQuizEntry(item.word);
-      if (en.right > 0) bits.push(en.right + " right on this word");
     } else if (studyMode === "typeall") {
       bits.push("type the whole word");
-      var en2 = getQuizEntry(item.word);
-      if (en2.right > 0) bits.push(en2.right + " right on this word");
     } else {
       bits.push("see mode");
     }
@@ -149,26 +147,12 @@
     return bits.join(" · ");
   }
 
-  /** Meta line for the word-detail popup (see-style, not tied to study mode). */
-  function describeWordPeekMeta(item) {
+  /** Word popup meta line (quiz rate in pill). */
+  function describeWordPeekMetaLine(item) {
     if (!item) return "";
     var bits = [];
     if (item.wordType) bits.push(item.wordType);
     bits.push("Lv " + item.difficulty);
-    var en = getQuizEntry(item.word);
-    if (en.quizzed > 0) {
-      bits.push(
-        "Quiz: " +
-          en.right +
-          " right · " +
-          en.wrong +
-          " wrong · " +
-          en.quizzed +
-          " rounds"
-      );
-    } else {
-      bits.push("No quiz stats yet");
-    }
     if (item.chinese) bits.push(item.chinese);
     return bits.join(" · ");
   }
@@ -649,6 +633,7 @@
     saveStreak(0);
     if (setModeActive) setHadWrongOnCard = true;
     updateScoreUi();
+    maybeRefreshCardQuizPill(w);
   }
 
   function bumpWordCorrect(w) {
@@ -659,12 +644,53 @@
     st[w] = (st[w] || 0) + 1;
     saveQuizDetail(d);
     saveWordStats(st);
+    maybeRefreshCardQuizPill(w);
     return e.right;
   }
 
   function getQuizEntry(w) {
     var d = loadQuizDetail();
     return d[w] || { quizzed: 0, right: 0, wrong: 0 };
+  }
+
+  function quizTryTotals(word) {
+    var en = getQuizEntry(word);
+    var right = en.right | 0;
+    var wrong = en.wrong | 0;
+    return { right: right, wrong: wrong, total: right + wrong };
+  }
+
+  function quizCorrectPercent(right, total) {
+    if (total < 1) return null;
+    return Math.round((100 * right) / total);
+  }
+
+  /** @returns {string} CSS tone: word-rate--none | full | high | low */
+  function quizRateToneClass(pct, total) {
+    if (total < 1) return "word-rate--none";
+    if (pct >= 100) return "word-rate--full";
+    if (pct > 70) return "word-rate--high";
+    return "word-rate--low";
+  }
+
+  function formatQuizRateLabel(right, total) {
+    if (total < 1) return "\u2014 (0/0)";
+    var pct = Math.round((100 * right) / total);
+    return pct + "% (" + right + "/" + total + ")";
+  }
+
+  /**
+   * @param {HTMLElement} el
+   * @param {string} word
+   * @param {string} baseClasses e.g. "word-rate-pill word-rate-pill--card"
+   */
+  function setWordRatePillForWord(el, word, baseClasses) {
+    if (!el) return;
+    var t = quizTryTotals(word);
+    var pct = quizCorrectPercent(t.right, t.total);
+    var tone = quizRateToneClass(pct != null ? pct : 0, t.total);
+    el.textContent = formatQuizRateLabel(t.right, t.total);
+    el.className = (baseClasses || "word-rate-pill") + " " + tone;
   }
 
   function findWordItemByText(word) {
@@ -754,8 +780,15 @@
       var meta = document.createElement("p");
       meta.className = "saved-list__lvl";
       meta.textContent = "Lv " + w.difficulty;
+      var rate = document.createElement("span");
+      setWordRatePillForWord(
+        rate,
+        w.word,
+        "word-rate-pill word-rate-pill--saved"
+      );
       li.appendChild(title);
       li.appendChild(meta);
+      li.appendChild(rate);
       listEl.appendChild(li);
     }
   }
@@ -863,12 +896,14 @@
       }
 
       var pctEl = document.createElement("p");
-      pctEl.className = "progress-row__pct";
+      var rateTone = quizRateToneClass(pctGreen, attempts);
+      pctEl.className = "progress-row__pct " + rateTone;
       if (attempts < 1) {
         pctEl.classList.add("progress-row__pct--empty");
-        pctEl.textContent = "—";
+        pctEl.textContent = formatQuizRateLabel(0, 0);
       } else {
-        pctEl.textContent = pctGreen + "%";
+        pctEl.textContent =
+          pctGreen + "% (" + r.right + "/" + attempts + ")";
       }
 
       li.appendChild(wEl);
@@ -925,9 +960,7 @@
     updateScoreUi();
     refreshReviewPanel();
     abortActiveSet();
-    if (current && elMeta) {
-      elMeta.textContent = describeCardMeta(current);
-    }
+    if (current) applyCardMetaForItem(current);
     setFeedback("Quiz history cleared.", "muted");
   }
 
@@ -1021,7 +1054,8 @@
   var elWordPeekSpeak = document.getElementById("word-peek-speak");
   var elWordPeekEmoji = document.getElementById("word-peek-emoji");
   var elWordPeekWord = document.getElementById("word-peek-word");
-  var elWordPeekMeta = document.getElementById("word-peek-meta");
+  var elWordPeekMetaLine = document.getElementById("word-peek-meta-line");
+  var elWordPeekMetaRate = document.getElementById("word-peek-meta-rate");
   var wordPeekItem = null;
 
   function kbdShortcutsAppendPlus(keysEl) {
@@ -1158,7 +1192,14 @@
     wordPeekItem = item;
     if (elWordPeekEmoji) elWordPeekEmoji.textContent = item.emoji || "";
     if (elWordPeekWord) elWordPeekWord.textContent = item.word || "";
-    if (elWordPeekMeta) elWordPeekMeta.textContent = describeWordPeekMeta(item);
+    if (elWordPeekMetaLine)
+      elWordPeekMetaLine.textContent = describeWordPeekMetaLine(item);
+    if (elWordPeekMetaRate)
+      setWordRatePillForWord(
+        elWordPeekMetaRate,
+        item.word,
+        "word-rate-pill word-rate-pill--peek"
+      );
     elWordPeekModal.hidden = false;
     updateWordPeekFavoriteButton();
     if (elWordPeekSpeak) elWordPeekSpeak.disabled = false;
@@ -1318,6 +1359,8 @@
   var elEmoji = document.getElementById("card-emoji");
   var elEnglish = document.getElementById("card-english");
   var elMeta = document.getElementById("card-meta");
+  var elMetaLine = document.getElementById("card-meta-line");
+  var elMetaRate = document.getElementById("card-meta-rate");
   var elDeckHint = document.getElementById("deck-hint");
   var elPointsVal = document.getElementById("points-val");
   var elStreakVal = document.getElementById("streak-val");
@@ -1336,6 +1379,28 @@
   var elNext = document.getElementById("btn-next");
   var elCheat = document.getElementById("btn-cheat");
   var elLoadError = document.getElementById("load-error");
+
+  function applyCardMetaForItem(item) {
+    if (!elMetaLine || !elMetaRate) return;
+    if (!item) {
+      elMetaLine.textContent = "";
+      elMetaRate.textContent = "";
+      elMetaRate.className = "word-rate-pill word-rate-pill--card word-rate--none";
+      return;
+    }
+    elMetaLine.textContent = describeCardMetaLine(item);
+    setWordRatePillForWord(
+      elMetaRate,
+      item.word,
+      "word-rate-pill word-rate-pill--card"
+    );
+  }
+
+  function maybeRefreshCardQuizPill(w) {
+    if (!current || current.word !== w) return;
+    applyCardMetaForItem(current);
+  }
+
   var elSpellZone = document.getElementById("spell-zone");
   var elSpellInline = document.getElementById("spell-inline");
   var elSpellInput = document.getElementById("spell-input");
@@ -1404,7 +1469,7 @@
     persistSelections();
     if (studyMode === "quiz" && current) {
       renderSpellChoices();
-      if (elMeta) elMeta.textContent = describeCardMeta(current);
+      applyCardMetaForItem(current);
       if (quizGapChoiceMode && elSpellChoiceRow && elSpellChoiceRow.firstElementChild) {
         window.setTimeout(function () {
           elSpellChoiceRow.firstElementChild.focus();
@@ -2056,7 +2121,7 @@
         elEnglish.hidden = true;
       }
       if (elChineseAside) elChineseAside.textContent = "";
-      if (elMeta) elMeta.textContent = "";
+      applyCardMetaForItem(null);
       if (elSpellZone) elSpellZone.hidden = true;
       hideSpellChoicesUi();
       if (elCheat) elCheat.hidden = true;
@@ -2070,7 +2135,7 @@
     if (elEmoji) elEmoji.textContent = current.emoji || "";
     if (elChineseAside) elChineseAside.textContent = "";
 
-    if (elMeta) elMeta.textContent = describeCardMeta(current);
+    applyCardMetaForItem(current);
 
     if (studyMode === "see") {
       if (elEnglish) {

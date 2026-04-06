@@ -1376,6 +1376,77 @@ body::after {
   max-width: 100%;
 }
 
+.flashcard__meta-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.flashcard__meta-line {
+  display: block;
+}
+
+.word-peek-modal__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+}
+
+/* Quiz correct-rate chip: green = 100%, yellow = above 70%, red = otherwise */
+.word-rate-pill {
+  font-size: 0.72rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  line-height: 1.25;
+  padding: 0.2em 0.55em;
+  border-radius: var(--radius-pill);
+  border: 1px solid transparent;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.94;
+}
+
+.word-rate-pill--card {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.word-rate-pill--saved {
+  align-self: flex-start;
+}
+
+.word-rate--none {
+  color: var(--muted);
+  background: rgba(8, 14, 20, 0.52);
+  border-color: rgba(122, 171, 154, 0.28);
+  text-shadow: none;
+}
+
+.word-rate--full {
+  color: #0a1410;
+  background: rgba(95, 250, 154, 0.26);
+  border-color: rgba(95, 250, 154, 0.4);
+  text-shadow: 0 0 6px rgba(95, 250, 154, 0.3);
+}
+
+.word-rate--high {
+  color: #1a1408;
+  background: rgba(255, 204, 51, 0.2);
+  border-color: rgba(255, 204, 51, 0.38);
+  text-shadow: 0 0 5px rgba(255, 204, 51, 0.22);
+}
+
+.word-rate--low {
+  color: #fff8f8;
+  background: rgba(255, 75, 92, 0.26);
+  border-color: rgba(255, 75, 92, 0.38);
+  text-shadow: 0 0 6px rgba(255, 75, 92, 0.22);
+}
+
 .flashcard__feedback {
   min-height: 1.5rem;
   margin: var(--space-2) 0 0;
@@ -1712,7 +1783,7 @@ body::after {
 .progress-grid__head,
 .progress-grid__row {
   display: grid;
-  grid-template-columns: 5.5rem 1fr 3rem;
+  grid-template-columns: 5.5rem 1fr minmax(4.5rem, auto);
   align-items: center;
   column-gap: var(--space-2);
   padding: var(--space-1) var(--space-2);
@@ -1789,16 +1860,33 @@ body::after {
 
 .progress-row__pct {
   margin: 0;
-  font-size: 1rem;
+  font-size: 0.78rem;
   font-weight: 400;
   font-variant-numeric: tabular-nums;
-  color: var(--crt-amber);
   text-align: right;
-  text-shadow: 0 0 6px rgba(255, 204, 51, 0.25);
+  line-height: 1.2;
+  justify-self: end;
 }
 
+.progress-row__pct.word-rate--full {
+  color: var(--crt-green);
+  text-shadow: 0 0 8px rgba(95, 250, 154, 0.35);
+}
+
+.progress-row__pct.word-rate--high {
+  color: var(--crt-amber-hot);
+  text-shadow: 0 0 6px rgba(255, 204, 51, 0.28);
+}
+
+.progress-row__pct.word-rate--low {
+  color: var(--crt-red);
+  text-shadow: 0 0 7px rgba(255, 107, 107, 0.32);
+}
+
+.progress-row__pct.word-rate--none,
 .progress-row__pct--empty {
   color: var(--muted);
+  text-shadow: none;
   font-weight: 400;
 }
 
