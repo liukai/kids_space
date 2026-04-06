@@ -7,13 +7,17 @@
   <title>Word Flashcards</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap"
+    rel="stylesheet"
+  />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <div class="app">
     <header class="site-header">
       <h1 class="site-header__title">Word Flashcards</h1>
+      <p class="site-header__subtitle">Arcade word maze · eat letters, score big</p>
       <div class="site-header__trophy" id="trophy-panel">
         <div class="site-header__trophy-row">
           <span class="site-header__trophy-label">Trophies <strong id="trophy-val">0</strong></span>
@@ -67,6 +71,36 @@
           <option value="favorites">Saved</option>
         </select>
       </div>
+      <div
+        class="control-bar__field control-bar__field--quiz-gap-choose"
+        id="quiz-gap-choice-field"
+        hidden
+      >
+        <span class="control-bar__label">Quiz · small hands</span>
+        <label class="pick-letter-toggle">
+          <input
+            type="checkbox"
+            id="quiz-gap-choice-mode"
+            class="pick-letter-toggle__input sr-only"
+            role="switch"
+            autocomplete="off"
+            aria-checked="false"
+            aria-label="Pick letter with big buttons and number keys"
+          />
+          <span class="pick-letter-toggle__surface" aria-hidden="true">
+            <span class="pick-letter-toggle__track">
+              <span class="pick-letter-toggle__knob"></span>
+            </span>
+          </span>
+          <span class="pick-letter-toggle__copy">
+            <span class="pick-letter-toggle__title">Pick letter</span>
+            <span class="pick-letter-toggle__sub"
+              >Easier · big taps · type
+              <kbd class="kbd-chip kbd-chip--tiny">1</kbd> <kbd class="kbd-chip kbd-chip--tiny">2</kbd>
+              <kbd class="kbd-chip kbd-chip--tiny">3</kbd></span>
+          </span>
+        </label>
+      </div>
     </div>
 
     <div
@@ -107,10 +141,6 @@
           <p id="card-english" class="flashcard__word" hidden></p>
 
           <div id="spell-zone" class="flashcard__spell" hidden>
-            <div id="spell-typeall-wrap" class="spell-typeall-wrap" hidden>
-              <p id="spell-typeall-hint" class="spell-typeall-hint"></p>
-              <div id="spell-typeall-dots" class="spell-typeall-dots" aria-hidden="true"></div>
-            </div>
             <div id="spell-inline" class="spell-inline"></div>
             <input
               id="spell-input"
@@ -123,6 +153,15 @@
               inputmode="text"
               aria-label="Your answer"
             />
+            <div id="spell-choice-wrap" class="spell-choice-wrap" hidden>
+              <p id="spell-choice-hint" class="spell-choice-hint"></p>
+              <div
+                id="spell-choice-row"
+                class="spell-choice-row"
+                role="group"
+                aria-label="Missing letter: choose 1, 2, or 3 on the keyboard, or tap"
+              ></div>
+            </div>
           </div>
 
           <p id="card-meta" class="flashcard__meta"></p>

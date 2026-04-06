@@ -133,7 +133,9 @@
     if (item.wordType) bits.push(item.wordType);
     bits.push("Lv " + item.difficulty);
     if (studyMode === "quiz") {
-      bits.push("one-letter gap");
+      bits.push(
+        quizGapChoiceMode ? "gap · pick letter" : "gap · type letter"
+      );
       var en = getQuizEntry(item.word);
       if (en.right > 0) bits.push(en.right + " right on this word");
     } else if (studyMode === "typeall") {
@@ -920,6 +922,8 @@
   var wordTypeScope = "all";
   var cardCount = 0;
   var studyMode = "see";
+  /** Quiz only: tap three letter buttons (optional 1/2/3 keys) instead of typing the gap. */
+  var quizGapChoiceMode = false;
   var missingIndex = 0;
   var cheatUsed = false;
   var quizAttemptCountedForCard = false;
@@ -1068,6 +1072,7 @@
         : QUIZ_SUCCESS_HOLD_GAP_MS;
     clearQuizAdvanceTimer();
     advancingQuiz = true;
+    hideSpellChoicesUi();
     quizAdvanceTimer = window.setTimeout(function () {
       quizAdvanceTimer = null;
       if (!setModeActive) {
@@ -1105,6 +1110,8 @@
   var elWordType = document.getElementById("word-type-filter");
   var elDeckScope = document.getElementById("deck-scope");
   var elStudyMode = document.getElementById("study-mode");
+  var elQuizGapChoiceField = document.getElementById("quiz-gap-choice-field");
+  var elQuizGapChoiceToggle = document.getElementById("quiz-gap-choice-mode");
   var elFavorite = document.getElementById("btn-favorite");
   var elSpeak = document.getElementById("btn-speak");
   var elNext = document.getElementById("btn-next");
@@ -1113,11 +1120,164 @@
   var elSpellZone = document.getElementById("spell-zone");
   var elSpellInline = document.getElementById("spell-inline");
   var elSpellInput = document.getElementById("spell-input");
-  var elSpellTypeallWrap = document.getElementById("spell-typeall-wrap");
-  var elSpellTypeallHint = document.getElementById("spell-typeall-hint");
-  var elSpellTypeallDots = document.getElementById("spell-typeall-dots");
+  var elSpellChoiceWrap = document.getElementById("spell-choice-wrap");
+  var elSpellChoiceHint = document.getElementById("spell-choice-hint");
+  var elSpellChoiceRow = document.getElementById("spell-choice-row");
   var elFeedback = document.getElementById("feedback");
   var elChineseAside = document.getElementById("chinese-aside");
+
+  function ensureSpellChoiceWrapLast() {
+    if (elSpellZone && elSpellChoiceWrap)
+      elSpellZone.appendChild(elSpellChoiceWrap);
+  }
+
+  function syncQuizGapInputForChoiceMode() {
+    if (!elSpellInput) return;
+    var choicesOn =
+      elSpellChoiceWrap &&
+      !elSpellChoiceWrap.hidden &&
+      quizGapChoiceMode &&
+      studyMode === "quiz" &&
+      current &&
+      !cheatUsed &&
+      !advancingQuiz;
+    if (choicesOn) {
+      elSpellInput.readOnly = true;
+      elSpellInput.setAttribute("inputmode", "none");
+      elSpellInput.classList.add("spell-input-inline--gap-choose");
+      elSpellInput.tabIndex = -1;
+    } else {
+      elSpellInput.readOnly = false;
+      elSpellInput.setAttribute("inputmode", "text");
+      elSpellInput.classList.remove("spell-input-inline--gap-choose");
+      if (studyMode === "quiz") elSpellInput.tabIndex = 0;
+    }
+  }
+
+  function hideSpellChoicesUi() {
+    document.documentElement.classList.remove("use-spell-choices");
+    if (elSpellChoiceWrap) elSpellChoiceWrap.hidden = true;
+    if (elSpellChoiceRow) elSpellChoiceRow.replaceChildren();
+    if (elSpellChoiceHint) elSpellChoiceHint.textContent = "";
+    syncQuizGapInputForChoiceMode();
+  }
+
+  function syncQuizGapSwitchAria() {
+    if (!elQuizGapChoiceToggle) return;
+    elQuizGapChoiceToggle.setAttribute(
+      "aria-checked",
+      elQuizGapChoiceToggle.checked ? "true" : "false"
+    );
+  }
+
+  function updateQuizGapChoiceField() {
+    if (elQuizGapChoiceField)
+      elQuizGapChoiceField.hidden = studyMode !== "quiz";
+    if (elQuizGapChoiceToggle)
+      elQuizGapChoiceToggle.checked = quizGapChoiceMode;
+    syncQuizGapSwitchAria();
+  }
+
+  function onQuizGapChoiceModeChange() {
+    if (!elQuizGapChoiceToggle) return;
+    quizGapChoiceMode = !!elQuizGapChoiceToggle.checked;
+    syncQuizGapSwitchAria();
+    persistSelections();
+    if (studyMode === "quiz" && current) {
+      renderSpellChoices();
+      if (elMeta) elMeta.textContent = describeCardMeta(current);
+      if (quizGapChoiceMode && elSpellChoiceRow && elSpellChoiceRow.firstElementChild) {
+        window.setTimeout(function () {
+          elSpellChoiceRow.firstElementChild.focus();
+        }, 0);
+      } else if (elSpellInput) {
+        window.setTimeout(function () {
+          elSpellInput.tabIndex = 0;
+          elSpellInput.focus();
+        }, 0);
+      }
+    }
+  }
+
+  function pickQuizWrongLetters(correct) {
+    var alpha = "abcdefghijklmnopqrstuvwxyz";
+    var wrong = [];
+    var guard = 0;
+    while (wrong.length < 2 && guard < 160) {
+      guard++;
+      var c = alpha[Math.floor(Math.random() * 26)];
+      if (c === correct) continue;
+      if (wrong.indexOf(c) !== -1) continue;
+      wrong.push(c);
+    }
+    while (wrong.length < 2) {
+      var k = 0;
+      var d = alpha[wrong.length % 26];
+      while (d === correct || wrong.indexOf(d) !== -1) {
+        k++;
+        d = alpha[k % 26];
+      }
+      wrong.push(d);
+    }
+    return wrong;
+  }
+
+  function renderSpellChoices() {
+    ensureSpellChoiceWrapLast();
+    if (
+      !elSpellChoiceWrap ||
+      !elSpellChoiceRow ||
+      !current ||
+      advancingQuiz ||
+      cheatUsed ||
+      studyMode !== "quiz" ||
+      !quizGapChoiceMode
+    ) {
+      hideSpellChoicesUi();
+      return;
+    }
+    if (elSpellChoiceHint)
+      elSpellChoiceHint.textContent =
+        "Each button shows number : letter — tap it or press that number on the keyboard";
+    var need = current.word.charAt(missingIndex);
+    var wrong = pickQuizWrongLetters(need);
+    var opts = shuffleInPlace([need, wrong[0], wrong[1]]);
+    elSpellChoiceRow.replaceChildren();
+    var qi;
+    for (qi = 0; qi < opts.length; qi++) {
+      (function (letter, keyNum) {
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "spell-choice-btn";
+        var numEl = document.createElement("span");
+        numEl.className = "spell-choice-btn__num";
+        numEl.textContent = String(keyNum);
+        var colonEl = document.createElement("span");
+        colonEl.className = "spell-choice-btn__colon";
+        colonEl.textContent = ":";
+        var letterEl = document.createElement("span");
+        letterEl.className = "spell-choice-btn__letter";
+        letterEl.textContent = letter;
+        btn.appendChild(numEl);
+        btn.appendChild(colonEl);
+        btn.appendChild(letterEl);
+        btn.setAttribute(
+          "aria-label",
+          "Choice " + keyNum + ": letter " + letter + ". Press " + keyNum + " on the keyboard or tap."
+        );
+        btn.addEventListener("click", function (ev) {
+          if (ev) ev.preventDefault();
+          if (!elSpellInput || advancingQuiz || cheatUsed) return;
+          elSpellInput.value = letter;
+          onSpellInputLive();
+        });
+        elSpellChoiceRow.appendChild(btn);
+      })(opts[qi], qi + 1);
+    }
+    elSpellChoiceWrap.hidden = false;
+    document.documentElement.classList.add("use-spell-choices");
+    syncQuizGapInputForChoiceMode();
+  }
 
   function trophyCount() {
     return Math.floor(totalPoints / TROPHY_EVERY);
@@ -1231,61 +1391,13 @@
     );
   }
 
-  function updateTypeAllDots(typedLen) {
-    if (!elSpellTypeallDots) return;
-    elSpellTypeallDots.classList.remove("spell-typeall-dots--success");
-    var slots = elSpellTypeallDots.querySelectorAll(".spell-typeall-slot");
-    var i;
-    for (i = 0; i < slots.length; i++) {
-      slots[i].classList.remove("spell-typeall-slot--win");
-      if (i < typedLen) {
-        slots[i].textContent = "\u25cf";
-        slots[i].classList.add("spell-typeall-slot--filled");
-      } else {
-        slots[i].textContent = "\u25cb";
-        slots[i].classList.remove("spell-typeall-slot--filled");
-      }
-    }
-  }
-
-  function markTypeAllDotsWin() {
-    if (!elSpellTypeallDots) return;
-    elSpellTypeallDots.classList.add("spell-typeall-dots--success");
-    var slots = elSpellTypeallDots.querySelectorAll(".spell-typeall-slot");
-    var i;
-    for (i = 0; i < slots.length; i++) {
-      slots[i].textContent = "\u2713";
-      slots[i].classList.remove("spell-typeall-slot--filled");
-      slots[i].classList.add("spell-typeall-slot--win");
-    }
-  }
-
-  /** Big green “you did it” UI (card + optional type-all checks). */
-  function showAnswerCelebrate(typeAllDots) {
+  /** Big green “you did it” UI on the card. */
+  function showAnswerCelebrate() {
     if (elCard) elCard.classList.add("flashcard--answer-ok");
-    if (typeAllDots) {
-      markTypeAllDotsWin();
-      if (elSpellTypeallHint && current) {
-        elSpellTypeallHint.classList.add("spell-typeall-hint--yes");
-        elSpellTypeallHint.textContent =
-          "Yes! All " + current.word.length + " letters are right!";
-      }
-    }
   }
 
   function clearAnswerCelebrate() {
     if (elCard) elCard.classList.remove("flashcard--answer-ok");
-    if (elSpellTypeallHint) {
-      elSpellTypeallHint.classList.remove("spell-typeall-hint--yes");
-    }
-    if (elSpellTypeallDots) {
-      elSpellTypeallDots.classList.remove("spell-typeall-dots--success");
-      var slots = elSpellTypeallDots.querySelectorAll(".spell-typeall-slot");
-      var j;
-      for (j = 0; j < slots.length; j++) {
-        slots[j].classList.remove("spell-typeall-slot--win");
-      }
-    }
   }
 
   function onSpellInputLiveTypeAll() {
@@ -1299,32 +1411,17 @@
     clearSpellInputVisual();
     if (v !== word) {
       if (elCard) elCard.classList.remove("flashcard--answer-ok");
-      if (elSpellTypeallHint) {
-        elSpellTypeallHint.classList.remove("spell-typeall-hint--yes");
-        elSpellTypeallHint.textContent =
-          "This word has " + n + " letters. Type it in the box!";
-      }
     }
-    updateTypeAllDots(v.length);
     if (cheatUsed) {
       elSpellInput.classList.add("spell-input-inline--ok");
       if (v === word && v.length > 0) {
-        markTypeAllDotsWin();
         if (elCard) elCard.classList.add("flashcard--answer-ok");
-        if (elSpellTypeallDots) {
-          elSpellTypeallDots.classList.add("spell-typeall-dots--success");
-        }
-        if (elSpellTypeallHint) {
-          elSpellTypeallHint.classList.add("spell-typeall-hint--yes");
-          elSpellTypeallHint.textContent =
-            "Peek filled the word — press Next (no points).";
-        }
       }
       setFeedback("Peek showed the word — press Next (no points).", "muted");
       return;
     }
     if (!v) {
-      setFeedback("Use the big box — spell all " + n + " letters!", "muted");
+      setFeedback("", null);
       return;
     }
     if (v === word) {
@@ -1332,7 +1429,7 @@
       return;
     }
     if (word.indexOf(v) === 0) {
-      setFeedback("Nice start — " + v.length + " of " + n + " letters.", "muted");
+      setFeedback("", null);
       return;
     }
     if (v.length >= n) {
@@ -1361,13 +1458,18 @@
     if (!v) {
       if (elCard) elCard.classList.remove("flashcard--answer-ok");
       quizGapLastWrongCharRecorded = null;
-      setFeedback("Type one letter in the box.", "muted");
+      setFeedback(
+        quizGapChoiceMode
+          ? "Tap a button (number : letter) or press 1, 2, or 3 on the keyboard."
+          : "Type one letter in the box.",
+        "muted"
+      );
       return;
     }
 
     if (cheatUsed) {
       elSpellInput.classList.add("spell-input-inline--ok");
-      showAnswerCelebrate(false);
+      showAnswerCelebrate();
       if (v === need) {
         window.setTimeout(function () {
           trySubmitSpell();
@@ -1453,37 +1555,21 @@
     if (!elSpellZone || !elSpellInput) return;
     cheatUsed = false;
     clearSpellInputVisual();
-    if (elSpellTypeallWrap) elSpellTypeallWrap.hidden = false;
-    if (elSpellInline) elSpellInline.hidden = true;
+    if (elSpellInline) {
+      elSpellInline.hidden = true;
+      elSpellInline.textContent = "";
+    }
     elSpellInput.classList.add("spell-input-full");
     var n = word.length;
     elSpellInput.maxLength = n;
     elSpellInput.value = "";
-    elSpellInput.setAttribute(
-      "aria-label",
-      "Type the whole word, " + n + " letters"
-    );
-    if (elSpellTypeallHint) {
-      elSpellTypeallHint.textContent =
-        "This word has " + n + " letters. Type it in the box!";
-    }
-    if (elSpellTypeallDots) {
-      elSpellTypeallDots.textContent = "";
-      var i;
-      for (i = 0; i < n; i++) {
-        var span = document.createElement("span");
-        span.className = "spell-typeall-slot";
-        span.textContent = "\u25cb";
-        elSpellTypeallDots.appendChild(span);
-      }
-    }
-    updateTypeAllDots(0);
+    elSpellInput.setAttribute("aria-label", "Type the whole word");
     elSpellZone.appendChild(elSpellInput);
+    ensureSpellChoiceWrapLast();
   }
 
   function rebuildSpellLine(word, missingIndex) {
     if (!elSpellZone || !elSpellInline || !elSpellInput) return;
-    if (elSpellTypeallWrap) elSpellTypeallWrap.hidden = true;
     if (elSpellInline) elSpellInline.hidden = false;
     elSpellInput.classList.remove("spell-input-full");
     elSpellInput.maxLength = 1;
@@ -1503,6 +1589,7 @@
         elSpellInline.appendChild(sp);
       }
     }
+    ensureSpellChoiceWrapLast();
   }
 
   function prepareRound() {
@@ -1525,10 +1612,7 @@
       .toLowerCase()
       .replace(/[^a-z]/g, "");
     if (typed.length < word.length) {
-      setFeedback(
-        "Keep typing — need " + word.length + " letters, you have " + typed.length + ".",
-        "muted"
-      );
+      setFeedback("", null);
       return;
     }
     if (!quizAttemptCountedForCard) {
@@ -1555,7 +1639,7 @@
       updateScoreUi();
       setFeedback("", null);
     }
-    showAnswerCelebrate(true);
+    showAnswerCelebrate();
     flashCardOk();
     scheduleQuizAdvanceAfterCorrect(true);
   }
@@ -1594,7 +1678,7 @@
       if (elChineseAside) elChineseAside.textContent = "";
       if (elMeta) elMeta.textContent = "";
       if (elSpellZone) elSpellZone.hidden = true;
-      if (elSpellTypeallWrap) elSpellTypeallWrap.hidden = true;
+      hideSpellChoicesUi();
       if (elCheat) elCheat.hidden = true;
       setFeedback("", null);
       updateSetBar();
@@ -1620,9 +1704,11 @@
         elSpeak.hidden = false;
         elSpeak.disabled = false;
       }
+      hideSpellChoicesUi();
       setFeedback("", null);
       pronounceAfterCard(!!fromUserTap);
     } else if (studyMode === "typeall") {
+      hideSpellChoicesUi();
       if (elEnglish) elEnglish.hidden = true;
       if (elSpellZone) elSpellZone.hidden = false;
       if (elCheat) {
@@ -1639,15 +1725,7 @@
       }
       setupTypeAllUi(current.word);
       if (elSpellInput) elSpellInput.tabIndex = 0;
-      var introBase = quizPointsForItem(current);
-      setFeedback(
-        "Listen, then type the whole word — you earn original points × 2 if you nail it: " +
-          introBase +
-          " × 2 = " +
-          introBase * 2 +
-          " pts!",
-        "muted"
-      );
+      setFeedback("", null);
       pronounceAfterCard(!!fromUserTap);
       window.setTimeout(function () {
         if (studyMode === "typeall" && current && elSpellInput) {
@@ -1679,10 +1757,18 @@
       );
       pronounceAfterCard(!!fromUserTap);
       window.setTimeout(function () {
-        if (studyMode === "quiz" && current && elSpellInput)
-          elSpellInput.focus();
+        if (studyMode !== "quiz" || !current) return;
+        if (
+          quizGapChoiceMode &&
+          elSpellChoiceRow &&
+          elSpellChoiceRow.firstElementChild
+        )
+          elSpellChoiceRow.firstElementChild.focus();
+        else if (elSpellInput) elSpellInput.focus();
       }, QUIZ_FOCUS_DELAY_MS);
+      renderSpellChoices();
     }
+    updateQuizGapChoiceField();
     updateFavoriteButton();
     updateSetBar();
   }
@@ -1820,6 +1906,7 @@
       level: elDifficulty ? elDifficulty.value : "all",
       deck: deckScope,
       wordType: wordTypeScope,
+      quizGapChoice: quizGapChoiceMode,
     });
   }
 
@@ -1931,6 +2018,7 @@
       speakWordLetters(current.word, true);
     }
     elSpellInput.focus();
+    renderSpellChoices();
   }
 
   function trySubmitSpell() {
@@ -1941,7 +2029,12 @@
       .toLowerCase()
       .charAt(0);
     if (!letter) {
-      setFeedback("Fill the gap before Next.", "muted");
+      setFeedback(
+        quizGapChoiceMode
+          ? "Choose a letter first — tap the button or press the matching number (1, 2, or 3)."
+          : "Fill the gap before Next.",
+        "muted"
+      );
       return;
     }
     if (!quizAttemptCountedForCard) {
@@ -1971,7 +2064,7 @@
       updateScoreUi();
       setFeedback("", null);
     }
-    showAnswerCelebrate(false);
+    showAnswerCelebrate();
     flashCardOk();
     scheduleQuizAdvanceAfterCorrect(false);
   }
@@ -1984,10 +2077,35 @@
   }
 
   function onGlobalKeydown(e) {
-    if (e.key !== "Enter") return;
     if (!current) return;
     if (elLoadError && elLoadError.hidden === false) return;
     var tag = (e.target && e.target.tagName) || "";
+
+    if (
+      studyMode === "quiz" &&
+      quizGapChoiceMode &&
+      !cheatUsed &&
+      !advancingQuiz &&
+      elSpellChoiceWrap &&
+      !elSpellChoiceWrap.hidden &&
+      elSpellChoiceRow &&
+      elSpellChoiceRow.children.length >= 3
+    ) {
+      var digit = e.key;
+      if (digit === "1" || digit === "2" || digit === "3") {
+        if (tag === "SELECT" || tag === "TEXTAREA") return;
+        if (tag === "INPUT" && e.target !== elSpellInput) return;
+        var idx = digit.charCodeAt(0) - 49;
+        var btn = elSpellChoiceRow.children[idx];
+        if (btn) {
+          e.preventDefault();
+          btn.click();
+        }
+        return;
+      }
+    }
+
+    if (e.key !== "Enter") return;
     if (tag === "SELECT" || tag === "TEXTAREA") return;
     if (studyMode === "see") {
       if (tag === "INPUT") return;
@@ -2000,7 +2118,13 @@
       var ch = String(elSpellInput.value || "").trim();
       if (!ch) {
         e.preventDefault();
-        elSpellInput.focus();
+        if (
+          quizGapChoiceMode &&
+          elSpellChoiceRow &&
+          elSpellChoiceRow.firstElementChild
+        )
+          elSpellChoiceRow.firstElementChild.focus();
+        else if (elSpellInput) elSpellInput.focus();
         return;
       }
       e.preventDefault();
@@ -2057,6 +2181,9 @@
     }
     if (elStudyMode) {
       elStudyMode.addEventListener("change", onStudyModeChange);
+    }
+    if (elQuizGapChoiceToggle) {
+      elQuizGapChoiceToggle.addEventListener("change", onQuizGapChoiceModeChange);
     }
     if (elFavorite) elFavorite.addEventListener("click", onFavoriteTap);
     var btnClearHistory = document.getElementById("btn-clear-history");
@@ -2205,6 +2332,12 @@
             wordTypeScope = prefs.wordType;
             elWordType.value = prefs.wordType;
           }
+        }
+
+        if (prefs && prefs.quizGapChoice === true) {
+          quizGapChoiceMode = true;
+          if (elQuizGapChoiceToggle) elQuizGapChoiceToggle.checked = true;
+          syncQuizGapSwitchAria();
         }
 
         rebuildPool();
