@@ -162,6 +162,17 @@
             <span id="card-meta-rate" class="word-rate-pill word-rate-pill--by-word"></span>
           </div>
 
+          <div id="card-pronunciation" class="flashcard__pronunciation" hidden>
+            <div id="card-pron-line-ipa" class="flashcard__pron-line" hidden>
+              <span class="flashcard__pron-label">IPA</span>
+              <span id="card-pron-ipa" class="flashcard__pron-ipa"></span>
+            </div>
+            <div id="card-pron-line-respell" class="flashcard__pron-line" hidden>
+              <span class="flashcard__pron-label">Sounds like</span>
+              <span id="card-pron-respell" class="flashcard__pron-respell"></span>
+            </div>
+          </div>
+
           <div id="spell-zone" class="flashcard__spell" hidden>
             <div id="quiz-word-row" class="flashcard__word-row flashcard__word-row--quiz"></div>
             <div id="spell-inline" class="spell-inline"></div>
@@ -300,6 +311,16 @@
       <div class="flashcard__surface word-peek-modal__surface">
         <span id="word-peek-emoji" class="flashcard__emoji" aria-hidden="true"></span>
         <p id="word-peek-word" class="flashcard__word"></p>
+        <div id="word-peek-pronunciation" class="flashcard__pronunciation word-peek-modal__pron" hidden>
+          <div id="word-peek-pron-line-ipa" class="flashcard__pron-line" hidden>
+            <span class="flashcard__pron-label">IPA</span>
+            <span id="word-peek-pron-ipa" class="flashcard__pron-ipa"></span>
+          </div>
+          <div id="word-peek-pron-line-respell" class="flashcard__pron-line" hidden>
+            <span class="flashcard__pron-label">Sounds like</span>
+            <span id="word-peek-pron-respell" class="flashcard__pron-respell"></span>
+          </div>
+        </div>
         <div id="word-peek-meta" class="flashcard__meta word-peek-modal__meta">
           <span id="word-peek-meta-line" class="flashcard__meta-line"></span>
           <span id="word-peek-meta-rate" class="word-rate-pill word-rate-pill--peek"></span>

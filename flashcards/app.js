@@ -38,6 +38,8 @@
           word: word,
           emoji: String(o.emoji != null ? o.emoji : ""),
           chinese: String(o.chinese != null ? o.chinese : ""),
+          ipa: String(o.ipa != null ? o.ipa : ""),
+          respelling: String(o.respelling != null ? o.respelling : ""),
           type: String(o.type != null ? o.type : ""),
           wordType: String(o.wordType != null ? o.wordType : ""),
           gradeLevel: String(o.gradeLevel != null ? o.gradeLevel : ""),
@@ -707,6 +709,8 @@
       word: lc,
       emoji: "",
       chinese: "",
+      ipa: "",
+      respelling: "",
       type: "",
       wordType: "",
       gradeLevel: "",
@@ -961,7 +965,10 @@
     updateScoreUi();
     refreshReviewPanel();
     abortActiveSet();
-    if (current) applyCardMetaForItem(current);
+    if (current) {
+      applyCardMetaForItem(current);
+      applyPronunciationToCard(current);
+    }
     setFeedback("Quiz history cleared.", "muted");
   }
 
@@ -1057,6 +1064,19 @@
   var elWordPeekWord = document.getElementById("word-peek-word");
   var elWordPeekMetaLine = document.getElementById("word-peek-meta-line");
   var elWordPeekMetaRate = document.getElementById("word-peek-meta-rate");
+  var elWordPeekPronunciation = document.getElementById(
+    "word-peek-pronunciation"
+  );
+  var elWordPeekPronLineIpa = document.getElementById(
+    "word-peek-pron-line-ipa"
+  );
+  var elWordPeekPronIpa = document.getElementById("word-peek-pron-ipa");
+  var elWordPeekPronLineRespell = document.getElementById(
+    "word-peek-pron-line-respell"
+  );
+  var elWordPeekPronRespell = document.getElementById(
+    "word-peek-pron-respell"
+  );
   var wordPeekItem = null;
 
   function kbdShortcutsAppendPlus(keysEl) {
@@ -1201,6 +1221,14 @@
         item.word,
         "word-rate-pill word-rate-pill--peek"
       );
+    fillPronunciationUi(
+      elWordPeekPronunciation,
+      elWordPeekPronLineIpa,
+      elWordPeekPronIpa,
+      elWordPeekPronLineRespell,
+      elWordPeekPronRespell,
+      item
+    );
     elWordPeekModal.hidden = false;
     updateWordPeekFavoriteButton();
     if (elWordPeekSpeak) elWordPeekSpeak.disabled = false;
@@ -1364,6 +1392,11 @@
   var elMeta = document.getElementById("card-meta");
   var elMetaLine = document.getElementById("card-meta-line");
   var elMetaRate = document.getElementById("card-meta-rate");
+  var elCardPronunciation = document.getElementById("card-pronunciation");
+  var elCardPronLineIpa = document.getElementById("card-pron-line-ipa");
+  var elCardPronIpa = document.getElementById("card-pron-ipa");
+  var elCardPronLineRespell = document.getElementById("card-pron-line-respell");
+  var elCardPronRespell = document.getElementById("card-pron-respell");
   var elDeckHint = document.getElementById("deck-hint");
   var elPointsVal = document.getElementById("points-val");
   var elStreakVal = document.getElementById("streak-val");
@@ -1382,6 +1415,48 @@
   var elNext = document.getElementById("btn-next");
   var elCheat = document.getElementById("btn-cheat");
   var elLoadError = document.getElementById("load-error");
+
+  function fillPronunciationUi(wrap, lineIpa, textIpa, lineResp, textResp, item) {
+    if (!wrap) return;
+    if (!item) {
+      wrap.hidden = true;
+      if (lineIpa) lineIpa.hidden = true;
+      if (lineResp) lineResp.hidden = true;
+      if (textIpa) textIpa.textContent = "";
+      if (textResp) textResp.textContent = "";
+      return;
+    }
+    var ipa = String(item.ipa != null ? item.ipa : "").trim();
+    var resp = String(item.respelling != null ? item.respelling : "").trim();
+    if (!ipa && !resp) {
+      wrap.hidden = true;
+      if (lineIpa) lineIpa.hidden = true;
+      if (lineResp) lineResp.hidden = true;
+      if (textIpa) textIpa.textContent = "";
+      if (textResp) textResp.textContent = "";
+      return;
+    }
+    wrap.hidden = false;
+    if (lineIpa && textIpa) {
+      lineIpa.hidden = !ipa;
+      textIpa.textContent = ipa;
+    }
+    if (lineResp && textResp) {
+      lineResp.hidden = !resp;
+      textResp.textContent = resp;
+    }
+  }
+
+  function applyPronunciationToCard(item) {
+    fillPronunciationUi(
+      elCardPronunciation,
+      elCardPronLineIpa,
+      elCardPronIpa,
+      elCardPronLineRespell,
+      elCardPronRespell,
+      item
+    );
+  }
 
   function applyCardMetaForItem(item) {
     if (!elMetaLine || !elMetaRate) return;
@@ -2149,6 +2224,7 @@
       }
       if (elChineseAside) elChineseAside.textContent = "";
       applyCardMetaForItem(null);
+      applyPronunciationToCard(null);
       if (elSpellZone) elSpellZone.hidden = true;
       if (elCardWordRow) elCardWordRow.hidden = true;
       hideSpellChoicesUi();
@@ -2164,6 +2240,7 @@
     if (elChineseAside) elChineseAside.textContent = "";
 
     applyCardMetaForItem(current);
+    applyPronunciationToCard(current);
 
     if (studyMode === "see") {
       if (elEnglish) {

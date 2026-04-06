@@ -7,7 +7,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "cvc",
     "difficulty": 2,
     "wordType": "CVC",
-    "gradeLevel": "K"
+    "gradeLevel": "K",
+    "ipa": "/kæt/",
+    "respelling": "KAT"
   },
   {
     "word": "dog",
@@ -16,7 +18,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "cvc",
     "difficulty": 2,
     "wordType": "CVC",
-    "gradeLevel": "K"
+    "gradeLevel": "K",
+    "ipa": "/dɔːɡ/",
+    "respelling": "DAWG"
   },
   {
     "word": "sun",
@@ -25,7 +29,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "cvc",
     "difficulty": 2,
     "wordType": "CVC",
-    "gradeLevel": "K"
+    "gradeLevel": "K",
+    "ipa": "/sʌn/",
+    "respelling": "SUN"
   },
   {
     "word": "bed",
@@ -34,7 +40,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "cvc",
     "difficulty": 2,
     "wordType": "CVC",
-    "gradeLevel": "K"
+    "gradeLevel": "K",
+    "ipa": "/bɛd/",
+    "respelling": "BED"
   },
   {
     "word": "pen",
@@ -43,7 +51,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "cvc",
     "difficulty": 2,
     "wordType": "CVC",
-    "gradeLevel": "K"
+    "gradeLevel": "K",
+    "ipa": "/pɛn/",
+    "respelling": "PEN"
   },
   {
     "word": "cup",
@@ -52,7 +62,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "cvc",
     "difficulty": 2,
     "wordType": "CVC",
-    "gradeLevel": "K"
+    "gradeLevel": "K",
+    "ipa": "/kʌp/",
+    "respelling": "KUP"
   },
   {
     "word": "map",
@@ -61,7 +73,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "cvc",
     "difficulty": 2,
     "wordType": "CVC",
-    "gradeLevel": "K"
+    "gradeLevel": "K",
+    "ipa": "/mæp/",
+    "respelling": "MAP"
   },
   {
     "word": "hat",
@@ -70,7 +84,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "cvc",
     "difficulty": 2,
     "wordType": "CVC",
-    "gradeLevel": "K"
+    "gradeLevel": "K",
+    "ipa": "/hæt/",
+    "respelling": "HAT"
   },
   {
     "word": "pig",
@@ -79,7 +95,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "cvc",
     "difficulty": 2,
     "wordType": "CVC",
-    "gradeLevel": "K"
+    "gradeLevel": "K",
+    "ipa": "/pɪɡ/",
+    "respelling": "PIG"
   },
   {
     "word": "box",
@@ -88,7 +106,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "cvc",
     "difficulty": 2,
     "wordType": "CVC",
-    "gradeLevel": "K"
+    "gradeLevel": "K",
+    "ipa": "/bɑːks/",
+    "respelling": "BAHKS"
   },
   {
     "word": "bat",
@@ -97,7 +117,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "cvc",
     "difficulty": 2,
     "wordType": "CVC",
-    "gradeLevel": "K"
+    "gradeLevel": "K",
+    "ipa": "/bæt/",
+    "respelling": "BAT"
   },
   {
     "word": "car",
@@ -106,7 +128,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "cvc",
     "difficulty": 2,
     "wordType": "CVC",
-    "gradeLevel": "K"
+    "gradeLevel": "K",
+    "ipa": "/kɑːr/",
+    "respelling": "KAR"
   },
   {
     "word": "bus",
@@ -115,7 +139,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "cvc",
     "difficulty": 2,
     "wordType": "CVC",
-    "gradeLevel": "K"
+    "gradeLevel": "K",
+    "ipa": "/bʌs/",
+    "respelling": "BUS"
   },
   {
     "word": "red",
@@ -124,7 +150,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "cvc",
     "difficulty": 2,
     "wordType": "CVC",
-    "gradeLevel": "K"
+    "gradeLevel": "K",
+    "ipa": "/rɛd/",
+    "respelling": "RED"
   },
   {
     "word": "run",
@@ -133,7 +161,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "cvc",
     "difficulty": 2,
     "wordType": "CVC",
-    "gradeLevel": "K"
+    "gradeLevel": "K",
+    "ipa": "/rʌn/",
+    "respelling": "RUN"
   },
   {
     "word": "sit",
@@ -142,7 +172,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "cvc",
     "difficulty": 2,
     "wordType": "CVC",
-    "gradeLevel": "K"
+    "gradeLevel": "K",
+    "ipa": "/sɪt/",
+    "respelling": "SIT"
   },
   {
     "word": "top",
@@ -151,7 +183,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "cvc",
     "difficulty": 2,
     "wordType": "CVC",
-    "gradeLevel": "K"
+    "gradeLevel": "K",
+    "ipa": "/tɑːp/",
+    "respelling": "TAHP"
   },
   {
     "word": "hot",
@@ -160,7 +194,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "cvc",
     "difficulty": 2,
     "wordType": "CVC",
-    "gradeLevel": "K"
+    "gradeLevel": "K",
+    "ipa": "/hɑːt/",
+    "respelling": "HAHT"
   },
   {
     "word": "big",
@@ -169,7 +205,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "cvc",
     "difficulty": 2,
     "wordType": "CVC",
-    "gradeLevel": "K"
+    "gradeLevel": "K",
+    "ipa": "/bɪɡ/",
+    "respelling": "BIG"
   },
   {
     "word": "bag",
@@ -178,7 +216,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "cvc",
     "difficulty": 2,
     "wordType": "CVC",
-    "gradeLevel": "K"
+    "gradeLevel": "K",
+    "ipa": "/bæɡ/",
+    "respelling": "BAG"
   },
   {
     "word": "leg",
@@ -187,7 +227,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "cvc",
     "difficulty": 2,
     "wordType": "CVC",
-    "gradeLevel": "K"
+    "gradeLevel": "K",
+    "ipa": "/lɛɡ/",
+    "respelling": "LEG"
   },
   {
     "word": "man",
@@ -196,7 +238,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "cvc",
     "difficulty": 2,
     "wordType": "CVC",
-    "gradeLevel": "K"
+    "gradeLevel": "K",
+    "ipa": "/mæn/",
+    "respelling": "MAN"
   },
   {
     "word": "fan",
@@ -205,7 +249,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "cvc",
     "difficulty": 2,
     "wordType": "CVC",
-    "gradeLevel": "K"
+    "gradeLevel": "K",
+    "ipa": "/fæn/",
+    "respelling": "FAN"
   },
   {
     "word": "pan",
@@ -214,7 +260,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "cvc",
     "difficulty": 2,
     "wordType": "CVC",
-    "gradeLevel": "K"
+    "gradeLevel": "K",
+    "ipa": "/pæn/",
+    "respelling": "PAN"
   },
   {
     "word": "cap",
@@ -223,7 +271,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "cvc",
     "difficulty": 2,
     "wordType": "CVC",
-    "gradeLevel": "K"
+    "gradeLevel": "K",
+    "ipa": "/kæp/",
+    "respelling": "KAP"
   },
   {
     "word": "net",
@@ -232,7 +282,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "cvc",
     "difficulty": 2,
     "wordType": "CVC",
-    "gradeLevel": "K"
+    "gradeLevel": "K",
+    "ipa": "/nɛt/",
+    "respelling": "NET"
   },
   {
     "word": "jet",
@@ -241,7 +293,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "cvc",
     "difficulty": 2,
     "wordType": "CVC",
-    "gradeLevel": "K"
+    "gradeLevel": "K",
+    "ipa": "/dʒɛt/",
+    "respelling": "JET"
   },
   {
     "word": "log",
@@ -250,7 +304,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "cvc",
     "difficulty": 2,
     "wordType": "CVC",
-    "gradeLevel": "K"
+    "gradeLevel": "K",
+    "ipa": "/lɔːɡ/",
+    "respelling": "LAWG"
   },
   {
     "word": "fox",
@@ -259,7 +315,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "cvc",
     "difficulty": 2,
     "wordType": "CVC",
-    "gradeLevel": "K"
+    "gradeLevel": "K",
+    "ipa": "/fɑːks/",
+    "respelling": "FAHKS"
   },
   {
     "word": "frog",
@@ -268,7 +326,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "phonics",
     "difficulty": 5,
     "wordType": "Blend/Digraph",
-    "gradeLevel": "1"
+    "gradeLevel": "1",
+    "ipa": "/frɔːɡ/",
+    "respelling": "FRAHG"
   },
   {
     "word": "flag",
@@ -277,7 +337,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "phonics",
     "difficulty": 5,
     "wordType": "Blend/Digraph",
-    "gradeLevel": "1"
+    "gradeLevel": "1",
+    "ipa": "/flæɡ/",
+    "respelling": "FLAG"
   },
   {
     "word": "plug",
@@ -286,7 +348,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "phonics",
     "difficulty": 5,
     "wordType": "Blend/Digraph",
-    "gradeLevel": "1"
+    "gradeLevel": "1",
+    "ipa": "/plʌɡ/",
+    "respelling": "PLUG"
   },
   {
     "word": "drum",
@@ -295,7 +359,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "phonics",
     "difficulty": 5,
     "wordType": "Blend/Digraph",
-    "gradeLevel": "1"
+    "gradeLevel": "1",
+    "ipa": "/drʌm/",
+    "respelling": "DRUM"
   },
   {
     "word": "clock",
@@ -304,7 +370,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "phonics",
     "difficulty": 5,
     "wordType": "Blend/Digraph",
-    "gradeLevel": "1"
+    "gradeLevel": "1",
+    "ipa": "/klɑːk/",
+    "respelling": "KLAHK"
   },
   {
     "word": "truck",
@@ -313,7 +381,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "phonics",
     "difficulty": 5,
     "wordType": "Blend/Digraph",
-    "gradeLevel": "1"
+    "gradeLevel": "1",
+    "ipa": "/trʌk/",
+    "respelling": "TRUK"
   },
   {
     "word": "plant",
@@ -322,7 +392,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "phonics",
     "difficulty": 5,
     "wordType": "Blend/Digraph",
-    "gradeLevel": "1"
+    "gradeLevel": "1",
+    "ipa": "/plænt/",
+    "respelling": "PLANT"
   },
   {
     "word": "brush",
@@ -331,7 +403,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "phonics",
     "difficulty": 5,
     "wordType": "Blend/Digraph",
-    "gradeLevel": "1"
+    "gradeLevel": "1",
+    "ipa": "/brʌʃ/",
+    "respelling": "BRUSH"
   },
   {
     "word": "bread",
@@ -340,7 +414,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "phonics",
     "difficulty": 5,
     "wordType": "Blend/Digraph",
-    "gradeLevel": "1"
+    "gradeLevel": "1",
+    "ipa": "/brɛd/",
+    "respelling": "BRED"
   },
   {
     "word": "train",
@@ -349,7 +425,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "phonics",
     "difficulty": 5,
     "wordType": "Blend/Digraph",
-    "gradeLevel": "1"
+    "gradeLevel": "1",
+    "ipa": "/treɪn/",
+    "respelling": "TRAYN"
   },
   {
     "word": "ship",
@@ -358,7 +436,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "phonics",
     "difficulty": 5,
     "wordType": "Blend/Digraph",
-    "gradeLevel": "1"
+    "gradeLevel": "1",
+    "ipa": "/ʃɪp/",
+    "respelling": "SHIP"
   },
   {
     "word": "chip",
@@ -367,7 +447,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "phonics",
     "difficulty": 5,
     "wordType": "Blend/Digraph",
-    "gradeLevel": "1"
+    "gradeLevel": "1",
+    "ipa": "/tʃɪp/",
+    "respelling": "CHIP"
   },
   {
     "word": "fish",
@@ -376,7 +458,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "phonics",
     "difficulty": 5,
     "wordType": "Blend/Digraph",
-    "gradeLevel": "1"
+    "gradeLevel": "1",
+    "ipa": "/fɪʃ/",
+    "respelling": "FISH"
   },
   {
     "word": "shoe",
@@ -385,7 +469,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "phonics",
     "difficulty": 5,
     "wordType": "Blend/Digraph",
-    "gradeLevel": "1"
+    "gradeLevel": "1",
+    "ipa": "/ʃuː/",
+    "respelling": "SHOO"
   },
   {
     "word": "chair",
@@ -394,7 +480,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "phonics",
     "difficulty": 5,
     "wordType": "Blend/Digraph",
-    "gradeLevel": "1"
+    "gradeLevel": "1",
+    "ipa": "/tʃer/",
+    "respelling": "CHAIR"
   },
   {
     "word": "the",
@@ -403,7 +491,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "sight",
     "difficulty": 2,
     "wordType": "Sight",
-    "gradeLevel": "K"
+    "gradeLevel": "K",
+    "ipa": "/ðə/",
+    "respelling": "thuh"
   },
   {
     "word": "and",
@@ -412,7 +502,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "sight",
     "difficulty": 2,
     "wordType": "Sight",
-    "gradeLevel": "K"
+    "gradeLevel": "K",
+    "ipa": "/ænd/",
+    "respelling": "AND"
   },
   {
     "word": "you",
@@ -421,7 +513,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "sight",
     "difficulty": 2,
     "wordType": "Sight",
-    "gradeLevel": "K"
+    "gradeLevel": "K",
+    "ipa": "/juː/",
+    "respelling": "YOO"
   },
   {
     "word": "is",
@@ -430,7 +524,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "sight",
     "difficulty": 2,
     "wordType": "Sight",
-    "gradeLevel": "K"
+    "gradeLevel": "K",
+    "ipa": "/ɪz/",
+    "respelling": "IZ"
   },
   {
     "word": "it",
@@ -439,7 +535,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "sight",
     "difficulty": 2,
     "wordType": "Sight",
-    "gradeLevel": "K"
+    "gradeLevel": "K",
+    "ipa": "/ɪt/",
+    "respelling": "IT"
   },
   {
     "word": "in",
@@ -448,7 +546,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "sight",
     "difficulty": 2,
     "wordType": "Sight",
-    "gradeLevel": "K"
+    "gradeLevel": "K",
+    "ipa": "/ɪn/",
+    "respelling": "IN"
   },
   {
     "word": "on",
@@ -457,7 +557,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "sight",
     "difficulty": 2,
     "wordType": "Sight",
-    "gradeLevel": "K"
+    "gradeLevel": "K",
+    "ipa": "/ɑːn/",
+    "respelling": "ON"
   },
   {
     "word": "to",
@@ -466,7 +568,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "sight",
     "difficulty": 2,
     "wordType": "Sight",
-    "gradeLevel": "K"
+    "gradeLevel": "K",
+    "ipa": "/tuː/",
+    "respelling": "TOO"
   },
   {
     "word": "we",
@@ -475,7 +579,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "sight",
     "difficulty": 2,
     "wordType": "Sight",
-    "gradeLevel": "K"
+    "gradeLevel": "K",
+    "ipa": "/wiː/",
+    "respelling": "WEE"
   },
   {
     "word": "go",
@@ -484,7 +590,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "sight",
     "difficulty": 2,
     "wordType": "Sight",
-    "gradeLevel": "K"
+    "gradeLevel": "K",
+    "ipa": "/ɡoʊ/",
+    "respelling": "GOH"
   },
   {
     "word": "me",
@@ -493,7 +601,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "sight",
     "difficulty": 2,
     "wordType": "Sight",
-    "gradeLevel": "K"
+    "gradeLevel": "K",
+    "ipa": "/miː/",
+    "respelling": "MEE"
   },
   {
     "word": "they",
@@ -502,7 +612,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "sight",
     "difficulty": 3,
     "wordType": "Sight",
-    "gradeLevel": "1"
+    "gradeLevel": "1",
+    "ipa": "/ðeɪ/",
+    "respelling": "THAY"
   },
   {
     "word": "have",
@@ -511,7 +623,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "sight",
     "difficulty": 3,
     "wordType": "Sight",
-    "gradeLevel": "1"
+    "gradeLevel": "1",
+    "ipa": "/hæv/",
+    "respelling": "HAV"
   },
   {
     "word": "said",
@@ -520,7 +634,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "sight",
     "difficulty": 3,
     "wordType": "Sight",
-    "gradeLevel": "1"
+    "gradeLevel": "1",
+    "ipa": "/sɛd/",
+    "respelling": "SED"
   },
   {
     "word": "from",
@@ -529,7 +645,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "sight",
     "difficulty": 3,
     "wordType": "Sight",
-    "gradeLevel": "1"
+    "gradeLevel": "1",
+    "ipa": "/frʌm/",
+    "respelling": "FRUM"
   },
   {
     "word": "what",
@@ -538,7 +656,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "sight",
     "difficulty": 3,
     "wordType": "Sight",
-    "gradeLevel": "1"
+    "gradeLevel": "1",
+    "ipa": "/wʌt/",
+    "respelling": "WUT"
   },
   {
     "word": "when",
@@ -547,7 +667,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "sight",
     "difficulty": 3,
     "wordType": "Sight",
-    "gradeLevel": "1"
+    "gradeLevel": "1",
+    "ipa": "/wɛn/",
+    "respelling": "WEN"
   },
   {
     "word": "where",
@@ -556,7 +678,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "sight",
     "difficulty": 3,
     "wordType": "Sight",
-    "gradeLevel": "1"
+    "gradeLevel": "1",
+    "ipa": "/wer/",
+    "respelling": "WAIR"
   },
   {
     "word": "why",
@@ -565,7 +689,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "sight",
     "difficulty": 3,
     "wordType": "Sight",
-    "gradeLevel": "1"
+    "gradeLevel": "1",
+    "ipa": "/waɪ/",
+    "respelling": "WY"
   },
   {
     "word": "how",
@@ -574,7 +700,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "sight",
     "difficulty": 3,
     "wordType": "Sight",
-    "gradeLevel": "1"
+    "gradeLevel": "1",
+    "ipa": "/haʊ/",
+    "respelling": "HOW"
   },
   {
     "word": "because",
@@ -583,7 +711,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "sight",
     "difficulty": 5,
     "wordType": "Sight",
-    "gradeLevel": "2"
+    "gradeLevel": "2",
+    "ipa": "/bɪˈkɔːz/",
+    "respelling": "bih-KAWZ"
   },
   {
     "word": "before",
@@ -592,7 +722,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "sight",
     "difficulty": 5,
     "wordType": "Sight",
-    "gradeLevel": "2"
+    "gradeLevel": "2",
+    "ipa": "/bɪˈfɔːr/",
+    "respelling": "bee-FOR"
   },
   {
     "word": "after",
@@ -601,7 +733,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "sight",
     "difficulty": 5,
     "wordType": "Sight",
-    "gradeLevel": "2"
+    "gradeLevel": "2",
+    "ipa": "/ˈæftər/",
+    "respelling": "AF-ter"
   },
   {
     "word": "again",
@@ -610,7 +744,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "sight",
     "difficulty": 5,
     "wordType": "Sight",
-    "gradeLevel": "2"
+    "gradeLevel": "2",
+    "ipa": "/əˈɡɛn/",
+    "respelling": "uh-GEN"
   },
   {
     "word": "every",
@@ -619,7 +755,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "sight",
     "difficulty": 5,
     "wordType": "Sight",
-    "gradeLevel": "2"
+    "gradeLevel": "2",
+    "ipa": "/ˈɛvri/",
+    "respelling": "EV-ree"
   },
   {
     "word": "could",
@@ -628,7 +766,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "sight",
     "difficulty": 5,
     "wordType": "Sight",
-    "gradeLevel": "2"
+    "gradeLevel": "2",
+    "ipa": "/kʊd/",
+    "respelling": "KOOD"
   },
   {
     "word": "should",
@@ -637,7 +777,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "sight",
     "difficulty": 5,
     "wordType": "Sight",
-    "gradeLevel": "2"
+    "gradeLevel": "2",
+    "ipa": "/ʃʊd/",
+    "respelling": "SHOOD"
   },
   {
     "word": "would",
@@ -646,7 +788,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "sight",
     "difficulty": 5,
     "wordType": "Sight",
-    "gradeLevel": "2"
+    "gradeLevel": "2",
+    "ipa": "/wʊd/",
+    "respelling": "WOOD"
   },
   {
     "word": "beautiful",
@@ -655,7 +799,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "advanced",
     "difficulty": 10,
     "wordType": "Advanced",
-    "gradeLevel": "10"
+    "gradeLevel": "10",
+    "ipa": "/ˈbjuːtɪfəl/",
+    "respelling": "BYOO-tih-full"
   },
   {
     "word": "important",
@@ -664,7 +810,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "advanced",
     "difficulty": 10,
     "wordType": "Advanced",
-    "gradeLevel": "10"
+    "gradeLevel": "10",
+    "ipa": "/ɪmˈpɔːrtnt/",
+    "respelling": "im-POR-tnt"
   },
   {
     "word": "different",
@@ -673,7 +821,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "advanced",
     "difficulty": 10,
     "wordType": "Advanced",
-    "gradeLevel": "10"
+    "gradeLevel": "10",
+    "ipa": "/ˈdɪfrənt/",
+    "respelling": "DIFF-runt"
   },
   {
     "word": "information",
@@ -682,7 +832,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "advanced",
     "difficulty": 10,
     "wordType": "Advanced",
-    "gradeLevel": "10"
+    "gradeLevel": "10",
+    "ipa": "/ˌɪnfərˈmeɪʃən/",
+    "respelling": "in-fer-MAY-shun"
   },
   {
     "word": "environment",
@@ -691,7 +843,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "advanced",
     "difficulty": 10,
     "wordType": "Advanced",
-    "gradeLevel": "10"
+    "gradeLevel": "10",
+    "ipa": "/ɪnˈvaɪrənmənt/",
+    "respelling": "in-VY-run-ment"
   },
   {
     "word": "experience",
@@ -700,7 +854,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "advanced",
     "difficulty": 10,
     "wordType": "Advanced",
-    "gradeLevel": "10"
+    "gradeLevel": "10",
+    "ipa": "/ɪkˈspɪriəns/",
+    "respelling": "ik-SPEER-ee-uns"
   },
   {
     "word": "education",
@@ -709,7 +865,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "advanced",
     "difficulty": 10,
     "wordType": "Advanced",
-    "gradeLevel": "10"
+    "gradeLevel": "10",
+    "ipa": "/ˌɛdʒuˈkeɪʃən/",
+    "respelling": "ed-joo-KAY-shun"
   },
   {
     "word": "development",
@@ -718,7 +876,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "advanced",
     "difficulty": 10,
     "wordType": "Advanced",
-    "gradeLevel": "10"
+    "gradeLevel": "10",
+    "ipa": "/dɪˈvɛləpmənt/",
+    "respelling": "dih-VEL-up-munt"
   },
   {
     "word": "apple",
@@ -727,7 +887,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "basic-food",
     "difficulty": 3,
     "wordType": "Basic · Food",
-    "gradeLevel": "K-1"
+    "gradeLevel": "K-1",
+    "ipa": "/ˈæpəl/",
+    "respelling": "AP-ul"
   },
   {
     "word": "banana",
@@ -736,7 +898,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "basic-food",
     "difficulty": 3,
     "wordType": "Basic · Food",
-    "gradeLevel": "K-1"
+    "gradeLevel": "K-1",
+    "ipa": "/bəˈnænə/",
+    "respelling": "buh-NAN-uh"
   },
   {
     "word": "ball",
@@ -745,7 +909,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "basic-things",
     "difficulty": 2,
     "wordType": "Basic · Things",
-    "gradeLevel": "K-1"
+    "gradeLevel": "K-1",
+    "ipa": "/bɔːl/",
+    "respelling": "BAWL"
   },
   {
     "word": "tree",
@@ -754,7 +920,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "basic-nature",
     "difficulty": 2,
     "wordType": "Basic · Nature",
-    "gradeLevel": "K-1"
+    "gradeLevel": "K-1",
+    "ipa": "/triː/",
+    "respelling": "TREE"
   },
   {
     "word": "bird",
@@ -763,7 +931,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "basic-nature",
     "difficulty": 2,
     "wordType": "Basic · Nature",
-    "gradeLevel": "K-1"
+    "gradeLevel": "K-1",
+    "ipa": "/bɜːrd/",
+    "respelling": "BURD"
   },
   {
     "word": "water",
@@ -772,7 +942,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "basic-food",
     "difficulty": 3,
     "wordType": "Basic · Food",
-    "gradeLevel": "K-1"
+    "gradeLevel": "K-1",
+    "ipa": "/ˈwɔːtər/",
+    "respelling": "WAW-ter"
   },
   {
     "word": "milk",
@@ -781,7 +953,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "basic-food",
     "difficulty": 2,
     "wordType": "Basic · Food",
-    "gradeLevel": "K-1"
+    "gradeLevel": "K-1",
+    "ipa": "/mɪlk/",
+    "respelling": "MILK"
   },
   {
     "word": "book",
@@ -790,7 +964,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "basic-things",
     "difficulty": 2,
     "wordType": "Basic · Things",
-    "gradeLevel": "K-1"
+    "gradeLevel": "K-1",
+    "ipa": "/bʊk/",
+    "respelling": "BOOK"
   },
   {
     "word": "door",
@@ -799,7 +975,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "basic-things",
     "difficulty": 2,
     "wordType": "Basic · Things",
-    "gradeLevel": "K-1"
+    "gradeLevel": "K-1",
+    "ipa": "/dɔːr/",
+    "respelling": "DOR"
   },
   {
     "word": "house",
@@ -808,7 +986,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "basic-things",
     "difficulty": 3,
     "wordType": "Basic · Things",
-    "gradeLevel": "K-1"
+    "gradeLevel": "K-1",
+    "ipa": "/haʊs/",
+    "respelling": "HOWSS"
   },
   {
     "word": "school",
@@ -817,7 +997,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "basic-school",
     "difficulty": 3,
     "wordType": "Basic · School",
-    "gradeLevel": "K-1"
+    "gradeLevel": "K-1",
+    "ipa": "/skuːl/",
+    "respelling": "SKOOL"
   },
   {
     "word": "teacher",
@@ -826,7 +1008,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "basic-school",
     "difficulty": 3,
     "wordType": "Basic · School",
-    "gradeLevel": "K-1"
+    "gradeLevel": "K-1",
+    "ipa": "/ˈtiːtʃər/",
+    "respelling": "TEE-chur"
   },
   {
     "word": "friend",
@@ -835,7 +1019,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "basic-people",
     "difficulty": 3,
     "wordType": "Basic · People",
-    "gradeLevel": "K-1"
+    "gradeLevel": "K-1",
+    "ipa": "/frɛnd/",
+    "respelling": "FREND"
   },
   {
     "word": "family",
@@ -844,7 +1030,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "basic-people",
     "difficulty": 3,
     "wordType": "Basic · People",
-    "gradeLevel": "K-1"
+    "gradeLevel": "K-1",
+    "ipa": "/ˈfæməli/",
+    "respelling": "FAM-uh-lee"
   },
   {
     "word": "play",
@@ -853,7 +1041,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "basic-verbs",
     "difficulty": 2,
     "wordType": "Basic · Verbs",
-    "gradeLevel": "K-1"
+    "gradeLevel": "K-1",
+    "ipa": "/pleɪ/",
+    "respelling": "PLAY"
   },
   {
     "word": "eat",
@@ -862,7 +1052,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "basic-verbs",
     "difficulty": 2,
     "wordType": "Basic · Verbs",
-    "gradeLevel": "K-1"
+    "gradeLevel": "K-1",
+    "ipa": "/iːt/",
+    "respelling": "EET"
   },
   {
     "word": "sleep",
@@ -871,7 +1063,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "basic-verbs",
     "difficulty": 3,
     "wordType": "Basic · Verbs",
-    "gradeLevel": "K-1"
+    "gradeLevel": "K-1",
+    "ipa": "/sliːp/",
+    "respelling": "SLEEP"
   },
   {
     "word": "jump",
@@ -880,7 +1074,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "basic-verbs",
     "difficulty": 2,
     "wordType": "Basic · Verbs",
-    "gradeLevel": "K-1"
+    "gradeLevel": "K-1",
+    "ipa": "/dʒʌmp/",
+    "respelling": "JUMP"
   },
   {
     "word": "walk",
@@ -889,7 +1085,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "basic-verbs",
     "difficulty": 2,
     "wordType": "Basic · Verbs",
-    "gradeLevel": "K-1"
+    "gradeLevel": "K-1",
+    "ipa": "/wɔːk/",
+    "respelling": "WAWK"
   },
   {
     "word": "read",
@@ -898,7 +1096,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "basic-verbs",
     "difficulty": 2,
     "wordType": "Basic · Verbs",
-    "gradeLevel": "K-1"
+    "gradeLevel": "K-1",
+    "ipa": "/riːd/",
+    "respelling": "REED"
   },
   {
     "word": "write",
@@ -907,7 +1107,9 @@ window.__FLASHCARD_WORDS__ = [
     "type": "basic-verbs",
     "difficulty": 3,
     "wordType": "Basic · Verbs",
-    "gradeLevel": "K-1"
+    "gradeLevel": "K-1",
+    "ipa": "/raɪt/",
+    "respelling": "RYTE"
   },
   {
     "word": "draw",
@@ -916,6 +1118,8 @@ window.__FLASHCARD_WORDS__ = [
     "type": "basic-verbs",
     "difficulty": 2,
     "wordType": "Basic · Verbs",
-    "gradeLevel": "K-1"
+    "gradeLevel": "K-1",
+    "ipa": "/drɔː/",
+    "respelling": "DRAW"
   }
 ]
