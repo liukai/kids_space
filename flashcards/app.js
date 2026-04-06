@@ -468,6 +468,8 @@
 
   /** Slightly after cancel() so Chrome/Edge don’t drop the utterance. */
   var SPEAK_AFTER_CANCEL_MS = 120;
+  /** Suppresses stale delayed speaks when auto-speak + user tap both queue TTS. */
+  var speakScheduleSeq = 0;
 
   function speakWord(text, userInitiated) {
     if (!text || !window.speechSynthesis) return;
@@ -478,6 +480,7 @@
     } else if (!speechUserEverActivated) {
       pendingSpeech = { kind: "word", text: text };
     }
+    var ticket = ++speakScheduleSeq;
     try {
       if (speechSynthesis.paused) speechSynthesis.resume();
     } catch (e) {}
@@ -488,6 +491,7 @@
     } catch (e1) {}
     runWhenSpeechVoicesReady(function () {
       window.setTimeout(function () {
+        if (ticket !== speakScheduleSeq) return;
         try {
           var u = new SpeechSynthesisUtterance(text);
           applyEnglishVoice(u);
@@ -496,6 +500,7 @@
           u.pitch = 1;
           u.onerror = function () {
             try {
+              if (ticket !== speakScheduleSeq) return;
               var u2 = new SpeechSynthesisUtterance(text);
               u2.lang = "en-US";
               u2.rate = 0.9;
@@ -520,6 +525,7 @@
     } else if (!speechUserEverActivated) {
       pendingSpeech = { kind: "letters", text: word };
     }
+    var ticket = ++speakScheduleSeq;
     var spaced = word.toLowerCase().split("").join(" ");
     try {
       if (speechSynthesis.paused) speechSynthesis.resume();
@@ -531,6 +537,7 @@
     } catch (e1) {}
     runWhenSpeechVoicesReady(function () {
       window.setTimeout(function () {
+        if (ticket !== speakScheduleSeq) return;
         try {
           var u = new SpeechSynthesisUtterance(spaced);
           applyEnglishVoice(u);
@@ -539,6 +546,7 @@
           u.pitch = 1;
           u.onerror = function () {
             try {
+              if (ticket !== speakScheduleSeq) return;
               var u2 = new SpeechSynthesisUtterance(spaced);
               u2.lang = "en-US";
               u2.rate = 0.78;
