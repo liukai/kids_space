@@ -24,7 +24,7 @@ Naming: use filenames above so the app can load them without config changes.
 Only chomper.png is loaded by the current build; add others when you extend sprites.
 
 5) trail-mascots.json (optional roster)
-   - Lists eater sprites in order. Each time the player finishes a full 10-treat strip,
+   - Lists eater sprites in order. Each time the player finishes a full 5×3 (15) treat grid,
      the app shows the next mascot (wraps to the first after the last).
    - Shape: { "mascots": [ { "src": "assets/set-maze/chomper.png" }, … ] }
    - src is relative to the flashcards page (same as chomper.png paths).

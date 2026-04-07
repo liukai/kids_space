@@ -799,7 +799,7 @@ body::after {
   max-width: 100%;
   min-width: 0;
   margin: 0;
-  padding: 0.06rem 4px 0.14rem;
+  padding: 0.04rem 4px 0.08rem;
   border-radius: var(--radius-pill);
   border: 3px solid rgba(255, 252, 248, 0.92);
   background: linear-gradient(180deg, #9ccc65 0%, #7cb342 45%, #689f38 100%);
@@ -835,40 +835,42 @@ body::after {
   justify-content: center;
   align-items: center;
   /* overflow-x:hidden + overflow-y:visible forces overflow-y:auto in browsers → vertical scrollbar
-     when chomper scale(1.5) paints past the row — hide both axes and pad for the scaled sprite */
+     when scaled mascot paints past the row — hide both axes and pad for sprite + glow */
   overflow: hidden;
   width: 100%;
   max-width: 100%;
   min-height: 0;
-  /* Room for scale(1.5) + munch glow so fully grown mascot isn’t clipped (overflow:hidden) */
-  padding: 7px 0 9px;
+  /* 3-row grid + scale(2) mascot — keep vertical slack modest */
+  padding: 4px 0 6px;
   box-sizing: border-box;
 }
 
 .cycle-maze__stage {
-  display: flex;
-  flex-direction: row;
+  display: grid;
+  grid-template-columns: 1fr 3fr;
   align-items: center;
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  gap: 0;
-  /* ~max box 42px × 1.5 + glow; flex row alone was too short */
-  min-height: clamp(3.35rem, 12vmin, 4.35rem);
+  column-gap: 0;
+  /* 3 sun rows + ~42px box × 2 scale + glow */
+  min-height: clamp(4.85rem, 22vmin, 6.5rem);
 }
 
 .cycle-maze__chomper-slot {
-  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   z-index: 4;
-  /* Match sprite box; overlap keeps trail tight without shrinking the plant art */
-  width: clamp(26px, 7.5vw, 34px);
   min-width: 0;
-  max-width: clamp(26px, 7.5vw, 34px);
-  padding: 0;
-  margin: 0 -7px 0 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  /* ~25% band for mascot growth; divider before sun grid */
+  padding: 0 clamp(3px, 1.2vmin, 8px) 0 0;
+  border-right: 1px solid rgba(0, 0, 0, 0.22);
+  box-shadow: 1px 0 0 rgba(255, 255, 255, 0.28);
+  margin: 0;
   pointer-events: none;
 }
 
@@ -882,24 +884,24 @@ body::after {
 }
 
 .cycle-maze__strip {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: nowrap;
-  column-gap: 0;
-  flex: 1 1 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-rows: repeat(3, auto);
+  gap: 0.12rem 0.06rem;
+  place-items: center;
+  align-content: center;
+  min-width: 0;
   width: 100%;
   max-width: 100%;
-  min-width: 0;
+  /* ~75% band; light inset from divider */
   margin: 0;
-  padding: 0;
+  padding: 0 0 0 clamp(4px, 1.5vmin, 9px);
   box-sizing: border-box;
 }
 
 .cycle-maze__cell {
   position: relative;
-  flex: 1 1 0;
+  width: 100%;
   min-width: 0;
   display: flex;
   flex-direction: row;
@@ -917,6 +919,20 @@ body::after {
 .cycle-maze__cell:has(.set-pellet--todo),
 .cycle-maze__cell:has(.set-pellet--current) {
   padding: 0;
+}
+
+/* Dense 5×3 trail: compact pellets */
+.cycle-maze .set-pellet {
+  min-width: 0;
+  min-height: 0;
+}
+
+.cycle-maze .set-pellet__glyph {
+  font-size: clamp(0.62rem, 2.8vw, 0.72rem);
+}
+
+.cycle-maze .set-pellet__glyph--brains {
+  font-size: clamp(0.68rem, 3vw, 0.82rem);
 }
 
 @keyframes cycle-maze-celebrate {
@@ -1095,12 +1111,18 @@ body::after {
   animation: set-pellet-chomp 0.16s ease-out 1 forwards;
 }
 
-/* Trail marks: ✖ clean correct, ⭕ peek / skip — no sun chomp tween */
-.set-pellet--eaten.set-pellet--maze-cross .set-pellet__glyph,
+/* Trail marks: ✔ clean correct, ⭕ peek / skip — no sun chomp tween */
+.set-pellet--eaten.set-pellet--maze-ok .set-pellet__glyph,
 .set-pellet--eaten.set-pellet--maze-soft .set-pellet__glyph {
   animation: none;
   font-size: clamp(0.72rem, 3.4vw, 0.92rem);
-  filter: drop-shadow(0 0 5px rgba(255, 230, 140, 0.55));
+}
+
+.set-pellet--eaten.set-pellet--maze-ok .set-pellet__glyph {
+  color: #e8f5e9;
+  filter:
+    drop-shadow(0 0 6px rgba(76, 175, 80, 0.85))
+    drop-shadow(0 0 2px rgba(27, 94, 32, 0.5));
 }
 
 .set-pellet--eaten.set-pellet--maze-soft .set-pellet__glyph {
@@ -1164,9 +1186,9 @@ body::after {
 .cycle-maze .set-bar__chomper {
   width: clamp(26px, 7.5vw, 34px);
   height: clamp(32px, 9.5vw, 42px);
-  /* Grow toward the trail (less empty gap vs first pellet when scale → 1.5) */
+  /* Grow toward the trail; mascot sits in left column so no negative overlap into grid */
   transform-origin: 80% 50%;
-  margin-right: -10px;
+  margin-right: 0;
   /* No transform transition: rebuilt nodes would tween scale and look like a wrong-answer “grow”. */
   transition: filter 0.22s ease;
 }

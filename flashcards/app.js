@@ -14,8 +14,10 @@
   var LS_STREAK = "flashcardQuizStreak_v1";
   var LS_FAVORITES = "flashcardFavorites_v1";
   var TROPHY_EVERY = 20;
-  /** Quiz / type-all: chomper strip refills after this many correct answers in a row (per session). */
-  var QUIZ_CYCLE_LEN = 10;
+  /** Sun grid: 5 columns × 3 rows; refill + mascot rotate after this many trail steps. */
+  var QUIZ_CYCLE_COLS = 5;
+  var QUIZ_CYCLE_ROWS = 3;
+  var QUIZ_CYCLE_LEN = QUIZ_CYCLE_COLS * QUIZ_CYCLE_ROWS;
   /**
    * Default trail eaters (same order as assets/set-maze/trail-mascots.json).
    * Keep this list in sync so mascot rotation still works when fetch fails (e.g. file://).
@@ -35,12 +37,12 @@
   var SET_PELLET_GLYPH = "\u2600\uFE0F";
   /** Easter egg: when current trail mascot is Zombie, pellets show brains. */
   var SET_PELLET_GLYPH_BRAINS = "\uD83E\uDDE0";
-  /** Filled trail slots: clean correct ✖️ vs peek or skip ⭕. */
-  var MAZE_MARK_CROSS = "\u2716\uFE0F";
+  /** Filled trail: clean correct ✔️ vs peek or skip ⭕. */
+  var MAZE_MARK_OK = "\u2714\uFE0F";
   var MAZE_MARK_CIRCLE = "\u2B55\uFE0F";
-  /** Trail mascot scale: 0.5 (empty strip of clean corrects) → 1.5 (10/10 ✖ only). Skips / peeks (⭕) don’t add growth. */
+  /** Trail mascot scale: 0.5 → 2.0 from ✔ count on the 5×3 grid (⭕ don’t add growth). */
   var CHOMPER_SCALE_MIN = 0.5;
-  var CHOMPER_SCALE_MAX = 1.5;
+  var CHOMPER_SCALE_MAX = 2;
 
   function currentTrailMascotRel() {
     return trailMascotSrcs.length > 0
@@ -1297,12 +1299,20 @@
   var QUIZ_SUCCESS_HOLD_PEEK_MS = 500;
   /** Pending auto-speak timeout — must clear so we never speak twice (e.g. Next before delay fires). */
   var pronounceAfterCardTimer = null;
-  var quizAdvanceTimer = null;
+  /** After correct: (1) bump trail + UI when sun reaches mascot (2) advance card */
+  var quizAdvanceBumpTimer = null;
+  var quizAdvanceCardTimer = null;
+  /** Match .cycle-maze--nom sun flight (~480ms) + buffer before swapping sun → ✔️ */
+  var QUIZ_TRAIL_NOM_MS = 520;
 
   function clearQuizAdvanceTimer() {
-    if (quizAdvanceTimer !== null) {
-      window.clearTimeout(quizAdvanceTimer);
-      quizAdvanceTimer = null;
+    if (quizAdvanceBumpTimer !== null) {
+      window.clearTimeout(quizAdvanceBumpTimer);
+      quizAdvanceBumpTimer = null;
+    }
+    if (quizAdvanceCardTimer !== null) {
+      window.clearTimeout(quizAdvanceCardTimer);
+      quizAdvanceCardTimer = null;
     }
   }
 
@@ -1352,7 +1362,7 @@
 
   /** Eaten suns in the current strip (0 .. QUIZ_CYCLE_LEN-1 while playing). */
   var quizCycleEaten = 0;
-  /** Parallel to filled slots: "ok" = ✖️, "soft" = peek / skip ⭕. */
+  /** Parallel to filled slots: "ok" = ✔️, "soft" = peek / skip ⭕. */
   var quizCycleMarks = [];
   var cycleHadWrongOnCard = false;
   /** Wrong guesses since the last strip refill (Pac “bomb” counter). */
@@ -1701,7 +1711,7 @@
     var lo = CHOMPER_SCALE_MIN;
     var hi = CHOMPER_SCALE_MAX;
     var t = n / QUIZ_CYCLE_LEN;
-    /* Linear so each clean correct step is an obvious size tick (0.5 → 1.5 over 10). */
+    /* Linear: 0.5 → 2 over full grid (QUIZ_CYCLE_LEN ✔ marks). */
     return lo + (hi - lo) * t;
   }
 
@@ -1721,7 +1731,7 @@
   function appendCycleMarkGlyph(pellet, kind) {
     var glyph = document.createElement("span");
     glyph.className = "set-pellet__glyph";
-    glyph.textContent = kind === "soft" ? MAZE_MARK_CIRCLE : MAZE_MARK_CROSS;
+    glyph.textContent = kind === "soft" ? MAZE_MARK_CIRCLE : MAZE_MARK_OK;
     glyph.setAttribute("aria-hidden", "true");
     pellet.appendChild(glyph);
   }
@@ -1759,7 +1769,7 @@
     return wrap;
   }
 
-  /** Clean-correct (✖) marks in the strip — skip/peek (⭕) advance the trail but do not grow the chomper. */
+  /** Clean-correct (✔) marks in the strip — skip/peek (⭕) advance the trail but do not grow the chomper. */
   function quizCycleOkMarkCount() {
     var n = 0;
     var i;
@@ -1808,7 +1818,7 @@
           pellet.classList.add("set-pellet--maze-soft");
           appendCycleMarkGlyph(pellet, "soft");
         } else {
-          pellet.classList.add("set-pellet--maze-cross");
+          pellet.classList.add("set-pellet--maze-ok");
           appendCycleMarkGlyph(pellet, "ok");
         }
       } else if (i === quizCycleEaten) {
@@ -1904,7 +1914,7 @@
   }
 
   /**
-   * Advance trail one slot. mark "ok" = ✖️ (clean correct), "soft" = ⭕ (peek or skip).
+   * Advance trail one slot. mark "ok" = ✔️ (clean correct), "soft" = ⭕ (peek or skip).
    */
   function bumpQuizCycle(mark) {
     if (!isTypingMode()) return;
@@ -1940,11 +1950,18 @@
     advancingQuiz = true;
     syncPrimaryActionButton();
     hideSpellChoicesUi();
-    quizAdvanceTimer = window.setTimeout(function () {
-      quizAdvanceTimer = null;
-      if (isTypingMode()) bumpQuizCycle(cheatUsed ? "soft" : "ok");
-      advanceToNewCard(true);
-    }, delay);
+    quizAdvanceBumpTimer = window.setTimeout(function () {
+      quizAdvanceBumpTimer = null;
+      if (isTypingMode()) {
+        bumpQuizCycle(cheatUsed ? "soft" : "ok");
+        updateQuizCycleUi();
+      }
+      var waitMore = Math.max(0, delay - QUIZ_TRAIL_NOM_MS);
+      quizAdvanceCardTimer = window.setTimeout(function () {
+        quizAdvanceCardTimer = null;
+        advanceToNewCard(true);
+      }, waitMore);
+    }, QUIZ_TRAIL_NOM_MS);
   }
 
   var elCard = document.getElementById("card");
