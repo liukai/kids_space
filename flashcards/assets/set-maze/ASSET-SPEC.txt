@@ -3,8 +3,10 @@ Pac-Man maze strip — optional PNGs (drop files next to this spec)
 1) chomper.png (ship this file)
    - Role: player sprite on the current pellet column (facing right).
    - You may upload a large source; run the processor so the repo stays small:
-       ./tools/process-chomper-asset.sh
-     (macOS: uses `sips` to cap longest side at 96 px, keeps alpha.)
+       ./tools/process-chomper-asset.sh   # only chomper.png
+       ./tools/process-set-maze-assets.sh  # all PNG + WebP in this folder (recommended)
+     (macOS: `sips` caps longest side at 96 px by default; override with MAX_PX=128.)
+     WebP: if `sips` cannot read a file, convert to PNG manually (e.g. Preview or `ffmpeg`).
    - Shipped size is typically ~72×96 (portrait) or similar after -Z 96.
    - Transparent background required.
 
@@ -20,3 +22,11 @@ Pac-Man maze strip — optional PNGs (drop files next to this spec)
 
 Naming: use filenames above so the app can load them without config changes.
 Only chomper.png is loaded by the current build; add others when you extend sprites.
+
+5) trail-mascots.json (optional roster)
+   - Lists eater sprites in order. Each time the player finishes a full 10-treat strip,
+     the app shows the next mascot (wraps to the first after the last).
+   - Shape: { "mascots": [ { "src": "assets/set-maze/chomper.png" }, … ] }
+   - src is relative to the flashcards page (same as chomper.png paths).
+   - If the file is missing or fetch fails (e.g. file://), built-in defaults apply.
+   - Drop new PNGs in this folder and add a line to mascots — no JS edit required.

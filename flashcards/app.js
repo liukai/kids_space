@@ -16,24 +16,89 @@
   var TROPHY_EVERY = 20;
   /** Quiz / type-all: chomper strip refills after this many correct answers in a row (per session). */
   var QUIZ_CYCLE_LEN = 10;
-  /** Optional PNG for the pellet-strip chomper (see assets/set-maze/ASSET-SPEC.txt). */
-  var SET_MAZE_CHOMPER_SRC = "assets/set-maze/chomper.png";
+  /**
+   * Default trail eaters (same order as assets/set-maze/trail-mascots.json).
+   * Keep this list in sync so mascot rotation still works when fetch fails (e.g. file://).
+   */
+  var DEFAULT_TRAIL_MASCOT_RELS = [
+    "assets/set-maze/chomper.png",
+    "assets/set-maze/Peashooter.png",
+    "assets/set-maze/sunflower.png",
+    "assets/set-maze/kernelpult.png",
+    "assets/set-maze/gatling.png",
+    "assets/set-maze/Zombie.png",
+  ];
+  var trailMascotSrcs = DEFAULT_TRAIL_MASCOT_RELS.slice();
+  /** Advances each time QUIZ_CYCLE_LEN trail steps complete (full strip), then cycles this list. */
+  var eatTrailMascotIndex = 0;
   /** Pellet “food” in the strip (sun); chomper moves left → right eating these. */
   var SET_PELLET_GLYPH = "\u2600\uFE0F";
+  /** Easter egg: when current trail mascot is Zombie, pellets show brains. */
+  var SET_PELLET_GLYPH_BRAINS = "\uD83E\uDDE0";
   /** Filled trail slots: clean correct ✖️ vs peek or skip ⭕. */
   var MAZE_MARK_CROSS = "\u2716\uFE0F";
   var MAZE_MARK_CIRCLE = "\u2B55\uFE0F";
-  /** Chomper visual scale from clean-correct trail marks only (✖), not skip/peek (⭕); curve in `chomperScaleFromCorrectCount`. */
+  /** Trail mascot scale: 0.5 (empty strip of clean corrects) → 1.5 (10/10 ✖ only). Skips / peeks (⭕) don’t add growth. */
   var CHOMPER_SCALE_MIN = 0.5;
   var CHOMPER_SCALE_MAX = 1.5;
 
-  function chomperImageAbsUrl() {
-    if (typeof URL === "undefined" || !document.baseURI) return SET_MAZE_CHOMPER_SRC;
+  function currentTrailMascotRel() {
+    return trailMascotSrcs.length > 0
+      ? trailMascotSrcs[eatTrailMascotIndex % trailMascotSrcs.length]
+      : DEFAULT_TRAIL_MASCOT_RELS[0];
+  }
+
+  function trailMascotImageAbsUrl() {
+    var rel = currentTrailMascotRel();
+    if (typeof URL === "undefined" || !document.baseURI) return rel;
     try {
-      return new URL(SET_MAZE_CHOMPER_SRC, document.baseURI).href;
+      return new URL(rel, document.baseURI).href;
     } catch (err) {
-      return SET_MAZE_CHOMPER_SRC;
+      return rel;
     }
+  }
+
+  function trailPelletGlyph() {
+    return /zombie/i.test(currentTrailMascotRel())
+      ? SET_PELLET_GLYPH_BRAINS
+      : SET_PELLET_GLYPH;
+  }
+
+  function trailPelletIsBrainsMode() {
+    return trailPelletGlyph() === SET_PELLET_GLYPH_BRAINS;
+  }
+
+  function loadTrailMascotManifest() {
+    if (typeof fetch === "undefined") return Promise.resolve();
+    var u;
+    try {
+      u = new URL("assets/set-maze/trail-mascots.json", document.baseURI).href;
+    } catch (e1) {
+      return Promise.resolve();
+    }
+    return fetch(u)
+      .then(function (r) {
+        return r.ok ? r.json() : null;
+      })
+      .then(function (data) {
+        if (!data || !data.mascots || !data.mascots.length) return;
+        var out = [];
+        var i;
+        for (i = 0; i < data.mascots.length; i++) {
+          var m = data.mascots[i];
+          var src =
+            m && typeof m === "object"
+              ? m.src
+              : typeof m === "string"
+                ? m
+                : null;
+          if (src && String(src).trim()) out.push(String(src).trim());
+        }
+        if (out.length) {
+          trailMascotSrcs = out;
+        }
+      })
+      .catch(function () {});
   }
 
   /** Quiz points per correct answer = word difficulty from JSON (min 1). */
@@ -295,6 +360,17 @@
       arr[j] = t;
     }
     return arr;
+  }
+
+  /** Each page load: random mascot order + random starting mascot (not a fixed sequence). */
+  function randomTrailMascotsForSession() {
+    var n = trailMascotSrcs.length;
+    if (n < 2) {
+      eatTrailMascotIndex = 0;
+      return;
+    }
+    shuffleInPlace(trailMascotSrcs);
+    eatTrailMascotIndex = Math.floor(Math.random() * n);
   }
 
   /**
@@ -1287,6 +1363,8 @@
   var cycleSunAnimGeneration = 0;
   /** Persisted: show chomper strip in quiz / type word (toggle). */
   var quizCycleMazeEnabled = true;
+  /** Persisted: IPA + “Say” respelling on card & word peek (off by default). */
+  var showPhoneticMarks = false;
 
   var elCycleMazeOuter = document.getElementById("cycle-maze-outer");
   var elCycleMazeToggle = document.getElementById("cycle-maze-toggle");
@@ -1294,6 +1372,7 @@
   var elCycleStrip = document.getElementById("cycle-maze-strip");
   var elCycleChomperSlot = document.getElementById("cycle-maze-chomper-slot");
   var elCycleStats = document.getElementById("cycle-maze-stats");
+  var elPhoneticMarksToggle = document.getElementById("phonetic-marks-toggle");
   var elKbdShortcutsModal = document.getElementById("kbd-shortcuts-modal");
   var elKbdShortcutsBackdrop = document.getElementById(
     "kbd-shortcuts-modal-backdrop"
@@ -1622,13 +1701,18 @@
     var lo = CHOMPER_SCALE_MIN;
     var hi = CHOMPER_SCALE_MAX;
     var t = n / QUIZ_CYCLE_LEN;
-    return lo + (hi - lo) * Math.pow(t, 0.82);
+    /* Linear so each clean correct step is an obvious size tick (0.5 → 1.5 over 10). */
+    return lo + (hi - lo) * t;
   }
 
   function appendPelletSunGlyph(pellet) {
     var glyph = document.createElement("span");
     glyph.className = "set-pellet__glyph";
-    glyph.textContent = SET_PELLET_GLYPH;
+    if (trailPelletIsBrainsMode()) {
+      glyph.classList.add("set-pellet__glyph--brains");
+      pellet.classList.add("set-pellet--brains-trail");
+    }
+    glyph.textContent = trailPelletGlyph();
     glyph.setAttribute("aria-hidden", "true");
     pellet.appendChild(glyph);
   }
@@ -1648,7 +1732,7 @@
     var sc =
       typeof scale === "number" && !isNaN(scale) && scale > 0 ? scale : CHOMPER_SCALE_MIN;
     wrap.style.transform = "scale(" + sc + ")";
-    wrap.style.transformOrigin = "center center";
+    /* transform-origin from CSS (.cycle-maze .set-bar__chomper) so growth reads toward the trail */
     var img = document.createElement("img");
     img.className = "set-bar__chomper-img";
     img.alt = "";
@@ -1670,7 +1754,7 @@
     };
     wrap.appendChild(img);
     wrap.appendChild(pac);
-    img.src = chomperImageAbsUrl();
+    img.src = trailMascotImageAbsUrl();
     if (img.complete) applySpriteState();
     return wrap;
   }
@@ -1697,6 +1781,12 @@
     if (!isTypingMode()) return;
     elCycleStrip.replaceChildren();
     elCycleStrip.setAttribute("dir", "ltr");
+    if (elCycleMaze) {
+      elCycleMaze.classList.toggle(
+        "cycle-maze--brains-trail",
+        trailPelletIsBrainsMode()
+      );
+    }
     if (elCycleChomperSlot) {
       elCycleChomperSlot.replaceChildren();
       var pop = document.createElement("div");
@@ -1746,6 +1836,7 @@
     if (!elCycleMaze || !elCycleMazeOuter) return;
     if (!isTypingMode() || !current) {
       elCycleMazeOuter.hidden = true;
+      elCycleMaze.classList.remove("cycle-maze--brains-trail");
       return;
     }
     elCycleMazeOuter.hidden = false;
@@ -1758,6 +1849,7 @@
     }
     if (!quizCycleMazeEnabled) {
       elCycleMaze.hidden = true;
+      elCycleMaze.classList.remove("cycle-maze--brains-trail");
       return;
     }
     elCycleMaze.hidden = false;
@@ -1773,6 +1865,28 @@
     );
     persistSelections();
     updateQuizCycleUi();
+  }
+
+  function onPhoneticMarksToggleChange() {
+    if (!elPhoneticMarksToggle) return;
+    showPhoneticMarks = !!elPhoneticMarksToggle.checked;
+    elPhoneticMarksToggle.setAttribute(
+      "aria-checked",
+      showPhoneticMarks ? "true" : "false"
+    );
+    persistSelections();
+    applyPronunciationToCard(current);
+    if (isWordPeekModalOpen() && wordPeekItem) {
+      fillPronunciationUi(
+        elWordPeekPronunciation,
+        elWordPeekPronIpaSeg,
+        elWordPeekPronMid,
+        elWordPeekPronRespellSeg,
+        elWordPeekPronIpa,
+        elWordPeekPronRespell,
+        wordPeekItem
+      );
+    }
   }
 
   function triggerQuizCycleCelebrate() {
@@ -1798,9 +1912,16 @@
     quizCycleEaten++;
     if (quizCycleEaten >= QUIZ_CYCLE_LEN) {
       triggerQuizCycleCelebrate();
+      var nm = trailMascotSrcs.length;
+      if (nm > 1) {
+        eatTrailMascotIndex = (eatTrailMascotIndex + 1) % nm;
+      } else if (nm === 1) {
+        eatTrailMascotIndex = 0;
+      }
       quizCycleEaten = 0;
       quizCycleMarks = [];
       quizCycleBombCount = 0;
+      updateQuizCycleUi();
     }
   }
 
@@ -1910,27 +2031,33 @@
     item
   ) {
     if (!wrap) return;
-    if (!item) {
+
+    function hidePronunciationUi() {
       wrap.hidden = true;
+      wrap.setAttribute("aria-hidden", "true");
       if (segIpa) segIpa.hidden = true;
       if (mid) mid.hidden = true;
       if (segResp) segResp.hidden = true;
       if (textIpa) textIpa.textContent = "";
       if (textResp) textResp.textContent = "";
+    }
+
+    if (!item) {
+      hidePronunciationUi();
+      return;
+    }
+    if (!showPhoneticMarks) {
+      hidePronunciationUi();
       return;
     }
     var ipa = String(item.ipa != null ? item.ipa : "").trim();
     var resp = String(item.respelling != null ? item.respelling : "").trim();
     if (!ipa && !resp) {
-      wrap.hidden = true;
-      if (segIpa) segIpa.hidden = true;
-      if (mid) mid.hidden = true;
-      if (segResp) segResp.hidden = true;
-      if (textIpa) textIpa.textContent = "";
-      if (textResp) textResp.textContent = "";
+      hidePronunciationUi();
       return;
     }
     wrap.hidden = false;
+    wrap.removeAttribute("aria-hidden");
     if (segIpa && textIpa) {
       segIpa.hidden = !ipa;
       textIpa.textContent = ipa;
@@ -2858,6 +2985,9 @@
         return favoriteSet[wordEntryKey(w)];
       });
     }
+    if (pool.length > 1) {
+      shuffleInPlace(pool);
+    }
   }
 
   function applyPoolHint() {
@@ -2927,6 +3057,7 @@
       wordType: wordTypeScope,
       quizGapChoice: quizGapChoiceMode,
       showCycleMaze: quizCycleMazeEnabled,
+      showPhoneticMarks: showPhoneticMarks,
     });
   }
 
@@ -3409,6 +3540,12 @@
     if (elCycleMazeToggle) {
       elCycleMazeToggle.addEventListener("change", onCycleMazeToggleChange);
     }
+    if (elPhoneticMarksToggle) {
+      elPhoneticMarksToggle.addEventListener(
+        "change",
+        onPhoneticMarksToggleChange
+      );
+    }
     if (elFavorite) elFavorite.addEventListener("click", onFavoriteTap);
     var btnClearHistory = document.getElementById("btn-clear-history");
     if (btnClearHistory) {
@@ -3478,13 +3615,15 @@
     quizStreak = loadStreak();
     updateScoreUi();
 
-    loadWordData()
-      .then(function (data) {
+    Promise.all([loadWordData(), loadTrailMascotManifest()])
+      .then(function (results) {
+        var data = results[0];
         allWords = dedupeWordList(normalizeWordList(data));
         if (!allWords.length) {
           showLoadError("no words in list.");
           return;
         }
+        randomTrailMascotsForSession();
         migrateQuizDetailFromLegacy();
         var gradeOpts = gradesPresentSorted(allWords);
         fillGradeSelect(gradeOpts);
@@ -3553,6 +3692,15 @@
           elCycleMazeToggle.setAttribute(
             "aria-checked",
             quizCycleMazeEnabled ? "true" : "false"
+          );
+        }
+
+        showPhoneticMarks = !!(prefs && prefs.showPhoneticMarks === true);
+        if (elPhoneticMarksToggle) {
+          elPhoneticMarksToggle.checked = showPhoneticMarks;
+          elPhoneticMarksToggle.setAttribute(
+            "aria-checked",
+            showPhoneticMarks ? "true" : "false"
           );
         }
 

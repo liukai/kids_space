@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Word flashcards — see or quiz. Works from file:// via words-embed.js." />
+  <meta name="description" content="Word flashcards in a bright backyard theme — see or quiz. Works from file:// via words-embed.js." />
   <title>Word Flashcards</title>
   <link rel="icon" href="favicon.png" type="image/png" sizes="32x32" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
-    href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=Fredoka+One&display=swap"
     rel="stylesheet"
   />
   <link rel="stylesheet" href="styles.css" />
@@ -18,7 +18,7 @@
   <div class="app">
     <header class="site-header">
       <h1 class="site-header__title">Word Flashcards</h1>
-      <p class="site-header__subtitle">Arcade word maze · eat letters, score big</p>
+      <p class="site-header__subtitle">Backyard word garden · grow your spelling</p>
       <div class="site-header__trophy" id="trophy-panel">
         <div class="site-header__trophy-row">
           <span class="site-header__trophy-label">Trophies <strong id="trophy-val">0</strong></span>
@@ -88,6 +88,26 @@
           <option value="all">All words</option>
           <option value="favorites">Saved</option>
         </select>
+      </div>
+      <div class="control-bar__field control-bar__field--phonetics">
+        <span class="control-bar__label" id="phonetic-marks-label">Sounds</span>
+        <label class="cycle-maze-toggle control-bar__phonetics-toggle">
+          <input
+            type="checkbox"
+            id="phonetic-marks-toggle"
+            class="cycle-maze-toggle__input sr-only"
+            role="switch"
+            autocomplete="off"
+            aria-checked="false"
+            aria-labelledby="phonetic-marks-label"
+            aria-describedby="phonetic-marks-hint"
+          />
+          <span class="cycle-maze-toggle__track" aria-hidden="true"></span>
+          <span class="cycle-maze-toggle__text">IPA</span>
+        </label>
+        <span id="phonetic-marks-hint" class="sr-only">
+          When on, show IPA and “Say” spelling on each card and in word peek.
+        </span>
       </div>
       <div
         class="control-bar__field control-bar__field--quiz-gap-choose"
@@ -161,7 +181,12 @@
             <span id="card-meta-rate" class="word-rate-pill word-rate-pill--by-word"></span>
           </div>
 
-          <div id="card-pronunciation" class="flashcard__pronunciation" hidden>
+          <div
+            id="card-pronunciation"
+            class="flashcard__pronunciation"
+            hidden
+            aria-hidden="true"
+          >
             <span id="card-pron-ipa-seg" class="flashcard__pron-seg" hidden>
               <span class="flashcard__pron-label">IPA</span>
               <span id="card-pron-ipa" class="flashcard__pron-ipa"></span>
@@ -336,7 +361,12 @@
       <div class="flashcard__surface word-peek-modal__surface">
         <span id="word-peek-emoji" class="flashcard__emoji" aria-hidden="true"></span>
         <p id="word-peek-word" class="flashcard__word"></p>
-        <div id="word-peek-pronunciation" class="flashcard__pronunciation word-peek-modal__pron" hidden>
+        <div
+          id="word-peek-pronunciation"
+          class="flashcard__pronunciation word-peek-modal__pron"
+          hidden
+          aria-hidden="true"
+        >
           <span id="word-peek-pron-ipa-seg" class="flashcard__pron-seg" hidden>
             <span class="flashcard__pron-label">IPA</span>
             <span id="word-peek-pron-ipa" class="flashcard__pron-ipa"></span>

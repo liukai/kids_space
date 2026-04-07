@@ -1,0 +1,10 @@
+{
+  "mascots": [
+    { "src": "assets/set-maze/chomper.png" },
+    { "src": "assets/set-maze/Peashooter.png" },
+    { "src": "assets/set-maze/sunflower.png" },
+    { "src": "assets/set-maze/kernelpult.png" },
+    { "src": "assets/set-maze/gatling.png" },
+    { "src": "assets/set-maze/Zombie.png", "note": "Pellets become 🧠 brains (easter egg)." }
+  ]
+}
