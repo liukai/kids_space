@@ -1,49 +1,36 @@
 # Kids Space
 
-A small collection of **browser games for kids** — plain HTML, CSS, and JavaScript. No install or build step; each game lives in its own folder.
+**Quick games that run in the tab you already have open.**  
+No installers, no “please ask a grown-up to type their Apple ID.” Just HTML, CSS, and JavaScript folders you can unzip, double-click (or serve locally), and play.
 
-## Games
+## What’s inside the toy box
 
-| Game | What it is | Open locally |
-|------|------------|--------------|
-| [**Typing practice**](typing_practice/index.html) | Retro-terminal typing: letters, words, sentences, quiz; optional speech (English + 中文) and key sounds. | Open [`typing_practice/index.html`](typing_practice/index.html) |
-| [**Times table**](times_table/index.html) | Multiplication practice (1×1–9×9), trophies, themes, optional 九九 rhymes, progress in the browser. | Open [`times_table/index.html`](times_table/index.html) |
+| Game | Vibe | Open it |
+|------|------|---------|
+| [**Word flashcards**](flashcards/index.html) | Backyard words & quiz energy: hear a word, pick gaps, or spell the whole thing. A **5×3 treat trail** feeds rotating plant pals—suns (or brains 🧠) fly in on clean answers, checkmarks stay put, mascots get bigger. IPA when you want it. | [`flashcards/index.html`](flashcards/index.html) |
+| [**Typing practice**](typing_practice/index.html) | Retro-terminal typing: letters → words → sentences → quiz. Optional English + 中文 speech and chunky key sounds. | [`typing_practice/index.html`](typing_practice/index.html) |
+| [**Times table**](times_table/index.html) | Multiplication from **1×1** through **9×9**: trophies, themes, optional 九九 rhymes, progress saved in the browser. | [`times_table/index.html`](times_table/index.html) |
 
-Each folder has its own **README** with features, file layout, and tips:
+Deeper nerdery per folder:
 
 - [typing_practice/README.md](typing_practice/README.md)
 - [times_table/README.md](times_table/README.md)
 
+*(Flashcards are documented here and inline in the app—peek the `flashcards/` source when you’re curious.)*
+
 ## GitHub Pages
 
-This repo includes [`.github/workflows/pages.yml`](.github/workflows/pages.yml), which deploys the **repository root** on pushes to `main`.
+Workflow: [`.github/workflows/pages.yml`](.github/workflows/pages.yml) deploys the **repo root** on pushes to `main`.
 
-After you enable **GitHub Actions** as the Pages source in **Settings → Pages**, your site URL will look like:
+In **Settings → Pages**, pick **GitHub Actions** as the source. Your site will look like:
 
 `https://<your-username>.github.io/<repository-name>/`
 
-Use the **site home page** ([`index.html`](index.html) at the repo root) to jump to either game:
-
-- `…/typing_practice/index.html`
-- `…/times_table/index.html`
-
-Paths are relative, so the same links work when you clone the repo and open `index.html` via a local server (recommended) or from disk where supported.
+The [root `index.html`](index.html) is the lobby—one hop to flashcards, typing, or times table. All links are relative, so the same layout works on Pages and on your laptop.
 
 ## Run locally (quick)
 
-**Typing practice** — words load from an embedded script; opening the file often works:
-
-```bash
-cd typing_practice && python3 -m http.server 8080
-```
-
-**Times table**:
-
-```bash
-cd times_table && python3 -m http.server 8080
-```
-
-To browse the landing page from disk, use a tiny server from the repo root:
+From the repo root (best for the hub page):
 
 ```bash
 python3 -m http.server 8080
@@ -51,17 +38,38 @@ python3 -m http.server 8080
 
 Then open [http://localhost:8080](http://localhost:8080).
 
+**Word flashcards** (embedded word list—serving avoids some `file://` quirks):
+
+```bash
+cd flashcards && python3 -m http.server 8081
+```
+
+**Typing practice** · **Times table** — same idea, from their folders:
+
+```bash
+cd typing_practice && python3 -m http.server 8080
+# or
+cd times_table && python3 -m http.server 8080
+```
+
 ## Repository layout
 
 ```
 kids_space/
-├── index.html           # Landing page (GitHub Pages entry)
-├── README.md            # This file
-├── typing_practice/     # Typing game
-├── times_table/       # Multiplication game
-└── .github/workflows/   # CI + Pages deploy
+├── index.html            # Lobby (Pages entry)
+├── README.md             # You are here
+├── flashcards/           # Word cards, quiz, treat trail, IPA
+├── typing_practice/
+├── times_table/
+├── quiz-report/          # Standalone quiz report UI (optional)
+├── .githooks/            # Optional: strip editor footers from commits (see install-git-hooks.sh)
+└── .github/workflows/    # CI + Pages deploy
 ```
 
 ## License
 
-The **times table** app is [MIT](times_table/LICENSE). Add or align licenses for other parts of the repo if you publish publicly.
+The **times table** app is [MIT](times_table/LICENSE). Align licenses for other folders if you ship the whole repo publicly.
+
+---
+
+*Now go feed the sunflower. ☀️*

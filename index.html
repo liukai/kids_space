@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta
     name="description"
-    content="Kids Space — word flashcards, typing practice, and times table. No install."
+    content="Kids Space — word flashcards with a 5×3 treat trail and rotating mascots, retro typing practice, and times tables. Runs in the browser, no install."
   />
-  <title>Kids Space — choose a game</title>
+  <title>Kids Space — pick your adventure</title>
   <style>
     :root {
       --bg: #f4f0e8;
@@ -78,11 +78,28 @@
       outline: 3px solid var(--accent-typing);
       outline-offset: 2px;
     }
+    .games a.typing:focus-visible {
+      outline-color: var(--accent-typing);
+    }
     .games a.math:focus-visible {
       outline-color: var(--accent-math);
     }
     .games a.words:focus-visible {
       outline-color: var(--accent-words);
+    }
+    .intro {
+      margin: 0 0 1.35rem;
+      padding: 1rem 1.15rem;
+      background: rgba(255, 255, 255, 0.65);
+      border-radius: 14px;
+      border: 1px dashed rgba(28, 25, 23, 0.12);
+      color: var(--muted);
+      font-size: 0.98rem;
+      line-height: 1.55;
+    }
+    .intro strong {
+      color: var(--ink);
+      font-weight: 650;
     }
     .badge-words {
       background: rgba(21, 128, 61, 0.15);
@@ -138,8 +155,12 @@
   <div class="wrap">
     <header>
       <h1>Kids Space</h1>
-      <p class="tagline">Pick a game — runs in your browser, no install.</p>
+      <p class="tagline">Browser mini-games — no download tab dance required.</p>
     </header>
+
+    <p class="intro">
+      <strong>Newest goodies:</strong> Word flashcards now have a backyard-style <strong>treat trail</strong>—a <strong>5×3</strong> grid of suns, rotating plant (and zombie) pals that <strong>grow as you nail answers</strong>, and little ✔️ marks that stay where each snack was conquered. Toggle IPA, quiz modes, type-the-whole-word, streaks, and trophies when you’re feeling fancy.
+    </p>
 
     <nav aria-label="Games">
       <ul class="games">
@@ -151,19 +172,19 @@
               <span class="badge badge-words">See · quiz · type</span>
             </p>
             <p class="game-desc">
-              Hear words, fill one-letter gaps, or spell the whole word — scores, streaks, and a chomper treat trail every 10 correct.
+              Hear the word, peek IPA, fill letter gaps, or spell it all—then watch suns zip into your mascot until the trail refills (15 treats per lap). Optional Trail toggle if you want a calmer lawn.
             </p>
           </a>
         </li>
         <li>
-          <a href="typing_practice/index.html">
+          <a class="typing" href="typing_practice/index.html">
             <p class="game-title">
               <span class="emoji" aria-hidden="true">⌨️</span>
               Typing practice
               <span class="badge badge-typing">English + 中文</span>
             </p>
             <p class="game-desc">
-              Letters, words, sentences, and a quiz — retro terminal style, optional speech and key sounds.
+              Glowy retro terminal: drills from single letters to a full quiz—crank up speech and click-clack SFX if the grown-ups allow it.
             </p>
           </a>
         </li>
@@ -175,7 +196,7 @@
               <span class="badge badge-math">1×1–9×9</span>
             </p>
             <p class="game-desc">
-              Multiplication practice with scores, trophies, themes, and optional 九九 rhymes.
+              Multiplication practice with scores, trophies, CRT vibes, and optional 九九 rhymes when you’re on a math streak.
             </p>
           </a>
         </li>
@@ -183,7 +204,9 @@
     </nav>
 
     <footer>
-      <p><a href="README.md">Project README</a> — how to run locally and deploy Pages.</p>
+      <p>
+        <a href="README.md">README</a> — run locally, GitHub Pages, and the folder map.
+      </p>
     </footer>
   </div>
 </body>
