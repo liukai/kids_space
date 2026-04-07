@@ -1,0 +1,8 @@
+---
+description: Never add Cursor branding to git commit message bodies
+alwaysApply: true
+---
+
+# Git commit messages
+
+Do not add attribution footers to commits: no `Made with: Cursor`, `Made-with: Cursor`, or similar lines. Keep messages to the actual change only.

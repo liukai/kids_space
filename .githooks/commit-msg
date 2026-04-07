@@ -1,0 +1,17 @@
+#!/usr/bin/env sh
+# Remove "Made with: Cursor" / "Made-with: Cursor" footers (any case, optional spaces).
+# Enable once: ./install-git-hooks.sh  (sets core.hooksPath to .githooks)
+set -e
+msg_file="$1"
+[ -n "$msg_file" ] && [ -f "$msg_file" ] || exit 0
+if ! command -v perl >/dev/null 2>&1; then
+  exit 0
+fi
+tmp=$(mktemp)
+trap 'rm -f "$tmp"' EXIT
+perl -ne 'print unless /^\s*Made[- ]with:\s*Cursor\s*$/i' "$msg_file" > "$tmp"
+if ! cmp -s "$msg_file" "$tmp"; then
+  mv "$tmp" "$msg_file"
+  trap - EXIT
+  rm -f "$tmp"
+fi
