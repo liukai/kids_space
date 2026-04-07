@@ -17,3 +17,8 @@ Thumbs.db
 
 # Optional local tooling (if you add Node later)
 node_modules/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
