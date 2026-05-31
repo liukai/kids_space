@@ -109,6 +109,27 @@
           When on, show IPA and “Say” spelling on each card and in word peek.
         </span>
       </div>
+      <div class="control-bar__field control-bar__field--phonetics">
+        <span class="control-bar__label" id="word-emoji-label">Picture</span>
+        <label class="cycle-maze-toggle control-bar__phonetics-toggle">
+          <input
+            type="checkbox"
+            id="word-emoji-toggle"
+            class="cycle-maze-toggle__input sr-only"
+            role="switch"
+            checked
+            autocomplete="off"
+            aria-checked="true"
+            aria-labelledby="word-emoji-label"
+            aria-describedby="word-emoji-hint"
+          />
+          <span class="cycle-maze-toggle__track" aria-hidden="true"></span>
+          <span class="cycle-maze-toggle__text">Emoji</span>
+        </label>
+        <span id="word-emoji-hint" class="sr-only">
+          When on, show the picture emoji above each word on the card and in word peek.
+        </span>
+      </div>
       <div
         class="control-bar__field control-bar__field--quiz-gap-choose"
         id="quiz-gap-choice-field"

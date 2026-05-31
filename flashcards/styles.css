@@ -1638,6 +1638,11 @@ body::after {
   filter: drop-shadow(0 2px 4px rgba(40, 50, 35, 0.12));
 }
 
+.flashcard__emoji[hidden] {
+  display: none !important;
+  margin: 0;
+}
+
 .flashcard__word {
   margin: 0;
   font-size: clamp(2rem, 10vw, 2.75rem);

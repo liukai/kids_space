@@ -1375,6 +1375,8 @@
   var quizCycleMazeEnabled = true;
   /** Persisted: IPA + “Say” respelling on card & word peek (off by default). */
   var showPhoneticMarks = false;
+  /** Persisted: picture emoji on card & word peek (on by default). */
+  var showWordEmoji = true;
 
   var elCycleMazeOuter = document.getElementById("cycle-maze-outer");
   var elCycleMazeToggle = document.getElementById("cycle-maze-toggle");
@@ -1383,6 +1385,7 @@
   var elCycleChomperSlot = document.getElementById("cycle-maze-chomper-slot");
   var elCycleStats = document.getElementById("cycle-maze-stats");
   var elPhoneticMarksToggle = document.getElementById("phonetic-marks-toggle");
+  var elWordEmojiToggle = document.getElementById("word-emoji-toggle");
   var elKbdShortcutsModal = document.getElementById("kbd-shortcuts-modal");
   var elKbdShortcutsBackdrop = document.getElementById(
     "kbd-shortcuts-modal-backdrop"
@@ -1552,7 +1555,7 @@
     if (!item || !elWordPeekModal) return;
     closeKbdShortcutsModal();
     wordPeekItem = item;
-    if (elWordPeekEmoji) elWordPeekEmoji.textContent = item.emoji || "";
+    applyWordEmojiToEl(elWordPeekEmoji, item);
     if (elWordPeekWord) elWordPeekWord.textContent = item.word || "";
     if (elWordPeekMetaLine)
       elWordPeekMetaLine.textContent = describeWordPeekMetaLine(item);
@@ -1896,6 +1899,32 @@
         elWordPeekPronRespell,
         wordPeekItem
       );
+    }
+  }
+
+  function displayWordEmoji(item) {
+    if (!showWordEmoji || !item) return "";
+    return item.emoji || "";
+  }
+
+  function applyWordEmojiToEl(el, item) {
+    if (!el) return;
+    var em = displayWordEmoji(item);
+    el.textContent = em;
+    el.hidden = !em;
+  }
+
+  function onWordEmojiToggleChange() {
+    if (!elWordEmojiToggle) return;
+    showWordEmoji = !!elWordEmojiToggle.checked;
+    elWordEmojiToggle.setAttribute(
+      "aria-checked",
+      showWordEmoji ? "true" : "false"
+    );
+    persistSelections();
+    applyWordEmojiToEl(elEmoji, current);
+    if (isWordPeekModalOpen() && wordPeekItem) {
+      applyWordEmojiToEl(elWordPeekEmoji, wordPeekItem);
     }
   }
 
@@ -2855,7 +2884,7 @@
       applyPoolHint();
       setCardEnabled(false);
       updateFavoriteButton();
-      if (elEmoji) elEmoji.textContent = "";
+      applyWordEmojiToEl(elEmoji, null);
       if (elEnglish) {
         elEnglish.textContent = "";
         elEnglish.hidden = true;
@@ -2875,7 +2904,7 @@
 
     setCardEnabled(true);
     clearAnswerCelebrate();
-    if (elEmoji) elEmoji.textContent = current.emoji || "";
+    applyWordEmojiToEl(elEmoji, current);
     if (elChineseAside) elChineseAside.textContent = "";
 
     applyCardMetaForItem(current);
@@ -3075,6 +3104,7 @@
       quizGapChoice: quizGapChoiceMode,
       showCycleMaze: quizCycleMazeEnabled,
       showPhoneticMarks: showPhoneticMarks,
+      showWordEmoji: showWordEmoji,
     });
   }
 
@@ -3563,6 +3593,9 @@
         onPhoneticMarksToggleChange
       );
     }
+    if (elWordEmojiToggle) {
+      elWordEmojiToggle.addEventListener("change", onWordEmojiToggleChange);
+    }
     if (elFavorite) elFavorite.addEventListener("click", onFavoriteTap);
     var btnClearHistory = document.getElementById("btn-clear-history");
     if (btnClearHistory) {
@@ -3718,6 +3751,15 @@
           elPhoneticMarksToggle.setAttribute(
             "aria-checked",
             showPhoneticMarks ? "true" : "false"
+          );
+        }
+
+        showWordEmoji = !(prefs && prefs.showWordEmoji === false);
+        if (elWordEmojiToggle) {
+          elWordEmojiToggle.checked = showWordEmoji;
+          elWordEmojiToggle.setAttribute(
+            "aria-checked",
+            showWordEmoji ? "true" : "false"
           );
         }
 
