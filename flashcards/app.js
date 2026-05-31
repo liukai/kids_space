@@ -278,6 +278,7 @@
       sight: "\u2764\ufe0f",
       advanced: "\ud83c\udf93",
       basic: "\ud83d\udce6",
+      minecraft: "\u26cf\ufe0f",
       "basic-food": "\ud83c\udf4e",
       "basic-things": "\ud83d\udce6",
       "basic-nature": "\ud83c\udf3f",
