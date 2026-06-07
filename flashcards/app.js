@@ -143,6 +143,8 @@
           type: String(o.type != null ? o.type : ""),
           wordType: String(o.wordType != null ? o.wordType : ""),
           gradeLevel: String(o.gradeLevel != null ? o.gradeLevel : ""),
+          mcWikiPage: String(o.mcWikiPage != null ? o.mcWikiPage : ""),
+          mcBlurb: String(o.mcBlurb != null ? o.mcBlurb : ""),
           difficulty:
             typeof o.difficulty === "number" && !isNaN(o.difficulty)
               ? o.difficulty
@@ -263,6 +265,101 @@
     var maxR = gradeRank(cap);
     return items.filter(function (w) {
       return gradeRank(w.gradeLevel) <= maxR;
+    });
+  }
+
+  function isMinecraftWord(w) {
+    return String(w.type) === "minecraft";
+  }
+
+  var MC_WIKI_BASE = "https://minecraft.wiki/w/";
+
+  function minecraftWikiUrl(pageTitle) {
+    var t = String(pageTitle != null ? pageTitle : "").trim();
+    if (!t) return "";
+    return MC_WIKI_BASE + t.replace(/ /g, "_");
+  }
+
+  function shouldShowMcEncyclopedia(item) {
+    return (
+      !!item &&
+      isMinecraftWord(item) &&
+      String(item.mcBlurb != null ? item.mcBlurb : "").trim().length > 0
+    );
+  }
+
+  function applyMcEncyclopediaUi(item, elWrap, elBlurb, elWiki) {
+    if (!elWrap) return;
+    if (!shouldShowMcEncyclopedia(item)) {
+      elWrap.hidden = true;
+      if (elBlurb) elBlurb.textContent = "";
+      if (elWiki) {
+        elWiki.removeAttribute("href");
+        elWiki.hidden = true;
+      }
+      return;
+    }
+    elWrap.hidden = false;
+    if (elBlurb) elBlurb.textContent = item.mcBlurb;
+    if (elWiki) {
+      var page = String(item.mcWikiPage != null ? item.mcWikiPage : "").trim();
+      var url = minecraftWikiUrl(page);
+      if (url) {
+        elWiki.href = url;
+        elWiki.textContent = "Minecraft Wiki \u2197";
+        elWiki.hidden = false;
+        elWiki.setAttribute(
+          "aria-label",
+          "Open Minecraft Wiki in a new tab"
+        );
+      } else {
+        elWiki.removeAttribute("href");
+        elWiki.hidden = true;
+      }
+    }
+  }
+
+  function minecraftWordsFrom(items) {
+    return items.filter(isMinecraftWord);
+  }
+
+  function mergeWordPoolsDedupe(primary, extra) {
+    var seen = Object.create(null);
+    var out = [];
+    var i;
+    var k;
+    for (i = 0; i < primary.length; i++) {
+      k = wordEntryKey(primary[i]);
+      if (seen[k]) continue;
+      seen[k] = true;
+      out.push(primary[i]);
+    }
+    for (i = 0; i < extra.length; i++) {
+      k = wordEntryKey(extra[i]);
+      if (seen[k]) continue;
+      seen[k] = true;
+      out.push(extra[i]);
+    }
+    return out;
+  }
+
+  function wordMatchesTypeScope(w, scope) {
+    if (scope === "all") return true;
+    var bar = scope.indexOf("|");
+    if (bar !== -1) {
+      return (
+        w.type === scope.slice(0, bar) &&
+        String(w.wordType) === scope.slice(bar + 1)
+      );
+    }
+    return w.type === scope;
+  }
+
+  function filterPoolByWordType(items, scope, keepMinecraft) {
+    if (scope === "all") return items.slice();
+    return items.filter(function (w) {
+      if (keepMinecraft && isMinecraftWord(w)) return true;
+      return wordMatchesTypeScope(w, scope);
     });
   }
 
@@ -1348,6 +1445,8 @@
   var gradeFilterCap = "all";
   var deckScope = "all";
   var wordTypeScope = "all";
+  /** "off" | "include" (+ MC any grade) | "only" (minecraft deck) */
+  var minecraftScope = "off";
   var cardCount = 0;
   var studyMode = "see";
   /** Quiz only: tap three letter buttons (optional 1/2/3 keys) instead of typing the gap. */
@@ -1405,6 +1504,9 @@
   var elWordPeekWord = document.getElementById("word-peek-word");
   var elWordPeekMetaLine = document.getElementById("word-peek-meta-line");
   var elWordPeekMetaRate = document.getElementById("word-peek-meta-rate");
+  var elWordPeekMcTip = document.getElementById("word-peek-mc-tip");
+  var elWordPeekMcBlurb = document.getElementById("word-peek-mc-blurb");
+  var elWordPeekMcWiki = document.getElementById("word-peek-mc-wiki");
   var elWordPeekPronunciation = document.getElementById(
     "word-peek-pronunciation"
   );
@@ -1574,6 +1676,12 @@
       elWordPeekPronIpa,
       elWordPeekPronRespell,
       item
+    );
+    applyMcEncyclopediaUi(
+      item,
+      elWordPeekMcTip,
+      elWordPeekMcBlurb,
+      elWordPeekMcWiki
     );
     elWordPeekModal.hidden = false;
     updateWordPeekFavoriteButton();
@@ -2002,6 +2110,9 @@
   var elMeta = document.getElementById("card-meta");
   var elMetaLine = document.getElementById("card-meta-line");
   var elMetaRate = document.getElementById("card-meta-rate");
+  var elCardMcTip = document.getElementById("card-mc-tip");
+  var elCardMcBlurb = document.getElementById("card-mc-blurb");
+  var elCardMcWiki = document.getElementById("card-mc-wiki");
   var elCardPronunciation = document.getElementById("card-pronunciation");
   var elCardPronIpaSeg = document.getElementById("card-pron-ipa-seg");
   var elCardPronMid = document.getElementById("card-pron-mid");
@@ -2018,6 +2129,7 @@
   var elGrade = document.getElementById("grade-filter");
   var elWordType = document.getElementById("word-type-filter");
   var elDeckScope = document.getElementById("deck-scope");
+  var elMinecraftScope = document.getElementById("minecraft-filter");
   var elStudyMode = document.getElementById("study-mode");
   var elQuizGapChoiceField = document.getElementById("quiz-gap-choice-field");
   var elQuizGapChoiceToggle = document.getElementById("quiz-gap-choice-mode");
@@ -2137,6 +2249,7 @@
       elMetaRate.className =
         "word-rate-pill word-rate-pill--by-word word-rate--none";
       elMetaRate.removeAttribute("aria-label");
+      applyMcEncyclopediaUi(null, elCardMcTip, elCardMcBlurb, elCardMcWiki);
       return;
     }
     elMetaLine.textContent = describeCardMetaLine(item);
@@ -2146,6 +2259,7 @@
       item.word,
       "word-rate-pill word-rate-pill--by-word"
     );
+    applyMcEncyclopediaUi(item, elCardMcTip, elCardMcBlurb, elCardMcWiki);
   }
 
   /** Place meta subtitle directly under the word row (see) or the gap line (quiz / type-all). */
@@ -2162,6 +2276,12 @@
         var next = elQuizWordRow.nextSibling;
         if (next) elSpellZone.insertBefore(elMeta, next);
         else elSpellZone.appendChild(elMeta);
+      }
+    }
+    if (elCardMcTip && elMeta.parentNode) {
+      var afterMeta = elMeta.nextSibling;
+      if (afterMeta !== elCardMcTip) {
+        elMeta.parentNode.insertBefore(elCardMcTip, afterMeta);
       }
     }
   }
@@ -3009,23 +3129,29 @@
       pool = [];
       return;
     }
-    pool =
-      gradeFilterCap === "all"
-        ? allWords.slice()
-        : filterByGradeCap(allWords, gradeFilterCap);
-    if (wordTypeScope !== "all") {
-      var bar = wordTypeScope.indexOf("|");
-      if (bar !== -1) {
-        var typ = wordTypeScope.slice(0, bar);
-        var wtyp = wordTypeScope.slice(bar + 1);
-        pool = pool.filter(function (w) {
-          return w.type === typ && String(w.wordType) === wtyp;
+    var mcAll = minecraftWordsFrom(allWords);
+    if (minecraftScope === "only") {
+      pool = mcAll.slice();
+    } else {
+      var base =
+        gradeFilterCap === "all"
+          ? allWords.slice()
+          : filterByGradeCap(allWords, gradeFilterCap);
+      if (minecraftScope === "include") {
+        var nonMc = base.filter(function (w) {
+          return !isMinecraftWord(w);
         });
+        pool = mergeWordPoolsDedupe(nonMc, mcAll);
       } else {
-        pool = pool.filter(function (w) {
-          return w.type === wordTypeScope;
-        });
+        pool = base;
       }
+    }
+    if (wordTypeScope !== "all") {
+      pool = filterPoolByWordType(
+        pool,
+        wordTypeScope,
+        minecraftScope === "include"
+      );
     }
     if (deckScope === "favorites") {
       pool = pool.filter(function (w) {
@@ -3039,10 +3165,18 @@
 
   function applyPoolHint() {
     if (!elDeckHint) return;
-    var tail =
-      gradeFilterCap === "all"
-        ? "All grades"
-        : "Up to Gr " + gradeFilterCap;
+    var tail;
+    if (minecraftScope === "only") {
+      tail = "Minecraft only · any grade";
+    } else {
+      tail =
+        gradeFilterCap === "all"
+          ? "All grades"
+          : "Up to Gr " + gradeFilterCap;
+      if (minecraftScope === "include") {
+        tail += " · + MC any grade";
+      }
+    }
     var scopeNote = deckScope === "favorites" ? " · Saved deck" : "";
     var typeNote = wordTypeScope !== "all" ? " · One word type" : "";
     if (!pool.length) {
@@ -3051,6 +3185,10 @@
       if (deckScope === "favorites") {
         elDeckHint.textContent +=
           " Save stars on words you want, or widen type/grade.";
+      }
+      if (minecraftScope === "only") {
+        elDeckHint.textContent +=
+          " Minecraft-only needs saved MC stars if deck is Saved.";
       }
       return;
     }
@@ -3102,6 +3240,7 @@
       grade: elGrade ? elGrade.value : "all",
       deck: deckScope,
       wordType: wordTypeScope,
+      minecraft: minecraftScope,
       quizGapChoice: quizGapChoiceMode,
       showCycleMaze: quizCycleMazeEnabled,
       showPhoneticMarks: showPhoneticMarks,
@@ -3139,6 +3278,32 @@
     if (!elWordType) return;
     resetQuizCycle();
     wordTypeScope = elWordType.value || "all";
+    persistSelections();
+    cardCount = 1;
+    rebuildPool();
+    applyPoolHint();
+    current = shufflePickDifferent(pool, null);
+    prepareRound();
+    renderCard(false);
+  }
+
+  function syncMinecraftBodyTheme() {
+    var mcOn =
+      minecraftScope === "include" || minecraftScope === "only";
+    document.body.classList.toggle("minecraft-theme", mcOn);
+    document.body.classList.toggle(
+      "minecraft-theme--only",
+      minecraftScope === "only"
+    );
+  }
+
+  function onMinecraftScopeChange() {
+    if (!elMinecraftScope) return;
+    resetQuizCycle();
+    var v = elMinecraftScope.value;
+    if (v === "include" || v === "only") minecraftScope = v;
+    else minecraftScope = "off";
+    syncMinecraftBodyTheme();
     persistSelections();
     cardCount = 1;
     rebuildPool();
@@ -3579,6 +3744,9 @@
     if (elWordType) {
       elWordType.addEventListener("change", onWordTypeChange);
     }
+    if (elMinecraftScope) {
+      elMinecraftScope.addEventListener("change", onMinecraftScopeChange);
+    }
     if (elStudyMode) {
       elStudyMode.addEventListener("change", onStudyModeChange);
     }
@@ -3730,6 +3898,17 @@
             elWordType.value = prefs.wordType;
           }
         }
+
+        minecraftScope = "off";
+        if (elMinecraftScope) elMinecraftScope.value = "off";
+        if (
+          prefs &&
+          (prefs.minecraft === "include" || prefs.minecraft === "only")
+        ) {
+          minecraftScope = prefs.minecraft;
+          if (elMinecraftScope) elMinecraftScope.value = prefs.minecraft;
+        }
+        syncMinecraftBodyTheme();
 
         if (prefs && prefs.quizGapChoice === true) {
           quizGapChoiceMode = true;

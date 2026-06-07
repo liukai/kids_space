@@ -1,4 +1,4 @@
-/* Backyard / lawn · bright daytime palette (legacy token names keep components working) */
+/* Backyard palette · MC mode uses planner art as full-page background */
 :root {
   --space-1: 8px;
   --space-2: 16px;
@@ -33,10 +33,8 @@
   --accent-soft: rgba(45, 110, 50, 0.14);
   --primary: var(--crt-green-dim);
   --primary-dark: #1a4220;
-  /* Backyard lawn: big squares — two deep greens (readable UI stays on .app / card) */
-  --lawn-check-light: #519018;
-  --lawn-check-dark: #417112;
-  --lawn-check-size: clamp(80px, 22vmin, 168px);
+  /* Minecraft scene (planner art background when filter on) */
+  --mc-bg-fallback: #87ceeb;
   --good: var(--crt-green);
   --bad: var(--crt-red);
   --fav-on: var(--pac-yellow-hot);
@@ -63,79 +61,33 @@ body {
   min-height: 100dvh;
   color: var(--ink);
   -webkit-tap-highlight-color: transparent;
-  background-color: var(--lawn-check-dark);
-  /* Layered sky + lawn cartoon vibe (PvZ-like): soft sun, rays, distant plants — low contrast */
-  background-image:
-    /* Sun: bright core */
-    radial-gradient(
-      circle 14vmin at 11% 7%,
-      rgba(255, 244, 175, 0.55) 0%,
-      rgba(255, 228, 120, 0.22) 48%,
-      transparent 72%
-    ),
-    /* Sun: very soft long rays */
-    repeating-conic-gradient(
-      from 0deg at 11% 7%,
-      transparent 0deg 11deg,
-      rgba(255, 252, 215, 0.055) 11deg 14deg
-    ),
-    /* Big daylight wash */
-    radial-gradient(circle 52vmin at 14% 8%, rgba(255, 248, 214, 0.38) 0%, transparent 46%),
-    /* Bottom “bushes” / plant mass — corners only, sits on lawn */
-    radial-gradient(ellipse 72% 52% at -10% 108%, rgba(34, 78, 32, 0.32) 0%, transparent 58%),
-    radial-gradient(ellipse 48% 38% at 6% 102%, rgba(58, 112, 48, 0.22) 0%, transparent 62%),
-    radial-gradient(ellipse 68% 48% at 112% 106%, rgba(36, 82, 34, 0.3) 0%, transparent 56%),
-    radial-gradient(ellipse 44% 34% at 94% 101%, rgba(62, 118, 52, 0.2) 0%, transparent 60%),
-    /* Tiny non-distracting specks (flower / seed packet feel) */
-    radial-gradient(circle 0.32rem at 19% 98%, rgba(255, 224, 110, 0.38) 0%, transparent 72%),
-    radial-gradient(circle 0.26rem at 81% 97.5%, rgba(255, 190, 200, 0.22) 0%, transparent 72%),
-    radial-gradient(circle 0.28rem at 48% 99%, rgba(240, 250, 160, 0.3) 0%, transparent 70%),
-    radial-gradient(ellipse 140% 85% at 50% -25%, rgba(255, 255, 255, 0.38) 0%, transparent 52%),
-    radial-gradient(ellipse 70% 45% at 85% 12%, rgba(255, 255, 255, 0.12) 0%, transparent 45%),
-    linear-gradient(
-      180deg,
-      rgba(110, 175, 220, 0.26) 0%,
-      rgba(110, 175, 220, 0.05) 14%,
-      transparent 28%
-    ),
-    repeating-conic-gradient(
-      var(--lawn-check-light) 0% 25%,
-      var(--lawn-check-dark) 0% 50%
-    );
-  background-size:
-    auto,
-    auto,
-    auto,
-    auto,
-    auto,
-    auto,
-    auto,
-    auto,
-    auto,
-    auto,
-    auto,
-    auto,
-    auto,
-    var(--lawn-check-size) var(--lawn-check-size);
+  background-color: #8ecfff;
+  background-image: linear-gradient(
+    180deg,
+    #8ecfff 0%,
+    #b8e4ff 22%,
+    #9ccc65 55%,
+    #7cb342 100%
+  );
   position: relative;
 }
 
-/* Subtle paper grain — much lighter than CRT scanlines */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 10000;
-  background: repeating-linear-gradient(
-    0deg,
-    rgba(255, 255, 255, 0.03) 0px,
-    rgba(255, 255, 255, 0.03) 1px,
-    transparent 1px,
-    transparent 4px
+body.minecraft-theme,
+body.minecraft-theme--only {
+  background-color: #8ecfff;
+  background-image: linear-gradient(
+    180deg,
+    #8ecfff 0%,
+    #b8e4ff 22%,
+    #9ccc65 55%,
+    #7cb342 100%
   );
-  opacity: 0.35;
-  mix-blend-mode: overlay;
+}
+
+/* No pixel grid / dirt overlays when MC filter is on */
+body::before {
+  content: none;
+  display: none;
 }
 
 body::after {
@@ -143,24 +95,62 @@ body::after {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: 9999;
-  background: radial-gradient(ellipse at center, transparent 45%, rgba(22, 40, 14, 0.08) 100%);
+  z-index: 1;
+  background: radial-gradient(ellipse at center, transparent 48%, rgba(20, 36, 14, 0.07) 100%);
+}
+
+body.minecraft-theme::after {
+  background: radial-gradient(
+    ellipse at center,
+    transparent 42%,
+    rgba(0, 0, 0, 0.06) 100%
+  );
+}
+
+body.minecraft-theme--only::after {
+  background: radial-gradient(
+    ellipse at center,
+    transparent 40%,
+    rgba(30, 20, 48, 0.08) 100%
+  );
 }
 
 .app {
   position: relative;
-  z-index: 1;
+  z-index: 2;
+  isolation: isolate;
   max-width: 28rem;
   margin: 0 auto;
   padding: var(--space-3) var(--space-2) var(--space-4);
-  /* Cream “mat” on the lawn — no green checker behind type (contrast) */
+  /* Inventory-style panel on the grass */
   background-color: #fbf9f4;
   background-image: linear-gradient(180deg, #fdfcf9 0%, #f4f1e8 100%);
-  border-radius: 24px;
-  border: 4px solid #f0e8dc;
+  border-radius: 20px;
+  border: 4px solid #c4a574;
   box-shadow:
-    0 0 0 1px rgba(100, 85, 55, 0.12),
+    0 0 0 2px #8b6914,
+    0 0 0 6px rgba(139, 105, 20, 0.18),
     0 14px 40px rgba(25, 45, 18, 0.22),
+    inset 0 2px 0 rgba(255, 255, 255, 0.92);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body.minecraft-theme .app {
+  border-color: #9a7038;
+  box-shadow:
+    0 0 0 2px #6b4f1a,
+    0 0 0 6px rgba(94, 160, 32, 0.2),
+    0 16px 44px rgba(20, 40, 14, 0.28),
+    inset 0 2px 0 rgba(255, 255, 255, 0.92),
+    inset 0 -3px 0 rgba(139, 105, 20, 0.12);
+}
+
+body.minecraft-theme--only .app {
+  border-color: #7a5830;
+  box-shadow:
+    0 0 0 2px #4a3518,
+    0 0 0 6px rgba(120, 60, 160, 0.14),
+    0 16px 44px rgba(18, 28, 40, 0.26),
     inset 0 2px 0 rgba(255, 255, 255, 0.92);
 }
 
@@ -516,7 +506,13 @@ body::after {
 
 @media (min-width: 36rem) {
   .control-bar {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 52rem) {
+  .control-bar {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 }
 
@@ -1953,6 +1949,48 @@ body::after {
 
 .flashcard__meta-line {
   display: block;
+}
+
+.flashcard__mc-tip {
+  margin: 0.45rem 0 0;
+  padding: 0.55rem 0.65rem;
+  max-width: 100%;
+  text-align: center;
+  border-radius: 12px;
+  border: 1px dashed rgba(91, 130, 68, 0.35);
+  background: rgba(255, 255, 255, 0.55);
+  box-sizing: border-box;
+}
+
+.flashcard__mc-tip--peek {
+  margin-top: 0.5rem;
+}
+
+.flashcard__mc-blurb {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.flashcard__mc-wiki {
+  display: inline-block;
+  margin-top: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #2e7d32;
+  text-decoration: none;
+  letter-spacing: 0.01em;
+}
+
+.flashcard__mc-wiki:hover {
+  text-decoration: underline;
+}
+
+.flashcard__mc-wiki:focus-visible {
+  outline: 2px solid var(--crt-green);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 /* Subtitle under the word: emoji + Lv + Chinese — quiet, low visual noise */

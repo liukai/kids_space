@@ -1546,7 +1546,14 @@ def build_base_rows():
     for w, e, zh, d, g in _BASIC_34:
         rows.append(_r(w, e, zh, "basic", d, "Basic", g))
     for w, e, zh, d, g in _MINECRAFT:
-        rows.append(_r(w, e, zh, "minecraft", d, "Minecraft", g))
+        row = _r(w, e, zh, "minecraft", d, "Minecraft", g)
+        try:
+            from minecraft_wiki_data import mc_wiki_fields
+
+            row.update(mc_wiki_fields(w))
+        except ImportError:
+            pass
+        rows.append(row)
     return rows
 
 

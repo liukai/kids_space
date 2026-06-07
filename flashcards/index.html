@@ -18,7 +18,7 @@
   <div class="app">
     <header class="site-header">
       <h1 class="site-header__title">Word Flashcards</h1>
-      <p class="site-header__subtitle">Backyard word garden · grow your spelling</p>
+      <p class="site-header__subtitle">Overworld word garden · dig in and spell</p>
       <div class="site-header__trophy" id="trophy-panel">
         <div class="site-header__trophy-row">
           <span class="site-header__trophy-label">Trophies <strong id="trophy-val">0</strong></span>
@@ -87,6 +87,19 @@
         <select id="deck-scope" class="control-bar__select" autocomplete="off" title="Which cards">
           <option value="all">All words</option>
           <option value="favorites">Saved</option>
+        </select>
+      </div>
+      <div class="control-bar__field">
+        <label class="control-bar__label" for="minecraft-filter">Minecraft</label>
+        <select
+          id="minecraft-filter"
+          class="control-bar__select"
+          autocomplete="off"
+          title="Add Minecraft words (any grade) or study MC only"
+        >
+          <option value="off">Off</option>
+          <option value="include">⛏️ + MC</option>
+          <option value="only">⛏️ MC only</option>
         </select>
       </div>
       <div class="control-bar__field control-bar__field--phonetics">
@@ -289,6 +302,18 @@
           <p id="card-meta" class="flashcard__meta flashcard__meta-wrap">
             <span id="card-meta-line" class="flashcard__meta-line"></span>
           </p>
+          <div id="card-mc-tip" class="flashcard__mc-tip" hidden>
+            <p id="card-mc-blurb" class="flashcard__mc-blurb"></p>
+            <a
+              id="card-mc-wiki"
+              class="flashcard__mc-wiki"
+              href="#"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Open Minecraft Wiki in a new tab"
+              hidden
+            >Minecraft Wiki ↗</a>
+          </div>
           <p id="feedback" class="flashcard__feedback" role="status" aria-live="assertive"></p>
         </div>
 
@@ -401,6 +426,18 @@
         <div id="word-peek-meta" class="flashcard__meta word-peek-modal__meta flashcard__meta--condensed">
           <span id="word-peek-meta-line" class="flashcard__meta-line"></span>
           <span id="word-peek-meta-rate" class="word-rate-pill word-rate-pill--peek"></span>
+        </div>
+        <div id="word-peek-mc-tip" class="flashcard__mc-tip flashcard__mc-tip--peek" hidden>
+          <p id="word-peek-mc-blurb" class="flashcard__mc-blurb"></p>
+          <a
+            id="word-peek-mc-wiki"
+            class="flashcard__mc-wiki"
+            href="#"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Open Minecraft Wiki in a new tab"
+            hidden
+          >Minecraft Wiki ↗</a>
         </div>
       </div>
       <button type="button" id="word-peek-close" class="btn btn--primary word-peek-modal__close">
