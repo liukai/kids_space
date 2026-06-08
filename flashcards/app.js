@@ -567,6 +567,172 @@
     }
   }
 
+  var DEFAULT_ART_GALLERY = [
+    {
+      id: "overworld-village-love",
+      src: "assets/art-gallery/overworld-village-love.png",
+      title: "Big overworld village",
+      caption:
+        "Steve, Alex, villagers, and friends in a sunny world. Love to Matt & Francis! — Kai",
+      artist: "Kai",
+    },
+    {
+      id: "overworld-village-friends",
+      src: "assets/art-gallery/overworld-village-friends.png",
+      title: "Village with friends",
+      caption:
+        "A cozy village with a castle, river, and lots of animals. Love to Matt & Francis! — Kai",
+      artist: "Kai",
+    },
+    {
+      id: "village-battle-day",
+      src: "assets/art-gallery/village-battle-day.png",
+      title: "Village battle day",
+      caption:
+        "Steve fights zombies and a creeper while the sun burns the undead.",
+      artist: "Kai",
+    },
+    {
+      id: "battle-planner-sketch",
+      src: "assets/art-gallery/battle-planner-sketch.png",
+      title: "Battle in the planner",
+      caption: "Heroes vs zombies and creepers — drawn in a weekly planner.",
+      artist: "Kai",
+    },
+    {
+      id: "heroes-vs-mobs",
+      src: "assets/art-gallery/heroes-vs-mobs.png",
+      title: "Heroes vs mobs",
+      caption:
+        "Steve and a friend take on a burning zombie and a defeated creeper.",
+      artist: "Kai",
+    },
+    {
+      id: "night-battle-fail",
+      src: "assets/art-gallery/night-battle-fail.png",
+      title: "Night battle",
+      caption: "The mobs win this round under the moon — humans failed…",
+      artist: "Kai",
+    },
+  ];
+  var artGalleryPieces = DEFAULT_ART_GALLERY.slice();
+  var artGalleryCurrentId = null;
+
+  function normalizeArtGalleryPiece(entry) {
+    if (!entry || typeof entry !== "object") return null;
+    var id = String(entry.id != null ? entry.id : "").trim();
+    var src = String(entry.src != null ? entry.src : "").trim();
+    var title = String(entry.title != null ? entry.title : "").trim();
+    if (!id || !src || !title) return null;
+    return {
+      id: id,
+      src: src,
+      title: title,
+      caption: String(entry.caption != null ? entry.caption : "").trim(),
+      artist: String(entry.artist != null ? entry.artist : "").trim(),
+    };
+  }
+
+  function artGalleryImageUrl(src) {
+    if (!src) return "";
+    if (/^https?:\/\//i.test(src)) return src;
+    try {
+      return new URL(src, document.baseURI).href;
+    } catch (e1) {
+      return src;
+    }
+  }
+
+  function loadArtGallery() {
+    artGalleryPieces = DEFAULT_ART_GALLERY.slice();
+    if (typeof fetch === "undefined") return Promise.resolve();
+    var u;
+    try {
+      u = new URL("assets/art-gallery/gallery.json", document.baseURI).href;
+    } catch (e2) {
+      return Promise.resolve();
+    }
+    return fetch(u)
+      .then(function (r) {
+        return r.ok ? r.json() : null;
+      })
+      .then(function (data) {
+        if (!data || !Array.isArray(data.pieces)) return;
+        var out = [];
+        var i;
+        for (i = 0; i < data.pieces.length; i++) {
+          var p = normalizeArtGalleryPiece(data.pieces[i]);
+          if (p) out.push(p);
+        }
+        if (out.length) artGalleryPieces = out;
+      })
+      .catch(function () {});
+  }
+
+  function syncArtGalleryFieldVisibility() {
+    if (!elMcArtGalleryField) return;
+    elMcArtGalleryField.hidden =
+      !isMcModeActive() || !artGalleryPieces.length;
+  }
+
+  function isArtGalleryModalOpen() {
+    return elArtGalleryModal && !elArtGalleryModal.hidden;
+  }
+
+  function pickRandomArtGalleryPiece(avoidId) {
+    if (!artGalleryPieces.length) return null;
+    if (artGalleryPieces.length === 1) return artGalleryPieces[0];
+    var pick;
+    var guard = 0;
+    do {
+      pick =
+        artGalleryPieces[Math.floor(Math.random() * artGalleryPieces.length)];
+      guard++;
+    } while (pick && pick.id === avoidId && guard < 12);
+    return pick;
+  }
+
+  function renderArtGalleryPiece(piece) {
+    if (!piece) return;
+    artGalleryCurrentId = piece.id;
+    if (elArtGalleryTitle) elArtGalleryTitle.textContent = piece.title;
+    if (elArtGalleryCaption) {
+      elArtGalleryCaption.textContent = piece.caption || "";
+      elArtGalleryCaption.hidden = !piece.caption;
+    }
+    if (elArtGalleryMeta) {
+      var meta = piece.artist ? "Art by " + piece.artist : "";
+      elArtGalleryMeta.textContent = meta;
+      elArtGalleryMeta.hidden = !meta;
+    }
+    if (elArtGalleryImg) {
+      elArtGalleryImg.src = artGalleryImageUrl(piece.src);
+      elArtGalleryImg.alt =
+        piece.title + (piece.caption ? ". " + piece.caption : "");
+    }
+  }
+
+  function openArtGalleryPiece(piece) {
+    if (!piece || !elArtGalleryModal) return;
+    renderArtGalleryPiece(piece);
+    elArtGalleryModal.hidden = false;
+    if (elArtGalleryClose) elArtGalleryClose.focus();
+  }
+
+  function openArtGalleryRandom() {
+    var piece = pickRandomArtGalleryPiece(artGalleryCurrentId);
+    if (piece) openArtGalleryPiece(piece);
+  }
+
+  function closeArtGalleryModal() {
+    artGalleryCurrentId = null;
+    if (elArtGalleryModal) elArtGalleryModal.hidden = true;
+    if (elArtGalleryImg) {
+      elArtGalleryImg.removeAttribute("src");
+      elArtGalleryImg.alt = "";
+    }
+  }
+
   function minecraftWordsFrom(items) {
     return items.filter(isMinecraftWord);
   }
@@ -1724,6 +1890,69 @@
   var quizAdvanceCardTimer = null;
   /** Match .cycle-maze--nom sun flight (~480ms) + buffer before swapping sun → ✔️ */
   var QUIZ_TRAIL_NOM_MS = 520;
+  /** See mode: auto-advance interval when slideshow is on. */
+  var SEE_SLIDESHOW_MS = 5000;
+  var seeSlideshowEnabled = false;
+  var seeSlideshowTimer = null;
+
+  function clearSeeSlideshowTimer() {
+    if (seeSlideshowTimer !== null) {
+      window.clearTimeout(seeSlideshowTimer);
+      seeSlideshowTimer = null;
+    }
+  }
+
+  function seeSlideshowPaused() {
+    return (
+      isKbdShortcutsModalOpen() ||
+      isWordPeekModalOpen() ||
+      isArtGalleryModalOpen()
+    );
+  }
+
+  function syncSeeSlideshowFieldVisibility() {
+    if (!elSeeSlideshowField) return;
+    elSeeSlideshowField.hidden = studyMode !== "see";
+  }
+
+  function scheduleSeeSlideshowTick() {
+    clearSeeSlideshowTimer();
+    if (
+      !seeSlideshowEnabled ||
+      studyMode !== "see" ||
+      !current ||
+      !pool.length
+    ) {
+      return;
+    }
+    seeSlideshowTimer = window.setTimeout(function () {
+      seeSlideshowTimer = null;
+      if (
+        !seeSlideshowEnabled ||
+        studyMode !== "see" ||
+        !pool.length
+      ) {
+        return;
+      }
+      if (seeSlideshowPaused()) {
+        scheduleSeeSlideshowTick();
+        return;
+      }
+      advanceToNewCard(false);
+    }, SEE_SLIDESHOW_MS);
+  }
+
+  function onSeeSlideshowToggleChange() {
+    if (!elSeeSlideshowToggle) return;
+    seeSlideshowEnabled = !!elSeeSlideshowToggle.checked;
+    elSeeSlideshowToggle.setAttribute(
+      "aria-checked",
+      seeSlideshowEnabled ? "true" : "false"
+    );
+    persistSelections();
+    if (seeSlideshowEnabled) scheduleSeeSlideshowTick();
+    else clearSeeSlideshowTimer();
+  }
 
   function clearQuizAdvanceTimer() {
     if (quizAdvanceBumpTimer !== null) {
@@ -1812,6 +2041,16 @@
   var elWordEmojiToggle = document.getElementById("word-emoji-toggle");
   var elMcKidsBlurbField = document.getElementById("mc-kids-blurb-field");
   var elMcKidsBlurbToggle = document.getElementById("mc-kids-blurb-toggle");
+  var elMcArtGalleryField = document.getElementById("mc-art-gallery-field");
+  var elBtnMcArtGallery = document.getElementById("btn-mc-art-gallery");
+  var elArtGalleryModal = document.getElementById("art-gallery-modal");
+  var elArtGalleryBackdrop = document.getElementById("art-gallery-modal-backdrop");
+  var elArtGalleryTitle = document.getElementById("art-gallery-title");
+  var elArtGalleryCaption = document.getElementById("art-gallery-caption");
+  var elArtGalleryMeta = document.getElementById("art-gallery-meta");
+  var elArtGalleryImg = document.getElementById("art-gallery-img");
+  var elArtGalleryShuffle = document.getElementById("art-gallery-shuffle");
+  var elArtGalleryClose = document.getElementById("art-gallery-close");
   var elKbdShortcutsModal = document.getElementById("kbd-shortcuts-modal");
   var elKbdShortcutsBackdrop = document.getElementById(
     "kbd-shortcuts-modal-backdrop"
@@ -2699,6 +2938,8 @@
   var elDeckScope = document.getElementById("deck-scope");
   var elMinecraftScope = document.getElementById("minecraft-filter");
   var elStudyMode = document.getElementById("study-mode");
+  var elSeeSlideshowField = document.getElementById("see-slideshow-field");
+  var elSeeSlideshowToggle = document.getElementById("see-slideshow-toggle");
   var elQuizGapChoiceField = document.getElementById("quiz-gap-choice-field");
   var elQuizGapChoiceToggle = document.getElementById("quiz-gap-choice-mode");
   var elFavorite = document.getElementById("btn-favorite");
@@ -3588,6 +3829,8 @@
       setFeedback("", null);
       updateQuizCycleUi();
       syncPrimaryActionButton();
+      clearSeeSlideshowTimer();
+      syncSeeSlideshowFieldVisibility();
       return;
     }
 
@@ -3680,10 +3923,14 @@
     positionCardMeta();
     appendCardMetaRateBesideWord();
     syncPrimaryActionButton();
+    syncSeeSlideshowFieldVisibility();
+    if (studyMode === "see" && seeSlideshowEnabled) scheduleSeeSlideshowTick();
+    else clearSeeSlideshowTimer();
   }
 
   function advanceToNewCard(fromUserTap) {
     clearQuizAdvanceTimer();
+    clearSeeSlideshowTimer();
     advancingQuiz = false;
     if (!pool.length) return;
     cardCount++;
@@ -3814,6 +4061,7 @@
       showPhoneticMarks: showPhoneticMarks,
       showWordEmoji: showWordEmoji,
       mcKidsBlurbs: showMcKidsBlurbs,
+      seeSlideshow: seeSlideshowEnabled,
     });
   }
 
@@ -3865,6 +4113,7 @@
       minecraftScope === "only"
     );
     syncMcKidsBlurbFieldVisibility();
+    syncArtGalleryFieldVisibility();
     refreshWordPictures();
   }
 
@@ -3887,10 +4136,12 @@
   function onStudyModeChange() {
     if (!elStudyMode) return;
     resetQuizCycle();
+    clearSeeSlideshowTimer();
     var v = elStudyMode.value;
     if (v === "quiz") studyMode = "quiz";
     else if (v === "typeall") studyMode = "typeall";
     else studyMode = "see";
+    syncSeeSlideshowFieldVisibility();
     persistSelections();
     cardCount = 1;
     prepareRound();
@@ -4052,6 +4303,14 @@
       return;
     }
 
+    if (isArtGalleryModalOpen()) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        closeArtGalleryModal();
+      }
+      return;
+    }
+
     if (isWordPeekModalOpen()) {
       if (e.key === "Escape") {
         e.preventDefault();
@@ -4114,7 +4373,7 @@
       !e.altKey
     ) {
       if (tag === "TEXTAREA" || tag === "SELECT") return;
-      if (isKbdShortcutsModalOpen() || isWordPeekModalOpen()) return;
+      if (isKbdShortcutsModalOpen() || isWordPeekModalOpen() || isArtGalleryModalOpen()) return;
       if (elLoadError && elLoadError.hidden === false) return;
       if (!current || !pool.length) return;
       e.preventDefault();
@@ -4321,6 +4580,9 @@
     if (elStudyMode) {
       elStudyMode.addEventListener("change", onStudyModeChange);
     }
+    if (elSeeSlideshowToggle) {
+      elSeeSlideshowToggle.addEventListener("change", onSeeSlideshowToggleChange);
+    }
     if (elQuizGapChoiceToggle) {
       elQuizGapChoiceToggle.addEventListener("change", onQuizGapChoiceModeChange);
     }
@@ -4338,6 +4600,27 @@
     }
     if (elMcKidsBlurbToggle) {
       elMcKidsBlurbToggle.addEventListener("change", onMcKidsBlurbToggleChange);
+    }
+    if (elBtnMcArtGallery) {
+      elBtnMcArtGallery.addEventListener("click", function (e) {
+        if (e) e.preventDefault();
+        openArtGalleryRandom();
+      });
+    }
+    if (elArtGalleryClose) {
+      elArtGalleryClose.addEventListener("click", function (e) {
+        if (e) e.preventDefault();
+        closeArtGalleryModal();
+      });
+    }
+    if (elArtGalleryBackdrop) {
+      elArtGalleryBackdrop.addEventListener("click", closeArtGalleryModal);
+    }
+    if (elArtGalleryShuffle) {
+      elArtGalleryShuffle.addEventListener("click", function (e) {
+        if (e) e.preventDefault();
+        openArtGalleryRandom();
+      });
     }
     if (elFavorite) elFavorite.addEventListener("click", onFavoriteTap);
     var btnClearHistory = document.getElementById("btn-clear-history");
@@ -4408,9 +4691,10 @@
     quizStreak = loadStreak();
     updateScoreUi();
 
-    Promise.all([loadWordData(), loadTrailMascotManifest()])
+    Promise.all([loadWordData(), loadTrailMascotManifest(), loadArtGallery()])
       .then(function (results) {
         var data = results[0];
+        syncArtGalleryFieldVisibility();
         allWords = dedupeWordList(normalizeWordList(data));
         if (!allWords.length) {
           showLoadError("no words in list.");
@@ -4525,6 +4809,17 @@
           );
         }
         syncMcKidsBlurbFieldVisibility();
+        syncArtGalleryFieldVisibility();
+
+        seeSlideshowEnabled = !!(prefs && prefs.seeSlideshow === true);
+        if (elSeeSlideshowToggle) {
+          elSeeSlideshowToggle.checked = seeSlideshowEnabled;
+          elSeeSlideshowToggle.setAttribute(
+            "aria-checked",
+            seeSlideshowEnabled ? "true" : "false"
+          );
+        }
+        syncSeeSlideshowFieldVisibility();
 
         rebuildPool();
         applyPoolHint();

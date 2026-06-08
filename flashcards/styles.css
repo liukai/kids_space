@@ -463,6 +463,99 @@ body.minecraft-theme--only .app {
   margin-top: var(--space-2);
 }
 
+/* MC fan-art gallery popup */
+.art-gallery-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10060;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2);
+}
+
+.art-gallery-modal[hidden] {
+  display: none !important;
+}
+
+.art-gallery-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.78);
+}
+
+.art-gallery-modal__panel {
+  position: relative;
+  z-index: 1;
+  width: min(560px, 100%);
+  max-height: min(92vh, 900px);
+  overflow: auto;
+  padding: var(--space-2);
+  border-radius: 16px;
+  background: linear-gradient(180deg, #f5fff0 0%, #eef8e6 100%);
+  border: 2px solid rgba(76, 140, 68, 0.35);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  box-sizing: border-box;
+}
+
+.art-gallery-modal__title {
+  margin: 0 0 0.35rem;
+  font-family: var(--font-display, "Fredoka One", sans-serif);
+  font-size: 1.15rem;
+  color: #2e5c28;
+  line-height: 1.25;
+}
+
+.art-gallery-modal__caption {
+  margin: 0 0 0.65rem;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.art-gallery-modal__caption[hidden] {
+  display: none !important;
+}
+
+.art-gallery-modal__figure {
+  margin: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid rgba(91, 130, 68, 0.25);
+}
+
+.art-gallery-modal__img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: min(58vh, 520px);
+  object-fit: contain;
+}
+
+.art-gallery-modal__meta {
+  margin: 0.45rem 0 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #2e7d32;
+}
+
+.art-gallery-modal__meta[hidden] {
+  display: none !important;
+}
+
+.art-gallery-modal__actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: var(--space-2);
+}
+
+.art-gallery-modal__actions .btn {
+  flex: 1 1 0;
+  min-height: 44px;
+  font-size: 0.95rem;
+}
+
 .saved-list__item--action {
   cursor: pointer;
   transition: border-color 0.15s ease, background 0.15s ease, transform 0.08s ease;
@@ -559,6 +652,34 @@ body.minecraft-theme--only .app {
 }
 
 /* IPA / respelling toggle — same pill height as selects */
+.control-bar__field--mc-art {
+  display: flex;
+  align-items: flex-end;
+}
+
+.btn--mc-art {
+  width: 100%;
+  min-height: 42px;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #2e5c28;
+  background: linear-gradient(180deg, #f0ffe8 0%, #dcefc8 100%);
+  border: 2px solid rgba(76, 140, 68, 0.45);
+  border-radius: 10px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65), 0 2px 0 rgba(45, 70, 40, 0.15);
+  cursor: pointer;
+}
+
+.btn--mc-art:not(:disabled):hover {
+  filter: brightness(1.04);
+}
+
+.btn--mc-art:focus-visible {
+  outline: 2px solid var(--crt-green);
+  outline-offset: 2px;
+}
+
 .control-bar__field--phonetics .control-bar__phonetics-toggle {
   margin: 0;
   width: 100%;

@@ -1,0 +1,46 @@
+{
+  "pieces": [
+    {
+      "id": "overworld-village-love",
+      "src": "assets/art-gallery/overworld-village-love.png",
+      "title": "Big overworld village",
+      "caption": "Steve, Alex, villagers, and friends in a sunny world. Love to Matt & Francis! — Kai",
+      "artist": "Kai"
+    },
+    {
+      "id": "overworld-village-friends",
+      "src": "assets/art-gallery/overworld-village-friends.png",
+      "title": "Village with friends",
+      "caption": "A cozy village with a castle, river, and lots of animals. Love to Matt & Francis! — Kai",
+      "artist": "Kai"
+    },
+    {
+      "id": "village-battle-day",
+      "src": "assets/art-gallery/village-battle-day.png",
+      "title": "Village battle day",
+      "caption": "Steve fights zombies and a creeper while the sun burns the undead.",
+      "artist": "Kai"
+    },
+    {
+      "id": "battle-planner-sketch",
+      "src": "assets/art-gallery/battle-planner-sketch.png",
+      "title": "Battle in the planner",
+      "caption": "Heroes vs zombies and creepers — drawn in a weekly planner.",
+      "artist": "Kai"
+    },
+    {
+      "id": "heroes-vs-mobs",
+      "src": "assets/art-gallery/heroes-vs-mobs.png",
+      "title": "Heroes vs mobs",
+      "caption": "Steve and a friend take on a burning zombie and a defeated creeper.",
+      "artist": "Kai"
+    },
+    {
+      "id": "night-battle-fail",
+      "src": "assets/art-gallery/night-battle-fail.png",
+      "title": "Night battle",
+      "caption": "The mobs win this round under the moon — humans failed…",
+      "artist": "Kai"
+    }
+  ]
+}

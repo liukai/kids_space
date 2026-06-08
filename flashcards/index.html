@@ -64,6 +64,30 @@
           <option value="typeall">Type word</option>
         </select>
       </div>
+      <div
+        class="control-bar__field control-bar__field--see-slideshow"
+        id="see-slideshow-field"
+        hidden
+      >
+        <span class="control-bar__label" id="see-slideshow-label">See</span>
+        <label class="cycle-maze-toggle control-bar__phonetics-toggle">
+          <input
+            type="checkbox"
+            id="see-slideshow-toggle"
+            class="cycle-maze-toggle__input sr-only"
+            role="switch"
+            autocomplete="off"
+            aria-checked="false"
+            aria-labelledby="see-slideshow-label"
+            aria-describedby="see-slideshow-hint"
+          />
+          <span class="cycle-maze-toggle__track" aria-hidden="true"></span>
+          <span class="cycle-maze-toggle__text">Slideshow</span>
+        </label>
+        <span id="see-slideshow-hint" class="sr-only">
+          When on, See mode advances to the next word every 5 seconds.
+        </span>
+      </div>
       <div class="control-bar__field">
         <label class="control-bar__label" for="grade-filter">Grade</label>
         <select
@@ -126,6 +150,20 @@
         <span id="mc-kids-blurb-hint" class="sr-only">
           When on, Minecraft word tips use short, easy sentences for ages 4 to 10. When off, show the longer description.
         </span>
+      </div>
+      <div
+        class="control-bar__field control-bar__field--mc-art"
+        id="mc-art-gallery-field"
+        hidden
+      >
+        <button
+          type="button"
+          id="btn-mc-art-gallery"
+          class="btn btn--mc-art"
+          title="Open a random Minecraft drawing"
+        >
+          🖼️ Art
+        </button>
       </div>
       <div class="control-bar__field control-bar__field--phonetics">
         <span class="control-bar__label" id="phonetic-marks-label">Sounds</span>
@@ -500,7 +538,38 @@
     </div>
   </div>
 
+  <div class="art-gallery-modal" id="art-gallery-modal" hidden>
+    <div class="art-gallery-modal__backdrop" id="art-gallery-modal-backdrop"></div>
+    <div
+      class="art-gallery-modal__panel"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="art-gallery-title"
+      aria-describedby="art-gallery-caption"
+    >
+      <h2 id="art-gallery-title" class="art-gallery-modal__title"></h2>
+      <p id="art-gallery-caption" class="art-gallery-modal__caption"></p>
+      <figure class="art-gallery-modal__figure">
+        <img
+          id="art-gallery-img"
+          class="art-gallery-modal__img"
+          alt=""
+          decoding="async"
+        />
+      </figure>
+      <p id="art-gallery-meta" class="art-gallery-modal__meta" hidden></p>
+      <div class="art-gallery-modal__actions">
+        <button type="button" id="art-gallery-shuffle" class="btn btn--secondary">
+          🎲 Another
+        </button>
+        <button type="button" id="art-gallery-close" class="btn btn--primary">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script src="words-embed.js?v=691"></script>
-  <script src="app.js?v=9" defer></script>
+  <script src="app.js?v=11" defer></script>
 </body>
 </html>
