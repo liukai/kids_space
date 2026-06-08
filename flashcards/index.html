@@ -55,156 +55,178 @@
       ></p>
     </header>
 
-    <div class="control-bar" role="toolbar" aria-label="Study options">
-      <div class="control-bar__field">
-        <label class="control-bar__label" for="study-mode">Mode</label>
-        <select id="study-mode" class="control-bar__select" autocomplete="off" title="Study mode">
-          <option value="see">See</option>
-          <option value="quiz">Quiz</option>
-          <option value="typeall">Type word</option>
-        </select>
-      </div>
-      <div
-        class="control-bar__field control-bar__field--see-slideshow"
-        id="see-slideshow-field"
-        hidden
+    <section class="control-panel" id="control-panel" aria-label="Study options">
+      <button
+        type="button"
+        class="control-panel__toggle"
+        id="btn-control-panel-toggle"
+        aria-expanded="false"
+        aria-controls="control-panel-body"
+        aria-label="Study options — show mode, grade, deck, and display settings"
       >
-        <span class="control-bar__label" id="see-slideshow-label">See</span>
-        <label class="cycle-maze-toggle control-bar__phonetics-toggle">
-          <input
-            type="checkbox"
-            id="see-slideshow-toggle"
-            class="cycle-maze-toggle__input sr-only"
-            role="switch"
-            autocomplete="off"
-            aria-checked="false"
-            aria-labelledby="see-slideshow-label"
-            aria-describedby="see-slideshow-hint"
-          />
-          <span class="cycle-maze-toggle__track" aria-hidden="true"></span>
-          <span class="cycle-maze-toggle__text">Slideshow</span>
-        </label>
-        <span id="see-slideshow-hint" class="sr-only">
-          When on, See mode advances to the next word every 5 seconds.
+        <span class="control-panel__lead">
+          <span class="control-panel__icon" aria-hidden="true">🎛️</span>
+          <span class="control-panel__copy">
+            <span class="control-panel__toggle-label">Study options</span>
+            <span class="control-panel__desc">Mode, grade, deck, Minecraft &amp; display</span>
+            <span class="control-panel__preview" aria-hidden="true">
+              <span class="control-panel__preview-tag">Mode</span>
+              <span class="control-panel__preview-tag">Grade</span>
+              <span class="control-panel__preview-tag">Type</span>
+              <span class="control-panel__preview-tag">Deck</span>
+              <span class="control-panel__preview-tag">MC</span>
+              <span class="control-panel__preview-tag control-panel__preview-tag--extras">IPA</span>
+              <span class="control-panel__preview-tag control-panel__preview-tag--extras">Pics</span>
+            </span>
+          </span>
         </span>
-      </div>
-      <div class="control-bar__field">
-        <label class="control-bar__label" for="grade-filter">Grade</label>
-        <select
-          id="grade-filter"
-          class="control-bar__select"
-          autocomplete="off"
-          title="Up to this reading grade"
-        ></select>
-      </div>
-      <div class="control-bar__field">
-        <label class="control-bar__label" for="word-type-filter">Word type</label>
-        <select
-          id="word-type-filter"
-          class="control-bar__select"
-          autocomplete="off"
-          title="Filter by phonics or topic"
-        ></select>
-      </div>
-      <div class="control-bar__field">
-        <label class="control-bar__label" for="deck-scope">Deck</label>
-        <select id="deck-scope" class="control-bar__select" autocomplete="off" title="Which cards">
-          <option value="all">All words</option>
-          <option value="favorites">Saved</option>
-        </select>
-      </div>
-      <div class="control-bar__field">
-        <label class="control-bar__label" for="minecraft-filter">Minecraft</label>
-        <select
-          id="minecraft-filter"
-          class="control-bar__select"
-          autocomplete="off"
-          title="Add Minecraft words (any grade) or study MC only"
-        >
-          <option value="off">Off</option>
-          <option value="include">⛏️ + MC</option>
-          <option value="only">⛏️ MC only</option>
-        </select>
-      </div>
-      <div
-        class="control-bar__field control-bar__field--mc-kids"
-        id="mc-kids-blurb-field"
-        hidden
-      >
-        <span class="control-bar__label" id="mc-kids-blurb-label">MC tips</span>
-        <label class="cycle-maze-toggle control-bar__phonetics-toggle">
-          <input
-            type="checkbox"
-            id="mc-kids-blurb-toggle"
-            class="cycle-maze-toggle__input sr-only"
-            role="switch"
-            checked
-            autocomplete="off"
-            aria-checked="true"
-            aria-labelledby="mc-kids-blurb-label"
-            aria-describedby="mc-kids-blurb-hint"
-          />
-          <span class="cycle-maze-toggle__track" aria-hidden="true"></span>
-          <span class="cycle-maze-toggle__text">Simple</span>
-        </label>
-        <span id="mc-kids-blurb-hint" class="sr-only">
-          When on, Minecraft word tips use short, easy sentences for ages 4 to 10. When off, show the longer description.
+        <span class="control-panel__meta">
+          <span class="control-panel__summary" id="control-panel-summary" aria-hidden="true"></span>
+          <span class="control-panel__action" aria-hidden="true"></span>
+          <span class="control-panel__chevron" aria-hidden="true"></span>
         </span>
-      </div>
-      <div
-        class="control-bar__field control-bar__field--mc-art"
-        id="mc-art-gallery-field"
-        hidden
-      >
-        <button
-          type="button"
-          id="btn-mc-art-gallery"
-          class="btn btn--mc-art"
-          title="Open a random Minecraft drawing"
-        >
-          🖼️ Art
-        </button>
-      </div>
-      <div class="control-bar__field control-bar__field--phonetics">
-        <span class="control-bar__label" id="phonetic-marks-label">Sounds</span>
-        <label class="cycle-maze-toggle control-bar__phonetics-toggle">
-          <input
-            type="checkbox"
-            id="phonetic-marks-toggle"
-            class="cycle-maze-toggle__input sr-only"
-            role="switch"
+      </button>
+      <div class="control-panel__body" id="control-panel-body" hidden>
+        <div class="control-bar" role="group" aria-label="Filters and display">
+          <p class="control-bar__group-label" id="control-bar-filters-label">Deck filters</p>
+          <div class="control-bar__filters" aria-labelledby="control-bar-filters-label">
+        <div class="control-bar__field">
+          <label class="control-bar__label" for="study-mode">Mode</label>
+          <select id="study-mode" class="control-bar__select" autocomplete="off" title="Study mode">
+            <option value="see">See</option>
+            <option value="quiz">Quiz</option>
+            <option value="typeall">Type word</option>
+          </select>
+        </div>
+        <div class="control-bar__field">
+          <label class="control-bar__label" for="grade-filter">Grade</label>
+          <select
+            id="grade-filter"
+            class="control-bar__select"
             autocomplete="off"
-            aria-checked="false"
-            aria-labelledby="phonetic-marks-label"
-            aria-describedby="phonetic-marks-hint"
-          />
-          <span class="cycle-maze-toggle__track" aria-hidden="true"></span>
-          <span class="cycle-maze-toggle__text">IPA</span>
-        </label>
-        <span id="phonetic-marks-hint" class="sr-only">
-          When on, show IPA and “Say” spelling on each card and in word peek.
-        </span>
-      </div>
-      <div class="control-bar__field control-bar__field--phonetics">
-        <span class="control-bar__label" id="word-emoji-label">Picture</span>
-        <label class="cycle-maze-toggle control-bar__phonetics-toggle">
-          <input
-            type="checkbox"
-            id="word-emoji-toggle"
-            class="cycle-maze-toggle__input sr-only"
-            role="switch"
-            checked
+            title="Up to this reading grade"
+          ></select>
+        </div>
+        <div class="control-bar__field">
+          <label class="control-bar__label" for="word-type-filter">Type</label>
+          <select
+            id="word-type-filter"
+            class="control-bar__select"
             autocomplete="off"
-            aria-checked="true"
-            aria-labelledby="word-emoji-label"
-            aria-describedby="word-emoji-hint"
-          />
-          <span class="cycle-maze-toggle__track" aria-hidden="true"></span>
-          <span class="cycle-maze-toggle__text" id="word-emoji-toggle-text">On</span>
-        </label>
-        <span id="word-emoji-hint" class="sr-only">
-          When on, show a picture above each word. In Minecraft mode, MC words use official wiki sprites instead of emoji.
-        </span>
+            title="Filter by phonics or topic"
+          ></select>
+        </div>
+        <div class="control-bar__field">
+          <label class="control-bar__label" for="deck-scope">Deck</label>
+          <select id="deck-scope" class="control-bar__select" autocomplete="off" title="Which cards">
+            <option value="all">All words</option>
+            <option value="favorites">Saved</option>
+          </select>
+        </div>
+        <div class="control-bar__field">
+          <label class="control-bar__label" for="minecraft-filter">MC</label>
+          <select
+            id="minecraft-filter"
+            class="control-bar__select"
+            autocomplete="off"
+            title="Add Minecraft words (any grade) or study MC only"
+          >
+            <option value="off">Off</option>
+            <option value="include">⛏️ + MC</option>
+            <option value="only">⛏️ MC only</option>
+          </select>
+        </div>
+          </div>
+          <p class="control-bar__group-label" id="control-bar-display-label">Display &amp; extras</p>
+          <div class="control-bar__extras" aria-labelledby="control-bar-display-label">
+        <div class="control-bar__chip" id="see-slideshow-field" hidden>
+          <label class="cycle-maze-toggle control-bar__chip-toggle">
+            <input
+              type="checkbox"
+              id="see-slideshow-toggle"
+              class="cycle-maze-toggle__input sr-only"
+              role="switch"
+              autocomplete="off"
+              aria-checked="false"
+              aria-labelledby="see-slideshow-label"
+              aria-describedby="see-slideshow-hint"
+            />
+            <span class="cycle-maze-toggle__track" aria-hidden="true"></span>
+            <span class="cycle-maze-toggle__text" id="see-slideshow-label">Slideshow</span>
+          </label>
+          <span id="see-slideshow-hint" class="sr-only">
+            When on, See mode reads each word aloud, waits 5 seconds, then advances.
+          </span>
+        </div>
+        <div class="control-bar__chip" id="mc-kids-blurb-field" hidden>
+          <label class="cycle-maze-toggle control-bar__chip-toggle">
+            <input
+              type="checkbox"
+              id="mc-kids-blurb-toggle"
+              class="cycle-maze-toggle__input sr-only"
+              role="switch"
+              checked
+              autocomplete="off"
+              aria-checked="true"
+              aria-labelledby="mc-kids-blurb-label"
+              aria-describedby="mc-kids-blurb-hint"
+            />
+            <span class="cycle-maze-toggle__track" aria-hidden="true"></span>
+            <span class="cycle-maze-toggle__text" id="mc-kids-blurb-label">Simple tips</span>
+          </label>
+          <span id="mc-kids-blurb-hint" class="sr-only">
+            When on, Minecraft word tips use short, easy sentences for ages 4 to 10. When off, show the longer description.
+          </span>
+        </div>
+        <div class="control-bar__chip control-bar__chip--btn" id="mc-art-gallery-field" hidden>
+          <button
+            type="button"
+            id="btn-mc-art-gallery"
+            class="btn btn--mc-art btn--chip"
+            title="Open a random Minecraft drawing"
+          >
+            🖼️ Art
+          </button>
+        </div>
+        <div class="control-bar__chip">
+          <label class="cycle-maze-toggle control-bar__chip-toggle">
+            <input
+              type="checkbox"
+              id="phonetic-marks-toggle"
+              class="cycle-maze-toggle__input sr-only"
+              role="switch"
+              autocomplete="off"
+              aria-checked="false"
+              aria-labelledby="phonetic-marks-label"
+              aria-describedby="phonetic-marks-hint"
+            />
+            <span class="cycle-maze-toggle__track" aria-hidden="true"></span>
+            <span class="cycle-maze-toggle__text" id="phonetic-marks-label">IPA sounds</span>
+          </label>
+          <span id="phonetic-marks-hint" class="sr-only">
+            When on, show IPA and “Say” spelling on each card and in word peek.
+          </span>
+        </div>
+        <div class="control-bar__chip">
+          <label class="cycle-maze-toggle control-bar__chip-toggle">
+            <input
+              type="checkbox"
+              id="word-emoji-toggle"
+              class="cycle-maze-toggle__input sr-only"
+              role="switch"
+              checked
+              autocomplete="off"
+              aria-checked="true"
+              aria-labelledby="word-emoji-label"
+              aria-describedby="word-emoji-hint"
+            />
+            <span class="cycle-maze-toggle__track" aria-hidden="true"></span>
+            <span class="cycle-maze-toggle__text" id="word-emoji-label">Pictures</span>
+          </label>
+          <span id="word-emoji-hint" class="sr-only">
+            When on, show a picture above each word. In Minecraft mode, MC words use official wiki sprites instead of emoji.
+          </span>
+        </div>
       </div>
       <div
         class="control-bar__field control-bar__field--quiz-gap-choose"
@@ -237,6 +259,8 @@
         </label>
       </div>
     </div>
+      </div>
+    </section>
 
     <p class="deck-hint" id="deck-hint" aria-live="polite"></p>
 
@@ -570,6 +594,6 @@
   </div>
 
   <script src="words-embed.js?v=691"></script>
-  <script src="app.js?v=11" defer></script>
+  <script src="app.js?v=16" defer></script>
 </body>
 </html>

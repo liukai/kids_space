@@ -617,6 +617,58 @@
   ];
   var artGalleryPieces = DEFAULT_ART_GALLERY.slice();
   var artGalleryCurrentId = null;
+  /** Shuffled ids — each piece shown once per cycle before the deck reshuffles. */
+  var artGalleryDeckIds = [];
+  var artGalleryDeckIdx = 0;
+
+  function artGalleryPieceById(id) {
+    var i;
+    for (i = 0; i < artGalleryPieces.length; i++) {
+      if (artGalleryPieces[i].id === id) return artGalleryPieces[i];
+    }
+    return null;
+  }
+
+  function resetArtGalleryDeck() {
+    artGalleryDeckIds = [];
+    var i;
+    for (i = 0; i < artGalleryPieces.length; i++) {
+      artGalleryDeckIds.push(artGalleryPieces[i].id);
+    }
+    shuffleInPlace(artGalleryDeckIds);
+    artGalleryDeckIdx = 0;
+    if (
+      artGalleryCurrentId &&
+      artGalleryDeckIds.length > 1 &&
+      artGalleryDeckIds[0] === artGalleryCurrentId
+    ) {
+      var j = 1 + Math.floor(Math.random() * (artGalleryDeckIds.length - 1));
+      var t = artGalleryDeckIds[0];
+      artGalleryDeckIds[0] = artGalleryDeckIds[j];
+      artGalleryDeckIds[j] = t;
+    }
+  }
+
+  /** Next piece in shuffled deck; reshuffles after every piece has been shown. */
+  function pickNextArtGalleryPiece() {
+    if (!artGalleryPieces.length) return null;
+    if (
+      !artGalleryDeckIds.length ||
+      artGalleryDeckIdx >= artGalleryDeckIds.length
+    ) {
+      resetArtGalleryDeck();
+    }
+    var id = artGalleryDeckIds[artGalleryDeckIdx];
+    artGalleryDeckIdx++;
+    var piece = artGalleryPieceById(id);
+    if (!piece) {
+      resetArtGalleryDeck();
+      if (!artGalleryDeckIds.length) return artGalleryPieces[0] || null;
+      id = artGalleryDeckIds[artGalleryDeckIdx++];
+      piece = artGalleryPieceById(id);
+    }
+    return piece || artGalleryPieces[0] || null;
+  }
 
   function normalizeArtGalleryPiece(entry) {
     if (!entry || typeof entry !== "object") return null;
@@ -645,6 +697,7 @@
 
   function loadArtGallery() {
     artGalleryPieces = DEFAULT_ART_GALLERY.slice();
+    resetArtGalleryDeck();
     if (typeof fetch === "undefined") return Promise.resolve();
     var u;
     try {
@@ -665,6 +718,7 @@
           if (p) out.push(p);
         }
         if (out.length) artGalleryPieces = out;
+        resetArtGalleryDeck();
       })
       .catch(function () {});
   }
@@ -677,19 +731,6 @@
 
   function isArtGalleryModalOpen() {
     return elArtGalleryModal && !elArtGalleryModal.hidden;
-  }
-
-  function pickRandomArtGalleryPiece(avoidId) {
-    if (!artGalleryPieces.length) return null;
-    if (artGalleryPieces.length === 1) return artGalleryPieces[0];
-    var pick;
-    var guard = 0;
-    do {
-      pick =
-        artGalleryPieces[Math.floor(Math.random() * artGalleryPieces.length)];
-      guard++;
-    } while (pick && pick.id === avoidId && guard < 12);
-    return pick;
   }
 
   function renderArtGalleryPiece(piece) {
@@ -720,7 +761,7 @@
   }
 
   function openArtGalleryRandom() {
-    var piece = pickRandomArtGalleryPiece(artGalleryCurrentId);
+    var piece = pickNextArtGalleryPiece();
     if (piece) openArtGalleryPiece(piece);
   }
 
@@ -1077,8 +1118,10 @@
         var p = pendingSpeech;
         pendingSpeech = null;
         if (p.kind === "letters") speakWordLetters(p.text, true);
-        else if (p.kind === "segments") speakTexts(p.segments, true);
-        else if (p.kind === "item") speakCardItem(p.item, true);
+        else if (p.kind === "segments")
+          speakTexts(p.segments, true, p.onAllDone);
+        else if (p.kind === "item")
+          speakCardItem(p.item, true, p.onAllDone);
         else speakWord(p.text, true);
       }
     }
@@ -1184,16 +1227,22 @@
     }
   }
 
-  function speakTexts(segments, userInitiated) {
-    if (!window.speechSynthesis) return;
+  function speakTexts(segments, userInitiated, onAllDone) {
+    if (!window.speechSynthesis) {
+      if (onAllDone) onAllDone();
+      return;
+    }
     var parts = normalizeSpeakSegments(segments);
-    if (!parts.length) return;
+    if (!parts.length) {
+      if (onAllDone) onAllDone();
+      return;
+    }
     userInitiated = userInitiated === true;
     wireSpeechUserActivationOnce();
     if (userInitiated) {
       pendingSpeech = null;
     } else if (!speechUserEverActivated) {
-      pendingSpeech = { kind: "segments", segments: parts };
+      pendingSpeech = { kind: "segments", segments: parts, onAllDone: onAllDone };
       return;
     }
     var ticket = ++speakScheduleSeq;
@@ -1206,7 +1255,11 @@
       }
     } catch (e1) {}
     function speakPartAt(idx) {
-      if (idx >= parts.length || ticket !== speakScheduleSeq) return;
+      if (ticket !== speakScheduleSeq) return;
+      if (idx >= parts.length) {
+        if (onAllDone) onAllDone();
+        return;
+      }
       var part = parts[idx];
       var delay = idx === 0 ? SPEAK_AFTER_CANCEL_MS : SPEAK_CHAIN_GAP_MS;
       runWhenSpeechVoicesReady(function () {
@@ -1226,15 +1279,20 @@
     speakTexts([{ text: text, rate: 0.9 }], userInitiated);
   }
 
-  /** Word, then MC stats + blurb when Minecraft mode is on. */
-  function speakCardItem(item, userInitiated) {
-    if (!item || !item.word) return;
+  /** Word; MC stats + description blurb only in See mode. */
+  function speakCardItem(item, userInitiated, onAllDone) {
+    if (!item || !item.word) {
+      if (onAllDone) onAllDone();
+      return;
+    }
     var segments = [{ text: item.word, rate: 0.9 }];
-    var statsLine = mcStatsSpeechText(item);
-    if (statsLine) segments.push({ text: statsLine, rate: 0.88 });
-    var blurb = mcBlurbSpeechText(item);
-    if (blurb) segments.push({ text: blurb, rate: 0.88 });
-    speakTexts(segments, userInitiated);
+    if (studyMode === "see") {
+      var statsLine = mcStatsSpeechText(item);
+      if (statsLine) segments.push({ text: statsLine, rate: 0.88 });
+      var blurb = mcBlurbSpeechText(item);
+      if (blurb) segments.push({ text: blurb, rate: 0.88 });
+    }
+    speakTexts(segments, userInitiated, onAllDone);
   }
 
   /** Letter-by-letter (after peek/cheat only — not on normal quiz hear). */
@@ -1890,16 +1948,121 @@
   var quizAdvanceCardTimer = null;
   /** Match .cycle-maze--nom sun flight (~480ms) + buffer before swapping sun → ✔️ */
   var QUIZ_TRAIL_NOM_MS = 520;
-  /** See mode: auto-advance interval when slideshow is on. */
+  /** See mode: pause after reading aloud before auto-advance. */
   var SEE_SLIDESHOW_MS = 5000;
   var seeSlideshowEnabled = false;
   var seeSlideshowTimer = null;
+  var seeSlideshowSpeechPoll = null;
+  var controlPanelOpen = false;
+
+  function syncControlPanelUi() {
+    if (elControlPanel) {
+      elControlPanel.classList.toggle("control-panel--open", controlPanelOpen);
+    }
+    if (elControlPanelBody) {
+      elControlPanelBody.hidden = !controlPanelOpen;
+    }
+    if (elControlPanelToggle) {
+      elControlPanelToggle.setAttribute(
+        "aria-expanded",
+        controlPanelOpen ? "true" : "false"
+      );
+      elControlPanelToggle.setAttribute(
+        "aria-label",
+        controlPanelOpen
+          ? "Study options — hide mode, grade, deck, and display settings"
+          : "Study options — show mode, grade, deck, and display settings"
+      );
+    }
+    if (elControlPanelSummary) {
+      elControlPanelSummary.textContent = controlPanelOpen
+        ? ""
+        : controlPanelSummaryText();
+      elControlPanelSummary.setAttribute(
+        "aria-hidden",
+        controlPanelOpen ? "true" : "false"
+      );
+    }
+  }
+
+  function controlPanelSummaryText() {
+    var bits = [];
+    if (studyMode === "quiz") bits.push("Quiz");
+    else if (studyMode === "typeall") bits.push("Type word");
+    else bits.push("See");
+    if (gradeFilterCap !== "all") bits.push("≤ G" + gradeFilterCap);
+    if (deckScope === "favorites") bits.push("Saved");
+    if (minecraftScope === "include") bits.push("+ MC");
+    else if (minecraftScope === "only") bits.push("MC only");
+    if (wordTypeScope !== "all" && elWordType && elWordType.selectedIndex >= 0) {
+      var typeLabel = elWordType.options[elWordType.selectedIndex].textContent;
+      if (typeLabel) {
+        typeLabel = String(typeLabel).replace(/^[^\s]+\s*/, "").trim();
+        if (typeLabel && typeLabel !== "All types") bits.push(typeLabel);
+      }
+    }
+    return bits.join(" · ");
+  }
+
+  function onControlPanelToggleClick() {
+    controlPanelOpen = !controlPanelOpen;
+    syncControlPanelUi();
+    persistSelections();
+  }
 
   function clearSeeSlideshowTimer() {
     if (seeSlideshowTimer !== null) {
       window.clearTimeout(seeSlideshowTimer);
       seeSlideshowTimer = null;
     }
+    if (seeSlideshowSpeechPoll !== null) {
+      window.clearTimeout(seeSlideshowSpeechPoll);
+      seeSlideshowSpeechPoll = null;
+    }
+  }
+
+  function seeSlideshowAfterSpeechCallback() {
+    return function () {
+      if (studyMode === "see" && seeSlideshowEnabled) scheduleSeeSlideshowTick();
+    };
+  }
+
+  /** Wait for TTS to finish (if any), then start the post-read countdown. */
+  function scheduleSeeSlideshowWhenReady() {
+    clearSeeSlideshowTimer();
+    if (
+      !seeSlideshowEnabled ||
+      studyMode !== "see" ||
+      !current ||
+      !pool.length
+    ) {
+      return;
+    }
+    function poll() {
+      if (
+        !seeSlideshowEnabled ||
+        studyMode !== "see" ||
+        !current ||
+        !pool.length
+      ) {
+        seeSlideshowSpeechPoll = null;
+        return;
+      }
+      if (seeSlideshowPaused()) {
+        seeSlideshowSpeechPoll = window.setTimeout(poll, 400);
+        return;
+      }
+      if (
+        window.speechSynthesis &&
+        (speechSynthesis.speaking || speechSynthesis.pending)
+      ) {
+        seeSlideshowSpeechPoll = window.setTimeout(poll, 250);
+        return;
+      }
+      seeSlideshowSpeechPoll = null;
+      scheduleSeeSlideshowTick();
+    }
+    poll();
   }
 
   function seeSlideshowPaused() {
@@ -1950,7 +2113,7 @@
       seeSlideshowEnabled ? "true" : "false"
     );
     persistSelections();
-    if (seeSlideshowEnabled) scheduleSeeSlideshowTick();
+    if (seeSlideshowEnabled) scheduleSeeSlideshowWhenReady();
     else clearSeeSlideshowTimer();
   }
 
@@ -1972,23 +2135,24 @@
       pronounceAfterCardTimer = null;
     }
     if (studyMode === "quiz" || studyMode === "typeall") {
-      if (fromUserTap) speakCardItem(current, true);
-      else {
-        pronounceAfterCardTimer = window.setTimeout(function () {
-          pronounceAfterCardTimer = null;
-          if (current && isTypingMode()) speakCardItem(current, false);
-        }, 140);
-      }
-      return;
-    }
     if (fromUserTap) speakCardItem(current, true);
     else {
       pronounceAfterCardTimer = window.setTimeout(function () {
         pronounceAfterCardTimer = null;
-        if (current) speakCardItem(current, false);
-      }, 100);
+        if (current && isTypingMode()) speakCardItem(current, false);
+      }, 140);
     }
+    return;
   }
+  var afterSpeech = seeSlideshowAfterSpeechCallback();
+  if (fromUserTap) speakCardItem(current, true, afterSpeech);
+  else {
+    pronounceAfterCardTimer = window.setTimeout(function () {
+      pronounceAfterCardTimer = null;
+      if (current) speakCardItem(current, false, afterSpeech);
+    }, 100);
+  }
+}
 
   var allWords = [];
   var pool = [];
@@ -2938,6 +3102,10 @@
   var elDeckScope = document.getElementById("deck-scope");
   var elMinecraftScope = document.getElementById("minecraft-filter");
   var elStudyMode = document.getElementById("study-mode");
+  var elControlPanel = document.getElementById("control-panel");
+  var elControlPanelToggle = document.getElementById("btn-control-panel-toggle");
+  var elControlPanelBody = document.getElementById("control-panel-body");
+  var elControlPanelSummary = document.getElementById("control-panel-summary");
   var elSeeSlideshowField = document.getElementById("see-slideshow-field");
   var elSeeSlideshowToggle = document.getElementById("see-slideshow-toggle");
   var elQuizGapChoiceField = document.getElementById("quiz-gap-choice-field");
@@ -3924,8 +4092,7 @@
     appendCardMetaRateBesideWord();
     syncPrimaryActionButton();
     syncSeeSlideshowFieldVisibility();
-    if (studyMode === "see" && seeSlideshowEnabled) scheduleSeeSlideshowTick();
-    else clearSeeSlideshowTimer();
+    if (studyMode !== "see") clearSeeSlideshowTimer();
   }
 
   function advanceToNewCard(fromUserTap) {
@@ -4062,7 +4229,9 @@
       showWordEmoji: showWordEmoji,
       mcKidsBlurbs: showMcKidsBlurbs,
       seeSlideshow: seeSlideshowEnabled,
+      controlPanelOpen: controlPanelOpen,
     });
+    syncControlPanelUi();
   }
 
   function onGradeChange() {
@@ -4191,7 +4360,8 @@
   function onHearWord(e) {
     if (e) e.preventDefault();
     if (!current) return;
-    speakCardItem(current, true);
+    clearSeeSlideshowTimer();
+    speakCardItem(current, true, seeSlideshowAfterSpeechCallback());
   }
 
   function onNextCard(e) {
@@ -4661,6 +4831,10 @@
     }
     document.addEventListener("keydown", onGlobalKeydown);
 
+    if (elControlPanelToggle) {
+      elControlPanelToggle.addEventListener("click", onControlPanelToggleClick);
+    }
+
     var btnReview = document.getElementById("btn-review-toggle");
     var bodyReview = document.getElementById("review-body");
     if (btnReview && bodyReview) {
@@ -4820,6 +4994,9 @@
           );
         }
         syncSeeSlideshowFieldVisibility();
+
+        controlPanelOpen = !!(prefs && prefs.controlPanelOpen === true);
+        syncControlPanelUi();
 
         rebuildPool();
         applyPoolHint();
