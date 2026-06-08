@@ -18,40 +18,105 @@
   var QUIZ_CYCLE_COLS = 5;
   var QUIZ_CYCLE_ROWS = 3;
   var QUIZ_CYCLE_LEN = QUIZ_CYCLE_COLS * QUIZ_CYCLE_ROWS;
-  /**
-   * Default trail eaters (same order as assets/set-maze/trail-mascots.json).
-   * Keep this list in sync so mascot rotation still works when fetch fails (e.g. file://).
-   */
-  var DEFAULT_TRAIL_MASCOT_RELS = [
-    "assets/set-maze/chomper.png",
-    "assets/set-maze/Peashooter.png",
-    "assets/set-maze/sunflower.png",
-    "assets/set-maze/kernelpult.png",
-    "assets/set-maze/gatling.png",
-    "assets/set-maze/Zombie.png",
+  /** Default MC trail roster (mirrors assets/set-maze/trail-mascots.json). */
+  var DEFAULT_TRAIL_HERO_MINERALS = [
+    { src: "https://minecraft.wiki/images/thumb/Coal_JE4_BE3.png/128px-Coal_JE4_BE3.png?165e9" },
+    { src: "https://minecraft.wiki/images/thumb/Iron_Ingot_JE3_BE2.png/128px-Iron_Ingot_JE3_BE2.png?849cb" },
+    { src: "https://minecraft.wiki/images/thumb/Gold_Ingot_JE4_BE2.png/128px-Gold_Ingot_JE4_BE2.png?80cd6" },
+    { src: "https://minecraft.wiki/images/thumb/Diamond_JE3_BE3.png/128px-Diamond_JE3_BE3.png?99d00" },
+    { src: "https://minecraft.wiki/images/thumb/Emerald_JE3_BE3.png/128px-Emerald_JE3_BE3.png?4c5f3" },
+    { src: "https://minecraft.wiki/images/thumb/Lapis_Lazuli_JE2_BE2.png/128px-Lapis_Lazuli_JE2_BE2.png?03506" },
   ];
-  var trailMascotSrcs = DEFAULT_TRAIL_MASCOT_RELS.slice();
+  var DEFAULT_TRAIL_MASCOTS = [
+    {
+      name: "Villager",
+      kind: "hero",
+      src: "https://minecraft.wiki/images/thumb/Plains_Villager_Base_JE2.png/128px-Plains_Villager_Base_JE2.png?a2fcc",
+    },
+    {
+      name: "Wolf",
+      kind: "hero",
+      src: "https://minecraft.wiki/images/thumb/Wolf_JE2_BE2.png/128px-Wolf_JE2_BE2.png?ee46e",
+    },
+    {
+      name: "Creeper",
+      kind: "villain",
+      src: "https://minecraft.wiki/images/thumb/Creeper_JE3_BE1.png/128px-Creeper_JE3_BE1.png?dc7b2",
+      loot: [
+        { src: "https://minecraft.wiki/images/thumb/TNT_JE3_BE2.png/128px-TNT_JE3_BE2.png?62989" },
+        { src: "https://minecraft.wiki/images/thumb/Redstone_Dust_JE2_BE2.png/128px-Redstone_Dust_JE2_BE2.png?8cf17" },
+      ],
+    },
+    {
+      name: "Zombie",
+      kind: "villain",
+      src: "https://minecraft.wiki/images/thumb/Zombie_JE3_BE2.png/128px-Zombie_JE3_BE2.png?c5423",
+      loot: [{ emoji: "\uD83C\uDF56" }, { emoji: "\uD83E\uDD55" }],
+    },
+  ];
+  var trailMascots = DEFAULT_TRAIL_MASCOTS.slice();
+  var trailHeroMinerals = DEFAULT_TRAIL_HERO_MINERALS.slice();
+  /** Per-cell trail treats for the current mascot lap (minerals or villain loot). */
+  var trailPelletPlan = [];
   /** Advances each time QUIZ_CYCLE_LEN trail steps complete (full strip), then cycles this list. */
   var eatTrailMascotIndex = 0;
-  /** Pellet “food” in the strip (sun); chomper moves left → right eating these. */
-  var SET_PELLET_GLYPH = "\u2600\uFE0F";
-  /** Easter egg: when current trail mascot is Zombie, pellets show brains. */
-  var SET_PELLET_GLYPH_BRAINS = "\uD83E\uDDE0";
   /** Filled trail: clean correct ✔️ vs peek or skip ⭕. */
   var MAZE_MARK_OK = "\u2714\uFE0F";
   var MAZE_MARK_CIRCLE = "\u2B55\uFE0F";
   /** Trail mascot scale: 0.5 → 2.0 from ✔ count on the 5×3 grid (⭕ don’t add growth). */
   var CHOMPER_SCALE_MIN = 0.5;
   var CHOMPER_SCALE_MAX = 2;
+  var SET_PELLET_GLYPH_FALLBACK = "\u2600\uFE0F";
+
+  function normalizeTrailLootItem(o) {
+    if (!o || typeof o !== "object") return null;
+    var src = String(o.src != null ? o.src : "").trim();
+    var emoji = String(o.emoji != null ? o.emoji : "").trim();
+    if (src) return { src: src };
+    if (emoji) return { emoji: emoji };
+    return null;
+  }
+
+  function normalizeTrailMascot(entry) {
+    if (typeof entry === "string") {
+      return { src: entry, kind: "hero", loot: [], name: "" };
+    }
+    if (!entry || typeof entry !== "object") {
+      return { src: "", kind: "hero", loot: [], name: "" };
+    }
+    var loot = [];
+    var i;
+    if (Array.isArray(entry.loot)) {
+      for (i = 0; i < entry.loot.length; i++) {
+        var li = normalizeTrailLootItem(entry.loot[i]);
+        if (li) loot.push(li);
+      }
+    }
+    return {
+      src: String(entry.src != null ? entry.src : "").trim(),
+      kind: entry.kind === "villain" ? "villain" : "hero",
+      loot: loot,
+      name: String(entry.name != null ? entry.name : "").trim(),
+    };
+  }
+
+  function currentTrailMascot() {
+    var list = trailMascots.length ? trailMascots : DEFAULT_TRAIL_MASCOTS;
+    return list[eatTrailMascotIndex % list.length] || DEFAULT_TRAIL_MASCOTS[0];
+  }
 
   function currentTrailMascotRel() {
-    return trailMascotSrcs.length > 0
-      ? trailMascotSrcs[eatTrailMascotIndex % trailMascotSrcs.length]
-      : DEFAULT_TRAIL_MASCOT_RELS[0];
+    return currentTrailMascot().src || "";
+  }
+
+  function trailMascotIsVillain() {
+    return currentTrailMascot().kind === "villain";
   }
 
   function trailMascotImageAbsUrl() {
     var rel = currentTrailMascotRel();
+    if (!rel) return "";
+    if (/^https?:\/\//i.test(rel)) return rel;
     if (typeof URL === "undefined" || !document.baseURI) return rel;
     try {
       return new URL(rel, document.baseURI).href;
@@ -60,14 +125,25 @@
     }
   }
 
-  function trailPelletGlyph() {
-    return /zombie/i.test(currentTrailMascotRel())
-      ? SET_PELLET_GLYPH_BRAINS
-      : SET_PELLET_GLYPH;
-  }
-
-  function trailPelletIsBrainsMode() {
-    return trailPelletGlyph() === SET_PELLET_GLYPH_BRAINS;
+  function rebuildTrailPelletPlan() {
+    var m = currentTrailMascot();
+    var plan = [];
+    var i;
+    if (m.kind === "villain" && m.loot && m.loot.length) {
+      for (i = 0; i < QUIZ_CYCLE_LEN; i++) {
+        plan.push(m.loot[i % m.loot.length]);
+      }
+    } else {
+      var pool =
+        trailHeroMinerals.length > 0
+          ? trailHeroMinerals.slice()
+          : DEFAULT_TRAIL_HERO_MINERALS.slice();
+      shuffleInPlace(pool);
+      for (i = 0; i < QUIZ_CYCLE_LEN; i++) {
+        plan.push(pool[i % pool.length]);
+      }
+    }
+    trailPelletPlan = plan;
   }
 
   function loadTrailMascotManifest() {
@@ -83,22 +159,24 @@
         return r.ok ? r.json() : null;
       })
       .then(function (data) {
-        if (!data || !data.mascots || !data.mascots.length) return;
+        if (!data) return;
+        if (data.heroMinerals && data.heroMinerals.length) {
+          var minerals = [];
+          var mi;
+          for (mi = 0; mi < data.heroMinerals.length; mi++) {
+            var mineral = normalizeTrailLootItem(data.heroMinerals[mi]);
+            if (mineral) minerals.push(mineral);
+          }
+          if (minerals.length) trailHeroMinerals = minerals;
+        }
+        if (!data.mascots || !data.mascots.length) return;
         var out = [];
         var i;
         for (i = 0; i < data.mascots.length; i++) {
-          var m = data.mascots[i];
-          var src =
-            m && typeof m === "object"
-              ? m.src
-              : typeof m === "string"
-                ? m
-                : null;
-          if (src && String(src).trim()) out.push(String(src).trim());
+          var m = normalizeTrailMascot(data.mascots[i]);
+          if (m.src) out.push(m);
         }
-        if (out.length) {
-          trailMascotSrcs = out;
-        }
+        if (out.length) trailMascots = out;
       })
       .catch(function () {});
   }
@@ -145,6 +223,9 @@
           gradeLevel: String(o.gradeLevel != null ? o.gradeLevel : ""),
           mcWikiPage: String(o.mcWikiPage != null ? o.mcWikiPage : ""),
           mcBlurb: String(o.mcBlurb != null ? o.mcBlurb : ""),
+          mcKidsBlurb: String(o.mcKidsBlurb != null ? o.mcKidsBlurb : ""),
+          mcImageUrl: String(o.mcImageUrl != null ? o.mcImageUrl : ""),
+          mcStats: normalizeMcStatsField(o.mcStats),
           difficulty:
             typeof o.difficulty === "number" && !isNaN(o.difficulty)
               ? o.difficulty
@@ -284,14 +365,180 @@
     return (
       !!item &&
       isMinecraftWord(item) &&
-      String(item.mcBlurb != null ? item.mcBlurb : "").trim().length > 0
+      (mcBlurbText(item).length > 0 || !!mcStatsForItem(item))
     );
   }
 
-  function applyMcEncyclopediaUi(item, elWrap, elBlurb, elWiki) {
+  function isMcModeActive() {
+    return minecraftScope === "include" || minecraftScope === "only";
+  }
+
+  var MC_STAT_CATEGORY_LABELS = {
+    block: "\uD83E\uDDF1 Block",
+    resource: "\uD83D\uDC8E Resource",
+    tool: "\uD83D\uDEE0\uFE0F Tool",
+    armor: "\uD83D\uDEE1\uFE0F Armor",
+    friendly: "\uD83D\uDC9A Friendly mob",
+    monster: "\uD83D\uDC7E Monster",
+    boss: "\uD83D\uDC80 Boss",
+    place: "\uD83D\uDDFA\uFE0F Place",
+    tip: "\uD83D\uDCA1 Game tip",
+  };
+
+  var MC_STAT_RARITY_LABELS = {
+    common: "\u26AA Common",
+    uncommon: "\uD83D\uDD35 Uncommon",
+    rare: "\uD83D\uDFE3 Rare",
+    very_rare: "\uD83C\uDF1F Super Rare",
+    unique: "\u2728 Super Super Rare",
+  };
+
+  var MC_STAT_VALUE_LABELS = {
+    handy: "\uD83D\uDC4D Pick up \u2014 ok stuff",
+    useful: "\u2B50 Pick up \u2014 good stuff",
+    valuable: "\uD83D\uDC8E Pick up \u2014 great stuff",
+    treasure: "\uD83D\uDC51 Pick up \u2014 best stuff",
+  };
+
+  var MC_STAT_DANGER_LABELS = {
+    safe: "\uD83D\uDE0A Safe",
+    careful: "\u26A0\uFE0F Be careful",
+    dangerous: "\uD83D\uDD25 Dangerous",
+    very_dangerous: "\uD83D\uDCA5 Very dangerous",
+    boss: "\uD83D\uDC79 Boss fight",
+  };
+
+  /** Drop leading emoji so TTS reads clean words only. */
+  function mcStatSpeechLabel(displayLabel) {
+    return String(displayLabel != null ? displayLabel : "")
+      .replace(
+        /^[\u{1F300}-\u{1FAFF}\u{1F1E0}-\u{1F1FF}\u2600-\u27BF\uFE0F\u200D]+\s*/u,
+        ""
+      )
+      .trim();
+  }
+
+  function normalizeMcStatsField(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    var cat = String(raw.category != null ? raw.category : "").trim();
+    var rar = String(raw.rarity != null ? raw.rarity : "").trim();
+    if (!cat || !MC_STAT_CATEGORY_LABELS[cat] || !rar || !MC_STAT_RARITY_LABELS[rar]) {
+      return null;
+    }
+    var out = { category: cat, rarity: rar };
+    var val = String(raw.value != null ? raw.value : "").trim();
+    if (val && MC_STAT_VALUE_LABELS[val]) out.value = val;
+    var dng = String(raw.danger != null ? raw.danger : "").trim();
+    if (dng && MC_STAT_DANGER_LABELS[dng]) out.danger = dng;
+    return out;
+  }
+
+  function mcStatsForItem(item) {
+    return item && item.mcStats ? item.mcStats : null;
+  }
+
+  function mcStatPillClass(kind, value) {
+    if (kind === "category") return "mc-stat-pill mc-stat-pill--category";
+    if (kind === "rarity") {
+      return "mc-stat-pill mc-stat-pill--rarity-" + value;
+    }
+    if (kind === "value") {
+      return (
+        "mc-stat-pill mc-stat-pill--value" +
+        (value === "treasure" ? " mc-stat-pill--value-treasure" : "")
+      );
+    }
+    if (kind === "danger") {
+      return "mc-stat-pill mc-stat-pill--danger-" + value;
+    }
+    return "mc-stat-pill";
+  }
+
+  function mcStatPillsForItem(item) {
+    var stats = mcStatsForItem(item);
+    if (!stats) return [];
+    var pills = [];
+    pills.push({
+      kind: "category",
+      label: MC_STAT_CATEGORY_LABELS[stats.category],
+      value: stats.category,
+    });
+    pills.push({
+      kind: "rarity",
+      label: MC_STAT_RARITY_LABELS[stats.rarity],
+      value: stats.rarity,
+    });
+    if (stats.value) {
+      pills.push({
+        kind: "value",
+        label: MC_STAT_VALUE_LABELS[stats.value],
+        value: stats.value,
+      });
+    }
+    if (stats.danger) {
+      pills.push({
+        kind: "danger",
+        label: MC_STAT_DANGER_LABELS[stats.danger],
+        value: stats.danger,
+      });
+    }
+    return pills;
+  }
+
+  function mcStatsSpeechText(item) {
+    if (!isMcModeActive()) return "";
+    var pills = mcStatPillsForItem(item);
+    if (!pills.length) return "";
+    var parts = [];
+    var i;
+    for (i = 0; i < pills.length; i++) {
+      parts.push(mcStatSpeechLabel(pills[i].label));
+    }
+    return parts.join(". ") + ".";
+  }
+
+  function renderMcStatsUi(item, elStats) {
+    if (!elStats) return;
+    elStats.replaceChildren();
+    if (!isMcModeActive() || !item) {
+      elStats.hidden = true;
+      return;
+    }
+    var pills = mcStatPillsForItem(item);
+    if (!pills.length) {
+      elStats.hidden = true;
+      return;
+    }
+    var i;
+    for (i = 0; i < pills.length; i++) {
+      var p = pills[i];
+      var span = document.createElement("span");
+      span.className = mcStatPillClass(p.kind, p.value);
+      span.textContent = p.label;
+      elStats.appendChild(span);
+    }
+    elStats.hidden = false;
+  }
+
+  /** Active MC description: simple (4–10) or full, depending on toggle. */
+  function mcBlurbText(item) {
+    if (!item) return "";
+    var full = String(item.mcBlurb != null ? item.mcBlurb : "").trim();
+    var kids = String(item.mcKidsBlurb != null ? item.mcKidsBlurb : "").trim();
+    if (showMcKidsBlurbs) return kids || full;
+    return full || kids;
+  }
+
+  function mcBlurbSpeechText(item) {
+    if (!isMcModeActive() || !shouldShowMcEncyclopedia(item)) return "";
+    return mcBlurbText(item);
+  }
+
+  function applyMcEncyclopediaUi(item, elWrap, elStats, elBlurb, elWiki) {
     if (!elWrap) return;
     if (!shouldShowMcEncyclopedia(item)) {
       elWrap.hidden = true;
+      renderMcStatsUi(null, elStats);
       if (elBlurb) elBlurb.textContent = "";
       if (elWiki) {
         elWiki.removeAttribute("href");
@@ -300,7 +547,8 @@
       return;
     }
     elWrap.hidden = false;
-    if (elBlurb) elBlurb.textContent = item.mcBlurb;
+    renderMcStatsUi(item, elStats);
+    if (elBlurb) elBlurb.textContent = mcBlurbText(item);
     if (elWiki) {
       var page = String(item.mcWikiPage != null ? item.mcWikiPage : "").trim();
       var url = minecraftWikiUrl(page);
@@ -464,13 +712,15 @@
 
   /** Each page load: random mascot order + random starting mascot (not a fixed sequence). */
   function randomTrailMascotsForSession() {
-    var n = trailMascotSrcs.length;
+    var n = trailMascots.length;
     if (n < 2) {
       eatTrailMascotIndex = 0;
+      rebuildTrailPelletPlan();
       return;
     }
-    shuffleInPlace(trailMascotSrcs);
+    shuffleInPlace(trailMascots);
     eatTrailMascotIndex = Math.floor(Math.random() * n);
+    rebuildTrailPelletPlan();
   }
 
   /**
@@ -661,6 +911,8 @@
         var p = pendingSpeech;
         pendingSpeech = null;
         if (p.kind === "letters") speakWordLetters(p.text, true);
+        else if (p.kind === "segments") speakTexts(p.segments, true);
+        else if (p.kind === "item") speakCardItem(p.item, true);
         else speakWord(p.text, true);
       }
     }
@@ -702,17 +954,81 @@
 
   /** Slightly after cancel() so Chrome/Edge don’t drop the utterance. */
   var SPEAK_AFTER_CANCEL_MS = 120;
+  /** Gap between chained utterances (word then MC blurb). */
+  var SPEAK_CHAIN_GAP_MS = 90;
   /** Suppresses stale delayed speaks when auto-speak + user tap both queue TTS. */
   var speakScheduleSeq = 0;
 
-  function speakWord(text, userInitiated) {
-    if (!text || !window.speechSynthesis) return;
+  function normalizeSpeakSegments(segments) {
+    var parts = [];
+    var i;
+    if (typeof segments === "string") {
+      var one = String(segments).trim();
+      if (one) parts.push({ text: one, rate: 0.9 });
+      return parts;
+    }
+    if (!Array.isArray(segments)) return parts;
+    for (i = 0; i < segments.length; i++) {
+      var s = segments[i];
+      if (typeof s === "string") {
+        var t = String(s).trim();
+        if (t) parts.push({ text: t, rate: 0.9 });
+      } else if (s && s.text) {
+        var tx = String(s.text).trim();
+        if (tx) {
+          parts.push({
+            text: tx,
+            rate: typeof s.rate === "number" && !isNaN(s.rate) ? s.rate : 0.9,
+          });
+        }
+      }
+    }
+    return parts;
+  }
+
+  function queueSpeechUtterance(text, rate, ticket, onDone) {
+    try {
+      var u = new SpeechSynthesisUtterance(text);
+      applyEnglishVoice(u);
+      u.rate = rate;
+      u.volume = 1;
+      u.pitch = 1;
+      u.onend = function () {
+        if (onDone) onDone();
+      };
+      u.onerror = function () {
+        try {
+          if (ticket !== speakScheduleSeq) return;
+          var u2 = new SpeechSynthesisUtterance(text);
+          u2.lang = "en-US";
+          u2.rate = rate;
+          u2.volume = 1;
+          u2.pitch = 1;
+          u2.onend = function () {
+            if (onDone) onDone();
+          };
+          speechSynthesis.speak(u2);
+        } catch (e3) {
+          if (onDone) onDone();
+        }
+      };
+      speechSynthesis.speak(u);
+    } catch (e2) {
+      if (onDone) onDone();
+    }
+  }
+
+  function speakTexts(segments, userInitiated) {
+    if (!window.speechSynthesis) return;
+    var parts = normalizeSpeakSegments(segments);
+    if (!parts.length) return;
     userInitiated = userInitiated === true;
     wireSpeechUserActivationOnce();
     if (userInitiated) {
       pendingSpeech = null;
     } else if (!speechUserEverActivated) {
-      pendingSpeech = { kind: "word", text: text };
+      pendingSpeech = { kind: "segments", segments: parts };
+      return;
     }
     var ticket = ++speakScheduleSeq;
     try {
@@ -723,30 +1039,36 @@
         speechSynthesis.cancel();
       }
     } catch (e1) {}
-    runWhenSpeechVoicesReady(function () {
-      window.setTimeout(function () {
-        if (ticket !== speakScheduleSeq) return;
-        try {
-          var u = new SpeechSynthesisUtterance(text);
-          applyEnglishVoice(u);
-          u.rate = 0.9;
-          u.volume = 1;
-          u.pitch = 1;
-          u.onerror = function () {
-            try {
-              if (ticket !== speakScheduleSeq) return;
-              var u2 = new SpeechSynthesisUtterance(text);
-              u2.lang = "en-US";
-              u2.rate = 0.9;
-              u2.volume = 1;
-              u2.pitch = 1;
-              speechSynthesis.speak(u2);
-            } catch (e3) {}
-          };
-          speechSynthesis.speak(u);
-        } catch (e2) {}
-      }, SPEAK_AFTER_CANCEL_MS);
-    });
+    function speakPartAt(idx) {
+      if (idx >= parts.length || ticket !== speakScheduleSeq) return;
+      var part = parts[idx];
+      var delay = idx === 0 ? SPEAK_AFTER_CANCEL_MS : SPEAK_CHAIN_GAP_MS;
+      runWhenSpeechVoicesReady(function () {
+        window.setTimeout(function () {
+          if (ticket !== speakScheduleSeq) return;
+          queueSpeechUtterance(part.text, part.rate, ticket, function () {
+            speakPartAt(idx + 1);
+          });
+        }, delay);
+      });
+    }
+    speakPartAt(0);
+  }
+
+  function speakWord(text, userInitiated) {
+    if (!text) return;
+    speakTexts([{ text: text, rate: 0.9 }], userInitiated);
+  }
+
+  /** Word, then MC stats + blurb when Minecraft mode is on. */
+  function speakCardItem(item, userInitiated) {
+    if (!item || !item.word) return;
+    var segments = [{ text: item.word, rate: 0.9 }];
+    var statsLine = mcStatsSpeechText(item);
+    if (statsLine) segments.push({ text: statsLine, rate: 0.88 });
+    var blurb = mcBlurbSpeechText(item);
+    if (blurb) segments.push({ text: blurb, rate: 0.88 });
+    speakTexts(segments, userInitiated);
   }
 
   /** Letter-by-letter (after peek/cheat only — not on normal quiz hear). */
@@ -1421,20 +1743,20 @@
       pronounceAfterCardTimer = null;
     }
     if (studyMode === "quiz" || studyMode === "typeall") {
-      if (fromUserTap) speakWord(current.word, true);
+      if (fromUserTap) speakCardItem(current, true);
       else {
         pronounceAfterCardTimer = window.setTimeout(function () {
           pronounceAfterCardTimer = null;
-          if (current && isTypingMode()) speakWord(current.word, false);
+          if (current && isTypingMode()) speakCardItem(current, false);
         }, 140);
       }
       return;
     }
-    if (fromUserTap) speakWord(current.word, true);
+    if (fromUserTap) speakCardItem(current, true);
     else {
       pronounceAfterCardTimer = window.setTimeout(function () {
         pronounceAfterCardTimer = null;
-        if (current) speakWord(current.word, false);
+        if (current) speakCardItem(current, false);
       }, 100);
     }
   }
@@ -1477,6 +1799,8 @@
   var showPhoneticMarks = false;
   /** Persisted: picture emoji on card & word peek (on by default). */
   var showWordEmoji = true;
+  /** MC mode: short tips for ages 4–10 vs longer descriptions. */
+  var showMcKidsBlurbs = true;
 
   var elCycleMazeOuter = document.getElementById("cycle-maze-outer");
   var elCycleMazeToggle = document.getElementById("cycle-maze-toggle");
@@ -1486,6 +1810,8 @@
   var elCycleStats = document.getElementById("cycle-maze-stats");
   var elPhoneticMarksToggle = document.getElementById("phonetic-marks-toggle");
   var elWordEmojiToggle = document.getElementById("word-emoji-toggle");
+  var elMcKidsBlurbField = document.getElementById("mc-kids-blurb-field");
+  var elMcKidsBlurbToggle = document.getElementById("mc-kids-blurb-toggle");
   var elKbdShortcutsModal = document.getElementById("kbd-shortcuts-modal");
   var elKbdShortcutsBackdrop = document.getElementById(
     "kbd-shortcuts-modal-backdrop"
@@ -1505,6 +1831,7 @@
   var elWordPeekMetaLine = document.getElementById("word-peek-meta-line");
   var elWordPeekMetaRate = document.getElementById("word-peek-meta-rate");
   var elWordPeekMcTip = document.getElementById("word-peek-mc-tip");
+  var elWordPeekMcStats = document.getElementById("word-peek-mc-stats");
   var elWordPeekMcBlurb = document.getElementById("word-peek-mc-blurb");
   var elWordPeekMcWiki = document.getElementById("word-peek-mc-wiki");
   var elWordPeekPronunciation = document.getElementById(
@@ -1680,6 +2007,7 @@
     applyMcEncyclopediaUi(
       item,
       elWordPeekMcTip,
+      elWordPeekMcStats,
       elWordPeekMcBlurb,
       elWordPeekMcWiki
     );
@@ -1827,14 +2155,28 @@
     return lo + (hi - lo) * t;
   }
 
-  function appendPelletSunGlyph(pellet) {
+  function appendTrailPelletGlyph(pellet, cellIndex) {
     var glyph = document.createElement("span");
     glyph.className = "set-pellet__glyph";
-    if (trailPelletIsBrainsMode()) {
-      glyph.classList.add("set-pellet__glyph--brains");
-      pellet.classList.add("set-pellet--brains-trail");
+    var item =
+      trailPelletPlan && trailPelletPlan.length
+        ? trailPelletPlan[cellIndex]
+        : null;
+    if (item && item.src) {
+      glyph.classList.add("set-pellet__glyph--img");
+      pellet.classList.add("set-pellet--mc-loot");
+      var img = document.createElement("img");
+      img.className = "set-pellet__loot-img";
+      img.src = item.src;
+      img.alt = "";
+      img.decoding = "async";
+      glyph.appendChild(img);
+    } else if (item && item.emoji) {
+      pellet.classList.add("set-pellet--mc-loot");
+      glyph.textContent = item.emoji;
+    } else {
+      glyph.textContent = SET_PELLET_GLYPH_FALLBACK;
     }
-    glyph.textContent = trailPelletGlyph();
     glyph.setAttribute("aria-hidden", "true");
     pellet.appendChild(glyph);
   }
@@ -1905,8 +2247,12 @@
     elCycleStrip.setAttribute("dir", "ltr");
     if (elCycleMaze) {
       elCycleMaze.classList.toggle(
-        "cycle-maze--brains-trail",
-        trailPelletIsBrainsMode()
+        "cycle-maze--villain-trail",
+        trailMascotIsVillain()
+      );
+      elCycleMaze.classList.toggle(
+        "cycle-maze--hero-trail",
+        !trailMascotIsVillain()
       );
     }
     if (elCycleChomperSlot) {
@@ -1936,17 +2282,20 @@
       } else if (i === quizCycleEaten) {
         cell.classList.add("cycle-maze__cell--current");
         pellet.classList.add("set-pellet--current");
-        appendPelletSunGlyph(pellet);
+        appendTrailPelletGlyph(pellet, i);
         if (cycleHadWrongOnCard) pellet.classList.add("set-pellet--wrong");
       } else {
         pellet.classList.add("set-pellet--todo");
-        appendPelletSunGlyph(pellet);
+        appendTrailPelletGlyph(pellet, i);
       }
       cell.appendChild(pellet);
       elCycleStrip.appendChild(cell);
     }
+    var mascot = currentTrailMascot();
+    var mascotLabel = mascot.name || (mascot.kind === "villain" ? "Mob" : "Hero");
     elCycleStats.textContent =
-      "Treat trail " +
+      mascotLabel +
+      " · Trail " +
       quizCycleEaten +
       "/" +
       QUIZ_CYCLE_LEN +
@@ -1958,7 +2307,10 @@
     if (!elCycleMaze || !elCycleMazeOuter) return;
     if (!isTypingMode() || !current) {
       elCycleMazeOuter.hidden = true;
-      elCycleMaze.classList.remove("cycle-maze--brains-trail");
+      elCycleMaze.classList.remove(
+        "cycle-maze--villain-trail",
+        "cycle-maze--hero-trail"
+      );
       return;
     }
     elCycleMazeOuter.hidden = false;
@@ -1971,7 +2323,10 @@
     }
     if (!quizCycleMazeEnabled) {
       elCycleMaze.hidden = true;
-      elCycleMaze.classList.remove("cycle-maze--brains-trail");
+      elCycleMaze.classList.remove(
+        "cycle-maze--villain-trail",
+        "cycle-maze--hero-trail"
+      );
       return;
     }
     elCycleMaze.hidden = false;
@@ -2016,11 +2371,196 @@
     return item.emoji || "";
   }
 
+  var mcWikiThumbCache = Object.create(null);
+  var MC_WIKI_IMG_API =
+    "https://minecraft.wiki/api.php?action=query&format=json&formatversion=2&prop=pageimages&pithumbsize=128&origin=*&titles=";
+
+  function wikiThumbFromApiPayload(data) {
+    var pages = data && data.query && data.query.pages;
+    if (!pages) return null;
+    if (Array.isArray(pages)) {
+      for (var i = 0; i < pages.length; i++) {
+        var row = pages[i];
+        if (row && row.thumbnail && row.thumbnail.source) {
+          return row.thumbnail.source;
+        }
+      }
+      return null;
+    }
+    var keys = Object.keys(pages);
+    for (var j = 0; j < keys.length; j++) {
+      var page = pages[keys[j]];
+      if (page && page.thumbnail && page.thumbnail.source) {
+        return page.thumbnail.source;
+      }
+    }
+    return null;
+  }
+
+  function fetchMcWikiThumbJsonp(pageTitle, done) {
+    var key = String(pageTitle != null ? pageTitle : "").trim();
+    if (!key) {
+      done(null);
+      return;
+    }
+    var cb = "mcWikiThumbCb_" + String(Date.now()) + "_" + Math.floor(Math.random() * 1e6);
+    var url =
+      MC_WIKI_IMG_API +
+      encodeURIComponent(key) +
+      "&callback=" +
+      encodeURIComponent(cb);
+    var script = document.createElement("script");
+    var finished = false;
+    function finish(thumb) {
+      if (finished) return;
+      finished = true;
+      try {
+        delete window[cb];
+      } catch (e1) {
+        window[cb] = undefined;
+      }
+      if (script.parentNode) script.parentNode.removeChild(script);
+      mcWikiThumbCache[key] = thumb || false;
+      done(thumb);
+    }
+    window[cb] = function (data) {
+      finish(wikiThumbFromApiPayload(data));
+    };
+    script.src = url;
+    script.onerror = function () {
+      finish(null);
+    };
+    document.head.appendChild(script);
+    window.setTimeout(function () {
+      finish(null);
+    }, 12000);
+  }
+
+  function isMcWikiPictureMode() {
+    return (
+      showWordEmoji &&
+      (minecraftScope === "include" || minecraftScope === "only")
+    );
+  }
+
+  function shouldUseMcWikiPicture(item) {
+    return (
+      !!item &&
+      isMinecraftWord(item) &&
+      isMcWikiPictureMode() &&
+      (String(item.mcImageUrl != null ? item.mcImageUrl : "").trim().length >
+        0 ||
+        String(item.mcWikiPage != null ? item.mcWikiPage : "").trim().length >
+          0)
+    );
+  }
+
+  function clearWordPictureEl(el) {
+    if (!el) return;
+    el.textContent = "";
+    el.classList.remove("flashcard__emoji--wiki");
+    var img = el.querySelector("img");
+    if (img) img.remove();
+  }
+
+  function showMcWikiPictureOnEl(el, item, src, myGen) {
+    if (!el || !src) return;
+    clearWordPictureEl(el);
+    el.hidden = false;
+    el.classList.add("flashcard__emoji--wiki");
+    var img = document.createElement("img");
+    img.className = "flashcard__emoji-img";
+    img.src = src;
+    img.alt = "";
+    img.decoding = "async";
+    img.addEventListener("error", function onImgErr() {
+      img.removeEventListener("error", onImgErr);
+      if (el._pictureGen !== myGen) return;
+      clearWordPictureEl(el);
+      var em = item.emoji || "";
+      el.textContent = em;
+      el.hidden = !em;
+    });
+    el.appendChild(img);
+  }
+
+  function fetchMcWikiThumb(pageTitle, done) {
+    var key = String(pageTitle != null ? pageTitle : "").trim();
+    if (!key) {
+      done(null);
+      return;
+    }
+    if (mcWikiThumbCache[key] === false) {
+      done(null);
+      return;
+    }
+    if (typeof mcWikiThumbCache[key] === "string") {
+      done(mcWikiThumbCache[key]);
+      return;
+    }
+    var url = MC_WIKI_IMG_API + encodeURIComponent(key);
+    fetch(url)
+      .then(function (res) {
+        if (!res.ok) throw new Error("wiki thumb " + res.status);
+        return res.json();
+      })
+      .then(function (data) {
+        var thumb = wikiThumbFromApiPayload(data);
+        mcWikiThumbCache[key] = thumb || false;
+        done(thumb);
+      })
+      .catch(function () {
+        fetchMcWikiThumbJsonp(key, done);
+      });
+  }
+
   function applyWordEmojiToEl(el, item) {
     if (!el) return;
+    el._pictureGen = (el._pictureGen || 0) + 1;
+    var myGen = el._pictureGen;
+    clearWordPictureEl(el);
+
+    if (!showWordEmoji || !item) {
+      el.hidden = true;
+      return;
+    }
+
+    if (shouldUseMcWikiPicture(item)) {
+      var embedded = String(
+        item.mcImageUrl != null ? item.mcImageUrl : ""
+      ).trim();
+      if (embedded) {
+        showMcWikiPictureOnEl(el, item, embedded, myGen);
+        return;
+      }
+      var page = String(item.mcWikiPage != null ? item.mcWikiPage : "").trim();
+      el.hidden = false;
+      el.classList.add("flashcard__emoji--wiki");
+      el.textContent = item.emoji || "";
+      fetchMcWikiThumb(page, function (thumbUrl) {
+        if (el._pictureGen !== myGen) return;
+        if (thumbUrl) {
+          showMcWikiPictureOnEl(el, item, thumbUrl, myGen);
+          return;
+        }
+        clearWordPictureEl(el);
+        var em = item.emoji || "";
+        el.textContent = em;
+        el.hidden = !em;
+      });
+      return;
+    }
+
     var em = displayWordEmoji(item);
     el.textContent = em;
     el.hidden = !em;
+  }
+
+  function refreshWordPictures() {
+    applyWordEmojiToEl(elEmoji, current);
+    if (isWordPeekModalOpen() && wordPeekItem) {
+      applyWordEmojiToEl(elWordPeekEmoji, wordPeekItem);
+    }
   }
 
   function onWordEmojiToggleChange() {
@@ -2031,10 +2571,36 @@
       showWordEmoji ? "true" : "false"
     );
     persistSelections();
-    applyWordEmojiToEl(elEmoji, current);
+    refreshWordPictures();
+  }
+
+  function syncMcKidsBlurbFieldVisibility() {
+    if (!elMcKidsBlurbField) return;
+    elMcKidsBlurbField.hidden = !isMcModeActive();
+  }
+
+  function refreshMcEncyclopediaUi() {
+    if (current) applyCardMetaForItem(current);
     if (isWordPeekModalOpen() && wordPeekItem) {
-      applyWordEmojiToEl(elWordPeekEmoji, wordPeekItem);
+      applyMcEncyclopediaUi(
+        wordPeekItem,
+        elWordPeekMcTip,
+        elWordPeekMcStats,
+        elWordPeekMcBlurb,
+        elWordPeekMcWiki
+      );
     }
+  }
+
+  function onMcKidsBlurbToggleChange() {
+    if (!elMcKidsBlurbToggle) return;
+    showMcKidsBlurbs = !!elMcKidsBlurbToggle.checked;
+    elMcKidsBlurbToggle.setAttribute(
+      "aria-checked",
+      showMcKidsBlurbs ? "true" : "false"
+    );
+    persistSelections();
+    refreshMcEncyclopediaUi();
   }
 
   function triggerQuizCycleCelebrate() {
@@ -2060,12 +2626,13 @@
     quizCycleEaten++;
     if (quizCycleEaten >= QUIZ_CYCLE_LEN) {
       triggerQuizCycleCelebrate();
-      var nm = trailMascotSrcs.length;
+      var nm = trailMascots.length;
       if (nm > 1) {
         eatTrailMascotIndex = (eatTrailMascotIndex + 1) % nm;
       } else if (nm === 1) {
         eatTrailMascotIndex = 0;
       }
+      rebuildTrailPelletPlan();
       quizCycleEaten = 0;
       quizCycleMarks = [];
       quizCycleBombCount = 0;
@@ -2111,6 +2678,7 @@
   var elMetaLine = document.getElementById("card-meta-line");
   var elMetaRate = document.getElementById("card-meta-rate");
   var elCardMcTip = document.getElementById("card-mc-tip");
+  var elCardMcStats = document.getElementById("card-mc-stats");
   var elCardMcBlurb = document.getElementById("card-mc-blurb");
   var elCardMcWiki = document.getElementById("card-mc-wiki");
   var elCardPronunciation = document.getElementById("card-pronunciation");
@@ -2249,7 +2817,7 @@
       elMetaRate.className =
         "word-rate-pill word-rate-pill--by-word word-rate--none";
       elMetaRate.removeAttribute("aria-label");
-      applyMcEncyclopediaUi(null, elCardMcTip, elCardMcBlurb, elCardMcWiki);
+      applyMcEncyclopediaUi(null, elCardMcTip, elCardMcStats, elCardMcBlurb, elCardMcWiki);
       return;
     }
     elMetaLine.textContent = describeCardMetaLine(item);
@@ -2259,7 +2827,7 @@
       item.word,
       "word-rate-pill word-rate-pill--by-word"
     );
-    applyMcEncyclopediaUi(item, elCardMcTip, elCardMcBlurb, elCardMcWiki);
+    applyMcEncyclopediaUi(item, elCardMcTip, elCardMcStats, elCardMcBlurb, elCardMcWiki);
   }
 
   /** Place meta subtitle directly under the word row (see) or the gap line (quiz / type-all). */
@@ -3245,6 +3813,7 @@
       showCycleMaze: quizCycleMazeEnabled,
       showPhoneticMarks: showPhoneticMarks,
       showWordEmoji: showWordEmoji,
+      mcKidsBlurbs: showMcKidsBlurbs,
     });
   }
 
@@ -3295,6 +3864,8 @@
       "minecraft-theme--only",
       minecraftScope === "only"
     );
+    syncMcKidsBlurbFieldVisibility();
+    refreshWordPictures();
   }
 
   function onMinecraftScopeChange() {
@@ -3363,13 +3934,13 @@
   function onWordPeekSpeak(e) {
     if (e) e.preventDefault();
     if (!wordPeekItem) return;
-    speakWord(wordPeekItem.word, true);
+    speakCardItem(wordPeekItem, true);
   }
 
   function onHearWord(e) {
     if (e) e.preventDefault();
     if (!current) return;
-    speakWord(current.word, true);
+    speakCardItem(current, true);
   }
 
   function onNextCard(e) {
@@ -3765,6 +4336,9 @@
     if (elWordEmojiToggle) {
       elWordEmojiToggle.addEventListener("change", onWordEmojiToggleChange);
     }
+    if (elMcKidsBlurbToggle) {
+      elMcKidsBlurbToggle.addEventListener("change", onMcKidsBlurbToggleChange);
+    }
     if (elFavorite) elFavorite.addEventListener("click", onFavoriteTap);
     var btnClearHistory = document.getElementById("btn-clear-history");
     if (btnClearHistory) {
@@ -3942,6 +4516,15 @@
             showWordEmoji ? "true" : "false"
           );
         }
+        showMcKidsBlurbs = !(prefs && prefs.mcKidsBlurbs === false);
+        if (elMcKidsBlurbToggle) {
+          elMcKidsBlurbToggle.checked = showMcKidsBlurbs;
+          elMcKidsBlurbToggle.setAttribute(
+            "aria-checked",
+            showMcKidsBlurbs ? "true" : "false"
+          );
+        }
+        syncMcKidsBlurbFieldVisibility();
 
         rebuildPool();
         applyPoolHint();

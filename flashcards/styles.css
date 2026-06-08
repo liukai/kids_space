@@ -1073,6 +1073,67 @@ body.minecraft-theme--only .app {
     drop-shadow(0 0 2px rgba(255, 255, 255, 0.35));
 }
 
+/* MC trail loot icons (minerals / mob drops) */
+.set-pellet__glyph--img {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(1.15rem, 5vw, 1.45rem);
+  height: clamp(1.15rem, 5vw, 1.45rem);
+}
+
+.set-pellet__loot-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.cycle-maze--hero-trail .set-pellet--mc-loot.set-pellet--todo .set-pellet__glyph {
+  filter:
+    drop-shadow(0 0 5px rgba(255, 215, 80, 0.75))
+    drop-shadow(0 0 3px rgba(76, 175, 80, 0.35));
+}
+
+.cycle-maze--hero-trail .set-pellet--mc-loot.set-pellet--current .set-pellet__glyph {
+  filter:
+    drop-shadow(0 0 8px rgba(255, 230, 100, 0.95))
+    drop-shadow(0 0 3px rgba(255, 255, 255, 0.4));
+}
+
+.cycle-maze--villain-trail .set-pellet--mc-loot.set-pellet--todo .set-pellet__glyph {
+  filter:
+    drop-shadow(0 0 5px rgba(180, 80, 220, 0.65))
+    drop-shadow(0 0 3px rgba(80, 40, 100, 0.45));
+}
+
+.cycle-maze--villain-trail .set-pellet--mc-loot.set-pellet--current .set-pellet__glyph {
+  filter:
+    drop-shadow(0 0 8px rgba(220, 100, 255, 0.85))
+    drop-shadow(0 0 3px rgba(255, 255, 255, 0.35));
+}
+
+.cycle-maze--villain-trail {
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.3),
+    0 2px 0 rgba(45, 50, 70, 0.3),
+    0 4px 14px rgba(80, 50, 90, 0.12);
+}
+
+.cycle-maze--hero-trail {
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.35),
+    0 2px 0 rgba(45, 70, 40, 0.28),
+    0 4px 14px rgba(60, 100, 50, 0.1);
+}
+
+.cycle-maze .set-bar__chomper-img {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
 /* Zombie easter egg: trail treats are brains */
 .set-pellet__glyph--brains {
   font-size: clamp(0.82rem, 3.6vw, 0.98rem);
@@ -1634,6 +1695,25 @@ body.minecraft-theme--only .app {
   filter: drop-shadow(0 2px 4px rgba(40, 50, 35, 0.12));
 }
 
+.flashcard__emoji--wiki {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: clamp(3rem, 18vw, 4.25rem);
+  min-height: clamp(3rem, 18vw, 4.25rem);
+  font-size: 0;
+}
+
+.flashcard__emoji-img {
+  display: block;
+  width: clamp(3rem, 18vw, 4.25rem);
+  height: clamp(3rem, 18vw, 4.25rem);
+  object-fit: contain;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  filter: drop-shadow(0 2px 4px rgba(40, 50, 35, 0.15));
+}
+
 .flashcard__emoji[hidden] {
   display: none !important;
   margin: 0;
@@ -1953,13 +2033,125 @@ body.minecraft-theme--only .app {
 
 .flashcard__mc-tip {
   margin: 0.45rem 0 0;
-  padding: 0.55rem 0.65rem;
+  padding: 0.6rem 0.75rem;
   max-width: 100%;
-  text-align: center;
+  text-align: left;
   border-radius: 12px;
   border: 1px dashed rgba(91, 130, 68, 0.35);
   background: rgba(255, 255, 255, 0.55);
   box-sizing: border-box;
+}
+
+.flashcard__mc-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.4rem;
+  margin: 0 0 0.45rem;
+}
+
+.flashcard__mc-stats[hidden] {
+  display: none !important;
+}
+
+.mc-stat-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.35;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.mc-stat-pill--value,
+.mc-stat-pill--value-treasure {
+  text-transform: none;
+  letter-spacing: 0.01em;
+  font-size: 0.58rem;
+  font-weight: 600;
+  white-space: normal;
+  text-align: center;
+}
+
+.mc-stat-pill--category {
+  color: #2e5c28;
+  background: rgba(129, 199, 132, 0.28);
+  border-color: rgba(76, 140, 68, 0.35);
+}
+
+.mc-stat-pill--rarity-common {
+  color: #4a5568;
+  background: rgba(148, 163, 184, 0.25);
+  border-color: rgba(100, 116, 139, 0.3);
+}
+
+.mc-stat-pill--rarity-uncommon {
+  color: #2563a8;
+  background: rgba(147, 197, 253, 0.35);
+  border-color: rgba(59, 130, 246, 0.35);
+}
+
+.mc-stat-pill--rarity-rare {
+  color: #6d28d9;
+  background: rgba(196, 181, 253, 0.4);
+  border-color: rgba(124, 58, 237, 0.35);
+}
+
+.mc-stat-pill--rarity-very_rare {
+  color: #9a3412;
+  background: rgba(254, 215, 170, 0.55);
+  border-color: rgba(234, 88, 12, 0.35);
+}
+
+.mc-stat-pill--rarity-unique {
+  color: #92400e;
+  background: rgba(253, 224, 71, 0.45);
+  border-color: rgba(217, 119, 6, 0.45);
+}
+
+.mc-stat-pill--value {
+  color: #166534;
+  background: rgba(134, 239, 172, 0.35);
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.mc-stat-pill--value-treasure {
+  color: #854d0e;
+  background: rgba(252, 211, 77, 0.5);
+  border-color: rgba(202, 138, 4, 0.45);
+}
+
+.mc-stat-pill--danger-safe {
+  color: #166534;
+  background: rgba(187, 247, 208, 0.45);
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.mc-stat-pill--danger-careful {
+  color: #a16207;
+  background: rgba(254, 240, 138, 0.45);
+  border-color: rgba(202, 138, 4, 0.35);
+}
+
+.mc-stat-pill--danger-dangerous {
+  color: #c2410c;
+  background: rgba(254, 202, 202, 0.45);
+  border-color: rgba(249, 115, 22, 0.4);
+}
+
+.mc-stat-pill--danger-very_dangerous,
+.mc-stat-pill--danger-boss {
+  color: #991b1b;
+  background: rgba(254, 202, 202, 0.55);
+  border-color: rgba(220, 38, 38, 0.45);
+}
+
+.minecraft-theme .flashcard__mc-tip {
+  margin-top: 0.5rem;
 }
 
 .flashcard__mc-tip--peek {
@@ -1968,9 +2160,10 @@ body.minecraft-theme--only .app {
 
 .flashcard__mc-blurb {
   margin: 0;
-  font-size: 0.78rem;
-  line-height: 1.45;
+  font-size: 0.8rem;
+  line-height: 1.5;
   color: var(--muted);
+  text-align: left;
 }
 
 .flashcard__mc-wiki {

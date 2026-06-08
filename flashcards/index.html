@@ -102,6 +102,31 @@
           <option value="only">⛏️ MC only</option>
         </select>
       </div>
+      <div
+        class="control-bar__field control-bar__field--mc-kids"
+        id="mc-kids-blurb-field"
+        hidden
+      >
+        <span class="control-bar__label" id="mc-kids-blurb-label">MC tips</span>
+        <label class="cycle-maze-toggle control-bar__phonetics-toggle">
+          <input
+            type="checkbox"
+            id="mc-kids-blurb-toggle"
+            class="cycle-maze-toggle__input sr-only"
+            role="switch"
+            checked
+            autocomplete="off"
+            aria-checked="true"
+            aria-labelledby="mc-kids-blurb-label"
+            aria-describedby="mc-kids-blurb-hint"
+          />
+          <span class="cycle-maze-toggle__track" aria-hidden="true"></span>
+          <span class="cycle-maze-toggle__text">Simple</span>
+        </label>
+        <span id="mc-kids-blurb-hint" class="sr-only">
+          When on, Minecraft word tips use short, easy sentences for ages 4 to 10. When off, show the longer description.
+        </span>
+      </div>
       <div class="control-bar__field control-bar__field--phonetics">
         <span class="control-bar__label" id="phonetic-marks-label">Sounds</span>
         <label class="cycle-maze-toggle control-bar__phonetics-toggle">
@@ -137,10 +162,10 @@
             aria-describedby="word-emoji-hint"
           />
           <span class="cycle-maze-toggle__track" aria-hidden="true"></span>
-          <span class="cycle-maze-toggle__text">Emoji</span>
+          <span class="cycle-maze-toggle__text" id="word-emoji-toggle-text">On</span>
         </label>
         <span id="word-emoji-hint" class="sr-only">
-          When on, show the picture emoji above each word on the card and in word peek.
+          When on, show a picture above each word. In Minecraft mode, MC words use official wiki sprites instead of emoji.
         </span>
       </div>
       <div
@@ -247,7 +272,7 @@
                   checked
                   autocomplete="off"
                   aria-checked="true"
-                  aria-label="Show eat trail (chomper and suns)"
+                  aria-label="Show treat trail (Minecraft heroes and mobs on a 5 by 3 grid)"
                 />
                 <span class="cycle-maze-toggle__track" aria-hidden="true"></span>
                 <span class="cycle-maze-toggle__text">Trail</span>
@@ -257,7 +282,7 @@
               id="cycle-maze"
               class="cycle-maze"
               role="region"
-              aria-label="Chomper eats one sun per correct answer on a 5 by 3 trail. A full grid refills the trail."
+              aria-label="Minecraft trail: hero or mob eats treats on a 5 by 3 grid. A full grid refills the trail."
               hidden
             >
               <p class="cycle-maze__stats" id="cycle-maze-stats" aria-live="polite"></p>
@@ -303,6 +328,12 @@
             <span id="card-meta-line" class="flashcard__meta-line"></span>
           </p>
           <div id="card-mc-tip" class="flashcard__mc-tip" hidden>
+            <div
+              id="card-mc-stats"
+              class="flashcard__mc-stats"
+              aria-label="Minecraft labels"
+              hidden
+            ></div>
             <p id="card-mc-blurb" class="flashcard__mc-blurb"></p>
             <a
               id="card-mc-wiki"
@@ -428,6 +459,12 @@
           <span id="word-peek-meta-rate" class="word-rate-pill word-rate-pill--peek"></span>
         </div>
         <div id="word-peek-mc-tip" class="flashcard__mc-tip flashcard__mc-tip--peek" hidden>
+          <div
+            id="word-peek-mc-stats"
+            class="flashcard__mc-stats"
+            aria-label="Minecraft labels"
+            hidden
+          ></div>
           <p id="word-peek-mc-blurb" class="flashcard__mc-blurb"></p>
           <a
             id="word-peek-mc-wiki"
@@ -463,7 +500,7 @@
     </div>
   </div>
 
-  <script src="words-embed.js?v=689"></script>
-  <script src="app.js" defer></script>
+  <script src="words-embed.js?v=691"></script>
+  <script src="app.js?v=9" defer></script>
 </body>
 </html>

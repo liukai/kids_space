@@ -23,10 +23,12 @@ Pac-Man maze strip — optional PNGs (drop files next to this spec)
 Naming: use filenames above so the app can load them without config changes.
 Only chomper.png is loaded by the current build; add others when you extend sprites.
 
-5) trail-mascots.json (optional roster)
-   - Lists eater sprites in order. Each time the player finishes a full 5×3 (15) treat grid,
-     the app shows the next mascot (wraps to the first after the last).
-   - Shape: { "mascots": [ { "src": "assets/set-maze/chomper.png" }, … ] }
-   - src is relative to the flashcards page (same as chomper.png paths).
-   - If the file is missing or fetch fails (e.g. file://), built-in defaults apply.
-   - Drop new PNGs in this folder and add a line to mascots — no JS edit required.
+5) trail-mascots.json (Minecraft roster)
+   - Heroes (villager, wolf, allay, …) eat random minerals from heroMinerals each lap.
+   - Villains (creeper, zombie, …) eat their own loot list (TNT, arrows, etc.).
+   - Shape: { "heroMinerals": [ { "src": "https://…" } ], "mascots": [
+       { "name": "Villager", "kind": "hero", "src": "https://…" },
+       { "name": "Creeper", "kind": "villain", "src": "https://…", "loot": [ … ] }
+     ] }
+   - Wiki image URLs from tools/fetch_mc_wiki_images.py work well for src.
+   - Legacy PvZ PNGs in this folder are unused; safe to delete.
