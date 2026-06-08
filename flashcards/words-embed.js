@@ -1,4 +1,4 @@
-// Flashcard word list (source of truth). Edit tools/word_list_data.py, then:
+// 689 words (165 Minecraft). Edit tools/word_list_data.py, then:
 //   python3 flashcards/tools/build_words_embed.py
 //   python3 flashcards/tools/merge-pronunciations.py
 window.__FLASHCARD_WORDS__ = [

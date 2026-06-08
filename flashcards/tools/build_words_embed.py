@@ -10,11 +10,6 @@ from word_list_data import BASE_ROWS, PRON
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "words-embed.js"
-BANNER = (
-    "// Flashcard word list (source of truth). Edit tools/word_list_data.py, then:\n"
-    "//   python3 flashcards/tools/build_words_embed.py\n"
-    "//   python3 flashcards/tools/merge-pronunciations.py\n"
-)
 
 
 def main() -> None:
@@ -31,7 +26,14 @@ def main() -> None:
             r.setdefault("respelling", "")
         data.append(r)
 
-    lines = [BANNER + "window.__FLASHCARD_WORDS__ = [\n"]
+    mc_count = sum(1 for row in data if row.get("type") == "minecraft")
+    banner = (
+        f"// {len(data)} words ({mc_count} Minecraft). "
+        "Edit tools/word_list_data.py, then:\n"
+        "//   python3 flashcards/tools/build_words_embed.py\n"
+        "//   python3 flashcards/tools/merge-pronunciations.py\n"
+    )
+    lines = [banner + "window.__FLASHCARD_WORDS__ = [\n"]
     for i, row in enumerate(data):
         tail = ",\n" if i < len(data) - 1 else "\n"
         lines.append("  " + json.dumps(row, ensure_ascii=False) + tail)

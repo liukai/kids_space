@@ -19,6 +19,13 @@ jobs:
           node --check flashcards/app.js
           node --check flashcards/words-embed.js
 
+      - name: Verify words-embed.js matches word_list_data.py
+        run: |
+          cp flashcards/words-embed.js /tmp/words-embed.js.bak
+          python3 flashcards/tools/build_words_embed.py
+          python3 flashcards/tools/merge-pronunciations.py
+          diff -q /tmp/words-embed.js.bak flashcards/words-embed.js
+
       - name: Verify required files exist
         run: |
           test -f times_table/index.html

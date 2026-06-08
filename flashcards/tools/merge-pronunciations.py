@@ -9,36 +9,37 @@ from word_list_data import PRON
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 EMBED = ROOT / "words-embed.js"
 
-BANNER = (
+FALLBACK_BANNER = (
     "// Flashcard word list (source of truth). Edit tools/word_list_data.py, then:\n"
     "//   python3 flashcards/tools/build_words_embed.py\n"
     "//   python3 flashcards/tools/merge-pronunciations.py\n"
 )
 
 
-def _read_embed_array(path: pathlib.Path) -> list:
+def _read_embed(path: pathlib.Path) -> tuple[str, list]:
     text = path.read_text(encoding="utf-8")
     marker = "window.__FLASHCARD_WORDS__ = "
     i = text.find(marker)
     if i == -1:
         raise ValueError(f"{path}: missing {marker!r}")
+    banner = text[:i]
     raw = text[i + len(marker) :].strip()
-    return json.loads(raw)
+    return banner, json.loads(raw)
 
 
-def _write_embed_array(path: pathlib.Path, data: list) -> None:
-    lines = [BANNER + "window.__FLASHCARD_WORDS__ = [\n"]
+def _write_embed_array(path: pathlib.Path, banner: str, data: list) -> None:
+    lines = [banner + "window.__FLASHCARD_WORDS__ = [\n"]
     for i, row in enumerate(data):
         tail = ",\n" if i < len(data) - 1 else "\n"
-        lines.append(
-            "  " + json.dumps(row, ensure_ascii=False) + tail
-        )
+        lines.append("  " + json.dumps(row, ensure_ascii=False) + tail)
     lines.append("]\n")
     path.write_text("".join(lines), encoding="utf-8")
 
 
 def main() -> None:
-    data = _read_embed_array(EMBED)
+    banner, data = _read_embed(EMBED)
+    if not banner.strip():
+        banner = FALLBACK_BANNER
     for row in data:
         w = row.get("word", "")
         if w in PRON:
@@ -48,7 +49,7 @@ def main() -> None:
         else:
             row.setdefault("ipa", "")
             row.setdefault("respelling", "")
-    _write_embed_array(EMBED, data)
+    _write_embed_array(EMBED, banner, data)
     print("Updated", EMBED, "—", len(data), "rows")
 
 
