@@ -1,0 +1,292 @@
+{
+  "characters": [
+    {
+      "id": "steve",
+      "name": "Steve",
+      "kind": "hero",
+      "src": "https://minecraft.wiki/Special:FilePath/Steve_%28classic%29_JE2.png?width=128",
+      "living": true,
+      "wikiKey": "steve"
+    },
+    {
+      "id": "alex",
+      "name": "Alex",
+      "kind": "hero",
+      "src": "https://minecraft.wiki/Special:FilePath/Alex_%28slim%29_JE2.png?width=128",
+      "living": true,
+      "wikiKey": "alex"
+    },
+    {
+      "id": "villager",
+      "name": "Villager",
+      "kind": "hero",
+      "src": "https://minecraft.wiki/images/thumb/Plains_Villager_Base_JE2.png/128px-Plains_Villager_Base_JE2.png?a2fcc",
+      "living": true,
+      "wikiKey": "villager"
+    },
+    {
+      "id": "librarian",
+      "name": "Librarian",
+      "kind": "hero",
+      "src": "https://minecraft.wiki/Special:FilePath/Plains_Librarian_Base_JE2.png?width=128",
+      "living": true,
+      "wikiKey": "librarian"
+    },
+    {
+      "id": "farmer",
+      "name": "Farmer",
+      "kind": "hero",
+      "src": "https://minecraft.wiki/Special:FilePath/Plains_Farmer_Base_JE2.png?width=128",
+      "living": true,
+      "wikiKey": "farmer"
+    },
+    {
+      "id": "wandering-trader",
+      "name": "Wandering Trader",
+      "kind": "hero",
+      "src": "https://minecraft.wiki/Special:FilePath/Wandering_Trader_JE2.png?width=128",
+      "living": true,
+      "wikiKey": "wandering-trader"
+    },
+    {
+      "id": "wolf",
+      "name": "Wolf",
+      "kind": "hero",
+      "src": "https://minecraft.wiki/images/thumb/Wolf_JE2_BE2.png/128px-Wolf_JE2_BE2.png?ee46e",
+      "living": true,
+      "wikiKey": "wolf"
+    },
+    {
+      "id": "cat",
+      "name": "Cat",
+      "kind": "hero",
+      "src": "https://minecraft.wiki/Special:FilePath/Tuxedo_Cat_JE2_BE2.png?width=128",
+      "living": true,
+      "wikiKey": "cat"
+    },
+    {
+      "id": "horse",
+      "name": "Horse",
+      "kind": "hero",
+      "src": "https://minecraft.wiki/Special:FilePath/Chestnut_Horse_JE3_BE2.png?width=128",
+      "living": true,
+      "wikiKey": "horse"
+    },
+    {
+      "id": "bee",
+      "name": "Bee",
+      "kind": "hero",
+      "src": "https://minecraft.wiki/Special:FilePath/Bee_JE2_BE2.gif?width=128",
+      "living": true,
+      "wikiKey": "bee"
+    },
+    {
+      "id": "panda",
+      "name": "Panda",
+      "kind": "hero",
+      "src": "https://minecraft.wiki/Special:FilePath/Panda_JE2_BE2.png?width=128",
+      "living": true,
+      "wikiKey": "panda"
+    },
+    {
+      "id": "fox",
+      "name": "Fox",
+      "kind": "hero",
+      "src": "https://minecraft.wiki/Special:FilePath/Fox_JE2_BE2.png?width=128",
+      "living": true,
+      "wikiKey": "fox"
+    },
+    {
+      "id": "dolphin",
+      "name": "Dolphin",
+      "kind": "hero",
+      "src": "https://minecraft.wiki/images/thumb/Dolphin.gif/128px-Dolphin.gif?2581a",
+      "living": true,
+      "wikiKey": "dolphin"
+    },
+    {
+      "id": "allay",
+      "name": "Allay",
+      "kind": "hero",
+      "src": "https://minecraft.wiki/images/thumb/Allay_JE2_BE2.gif/128px-Allay_JE2_BE2.gif?aca63",
+      "living": true,
+      "wikiKey": "allay"
+    },
+    {
+      "id": "axolotl",
+      "name": "Axolotl",
+      "kind": "hero",
+      "src": "https://minecraft.wiki/images/thumb/Axolotl_Idle_Floor_Underwater.gif/128px-Axolotl_Idle_Floor_Underwater.gif?20bba",
+      "living": true,
+      "wikiKey": "axolotl"
+    },
+    {
+      "id": "sniffer",
+      "name": "Sniffer",
+      "kind": "hero",
+      "src": "https://minecraft.wiki/images/thumb/Sniffer_sniffsniff.gif/128px-Sniffer_sniffsniff.gif?36ccd",
+      "living": true,
+      "wikiKey": "sniffer"
+    },
+    {
+      "id": "pig",
+      "name": "Pig",
+      "kind": "hero",
+      "src": "https://minecraft.wiki/Special:FilePath/Temperate_Pig_JE3_BE2.png?width=128",
+      "living": true,
+      "wikiKey": "pig"
+    },
+    {
+      "id": "cow",
+      "name": "Cow",
+      "kind": "hero",
+      "src": "https://minecraft.wiki/Special:FilePath/Cow_JE5_BE3.png?width=128",
+      "living": true,
+      "wikiKey": "cow"
+    },
+    {
+      "id": "sheep",
+      "name": "Sheep",
+      "kind": "hero",
+      "src": "https://minecraft.wiki/Special:FilePath/Sheep_JE4_BE3.png?width=128",
+      "living": true,
+      "wikiKey": "sheep"
+    },
+    {
+      "id": "chicken",
+      "name": "Chicken",
+      "kind": "hero",
+      "src": "https://minecraft.wiki/images/thumb/Chicken_JE2_BE2.png/128px-Chicken_JE2_BE2.png?30245",
+      "living": true,
+      "wikiKey": "chicken"
+    },
+    {
+      "id": "creeper",
+      "name": "Creeper",
+      "kind": "villain",
+      "src": "https://minecraft.wiki/images/thumb/Creeper_JE3_BE1.png/128px-Creeper_JE3_BE1.png?dc7b2",
+      "living": true,
+      "wikiKey": "creeper"
+    },
+    {
+      "id": "zombie",
+      "name": "Zombie",
+      "kind": "villain",
+      "src": "https://minecraft.wiki/images/thumb/Zombie_JE3_BE2.png/128px-Zombie_JE3_BE2.png?c5423",
+      "living": true,
+      "wikiKey": "zombie"
+    },
+    {
+      "id": "skeleton",
+      "name": "Skeleton",
+      "kind": "villain",
+      "src": "https://minecraft.wiki/images/thumb/Lefthandedskeleton.png/128px-Lefthandedskeleton.png?2221f",
+      "living": true,
+      "wikiKey": "skeleton"
+    },
+    {
+      "id": "spider",
+      "name": "Spider",
+      "kind": "villain",
+      "src": "https://minecraft.wiki/images/thumb/Spider_JE5_BE4.png/128px-Spider_JE5_BE4.png?b090e",
+      "living": true,
+      "wikiKey": "spider"
+    },
+    {
+      "id": "cave-spider",
+      "name": "Cave Spider",
+      "kind": "villain",
+      "src": "https://minecraft.wiki/Special:FilePath/Cave_Spider_JE2_BE2.png?width=128",
+      "living": true,
+      "wikiKey": "cave-spider"
+    },
+    {
+      "id": "enderman",
+      "name": "Enderman",
+      "kind": "villain",
+      "src": "https://minecraft.wiki/images/thumb/Enderman_JE3.png/128px-Enderman_JE3.png?c6308",
+      "living": true,
+      "wikiKey": "enderman"
+    },
+    {
+      "id": "witch",
+      "name": "Witch",
+      "kind": "villain",
+      "src": "https://minecraft.wiki/Special:FilePath/Witch_JE2.png?width=128",
+      "living": true,
+      "wikiKey": "witch"
+    },
+    {
+      "id": "piglin",
+      "name": "Piglin",
+      "kind": "villain",
+      "src": "https://minecraft.wiki/images/thumb/Piglin_JE1.png/128px-Piglin_JE1.png?a498e",
+      "living": true,
+      "wikiKey": "piglin"
+    },
+    {
+      "id": "zombified-piglin",
+      "name": "Zombified Piglin",
+      "kind": "villain",
+      "src": "https://minecraft.wiki/Special:FilePath/Zombified_Piglin_JE2_BE2.png?width=128",
+      "living": true,
+      "wikiKey": "zombified-piglin"
+    },
+    {
+      "id": "ghast",
+      "name": "Ghast",
+      "kind": "villain",
+      "src": "https://minecraft.wiki/images/thumb/Ghast_JE3_BE3.gif/128px-Ghast_JE3_BE3.gif?ae9fb",
+      "living": true,
+      "wikiKey": "ghast"
+    },
+    {
+      "id": "blaze",
+      "name": "Blaze",
+      "kind": "villain",
+      "src": "https://minecraft.wiki/images/thumb/Blaze_JE2.gif/128px-Blaze_JE2.gif?29f6f",
+      "living": true,
+      "wikiKey": "blaze"
+    },
+    {
+      "id": "slime",
+      "name": "Slime",
+      "kind": "villain",
+      "src": "https://minecraft.wiki/images/thumb/Slime_JE3_BE2.png/128px-Slime_JE3_BE2.png?5b6a7",
+      "living": true,
+      "wikiKey": "slime"
+    },
+    {
+      "id": "magma-cube",
+      "name": "Magma Cube",
+      "kind": "villain",
+      "src": "https://minecraft.wiki/Special:FilePath/Magma_Cube_JE2_BE2.png?width=128",
+      "living": true,
+      "wikiKey": "magma-cube"
+    },
+    {
+      "id": "phantom",
+      "name": "Phantom",
+      "kind": "villain",
+      "src": "https://minecraft.wiki/images/thumb/Phantom_JE2.gif/128px-Phantom_JE2.gif?ed906",
+      "living": true,
+      "wikiKey": "phantom"
+    },
+    {
+      "id": "drowned",
+      "name": "Drowned",
+      "kind": "villain",
+      "src": "https://minecraft.wiki/images/thumb/Drowned_JE2.png/128px-Drowned_JE2.png?408ba",
+      "living": true,
+      "wikiKey": "drowned"
+    },
+    {
+      "id": "warden",
+      "name": "Warden",
+      "kind": "villain",
+      "src": "https://minecraft.wiki/images/thumb/Warden.gif/128px-Warden.gif?d0f99",
+      "living": true,
+      "wikiKey": "warden"
+    }
+  ]
+}

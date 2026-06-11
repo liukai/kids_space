@@ -7,6 +7,7 @@ No installers, no “please ask a grown-up to type their Apple ID.” Just HTML,
 
 | Game | Vibe | Open it |
 |------|------|---------|
+| [**Reward Overworld**](rewards/index.html) | Minecraft star board: tap a player (Steve, Creeper, etc.), log good/oops points with reasons, see today/week/trends. Browser-only storage. | [`rewards/index.html`](rewards/index.html) |
 | [**Word flashcards**](flashcards/index.html) | Backyard words & quiz energy: hear a word, pick gaps, or spell the whole thing. A **5×3 treat trail** feeds rotating plant pals—suns (or brains 🧠) fly in on clean answers, checkmarks stay put, mascots get bigger. IPA when you want it. | [`flashcards/index.html`](flashcards/index.html) |
 | [**Typing practice**](typing_practice/index.html) | Retro-terminal typing: letters → words → sentences → quiz. Optional English + 中文 speech and chunky key sounds. | [`typing_practice/index.html`](typing_practice/index.html) |
 | [**Times table**](times_table/index.html) | Multiplication from **1×1** through **9×9**: trophies, themes, optional 九九 rhymes, progress saved in the browser. | [`times_table/index.html`](times_table/index.html) |
@@ -58,6 +59,7 @@ cd times_table && python3 -m http.server 8080
 kids_space/
 ├── index.html            # Lobby (Pages entry)
 ├── README.md             # You are here
+├── rewards/              # MC-themed star / behavior board
 ├── flashcards/           # Word cards, quiz, treat trail, IPA
 ├── typing_practice/
 ├── times_table/

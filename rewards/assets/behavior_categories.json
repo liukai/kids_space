@@ -1,0 +1,108 @@
+{
+  "pairs": [
+    {
+      "id": "kindness",
+      "good": {
+        "id": "kind_heart",
+        "label": "Kind Heart",
+        "wikiKey": "honey"
+      },
+      "bad": {
+        "id": "mean_words",
+        "label": "Mean Words",
+        "wikiKey": "tnt"
+      }
+    },
+    {
+      "id": "listening",
+      "good": {
+        "id": "listening_ears",
+        "label": "Listening Ears",
+        "wikiKey": "sniffer"
+      },
+      "bad": {
+        "id": "not_listening",
+        "label": "Not Listening",
+        "wikiKey": "dispenser"
+      }
+    },
+    {
+      "id": "helping",
+      "good": {
+        "id": "helping_hands",
+        "label": "Helping Hands",
+        "wikiKey": "allay"
+      },
+      "bad": {
+        "id": "not_helping",
+        "label": "Not Helping",
+        "wikiKey": "hopper"
+      }
+    },
+    {
+      "id": "trying",
+      "good": {
+        "id": "brave_tryer",
+        "label": "Brave Tryer",
+        "wikiKey": "pickaxe"
+      },
+      "bad": {
+        "id": "giving_up_soon",
+        "label": "Giving Up Too Soon",
+        "wikiKey": "sand"
+      }
+    },
+    {
+      "id": "creative",
+      "good": {
+        "id": "creative_mind",
+        "label": "Creative Mind",
+        "wikiKey": "creative"
+      },
+      "bad": {
+        "id": "just_copying",
+        "label": "Just Copying",
+        "wikiKey": "repeater"
+      }
+    },
+    {
+      "id": "effort",
+      "good": {
+        "id": "do_hard_things",
+        "label": "Do Hard Things",
+        "wikiKey": "anvil"
+      },
+      "bad": {
+        "id": "dont_try_hard",
+        "label": "Don't Try Hard",
+        "wikiKey": "dirt"
+      }
+    },
+    {
+      "id": "sharing",
+      "good": {
+        "id": "sharing_heart",
+        "label": "Sharing Heart",
+        "wikiKey": "chest"
+      },
+      "bad": {
+        "id": "not_sharing",
+        "label": "Not Sharing",
+        "wikiKey": "bedrock"
+      }
+    },
+    {
+      "id": "cleanup",
+      "good": {
+        "id": "clean_up_star",
+        "label": "Clean-Up Star",
+        "wikiKey": "sponge"
+      },
+      "bad": {
+        "id": "leaving_mess",
+        "label": "Leaving a Mess",
+        "wikiKey": "slime"
+      }
+    }
+  ]
+}
