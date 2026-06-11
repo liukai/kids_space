@@ -1,0 +1,1 @@
+window.REWARD_WIKI_GIF_URLS={};

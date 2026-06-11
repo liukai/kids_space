@@ -78,7 +78,7 @@ def ext_for_url(url: str) -> str:
     if path.endswith(".gif"):
         return ".gif"
     if path.endswith(".webp"):
-        return ".webp"
+        return ".png"
     return ".png"
 
 
@@ -89,12 +89,9 @@ def download(url: str, dest: Path) -> None:
         dest.write_bytes(resp.read())
 
 
-def wiki_filepath_url(filename: str) -> str:
-    return (
-        "https://minecraft.wiki/Special:FilePath/"
-        + urllib.parse.quote(filename)
-        + "?width=128"
-    )
+def wiki_thumb_url(filename: str, size: int = 128) -> str:
+    seg = urllib.parse.quote(filename.replace(" ", "_"), safe="")
+    return f"https://minecraft.wiki/images/thumb/{seg}/{size}px-{seg}"
 
 
 def resolve_url(
@@ -105,9 +102,12 @@ def resolve_url(
     api_cache: dict[str, str | None],
 ) -> str | None:
     if key in wiki_images:
-        return wiki_images[key]
+        url = wiki_images[key]
+        if ".webp" in url.lower():
+            return url.replace(".webp", ".png")
+        return url
     if key in extra_files:
-        return wiki_filepath_url(extra_files[key])
+        return wiki_thumb_url(extra_files[key])
     page = CHAR_PAGES.get(key, label)
     if page not in api_cache:
         fetched = api_thumbnails([page])
@@ -165,7 +165,7 @@ def patch_entry(
     download_url = url
     extra_name = EXTRA_FILES.get(wiki_key) or EXTRA_FILES.get(entry_id)
     if extra_name:
-        download_url = wiki_filepath_url(extra_name)
+        download_url = wiki_thumb_url(extra_name)
 
     ext = ext_for_url(download_url)
     extra_name = EXTRA_FILES.get(wiki_key) or EXTRA_FILES.get(entry_id)

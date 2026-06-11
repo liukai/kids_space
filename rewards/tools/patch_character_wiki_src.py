@@ -37,19 +37,17 @@ EXTRA_FILES = {
 }
 
 
-def wiki_filepath_url(filename: str) -> str:
-    return (
-        "https://minecraft.wiki/Special:FilePath/"
-        + urllib.parse.quote(filename)
-        + "?width=128"
-    )
+def wiki_thumb_url(filename: str, size: int = 128) -> str:
+    seg = urllib.parse.quote(filename.replace(" ", "_"), safe="")
+    return f"https://minecraft.wiki/images/thumb/{seg}/{size}px-{seg}"
 
 
 def resolve_url(char_id: str, wiki_images: dict[str, str]) -> str | None:
     if char_id in wiki_images:
-        return wiki_images[char_id]
+        url = wiki_images[char_id]
+        return url
     if char_id in EXTRA_FILES:
-        return wiki_filepath_url(EXTRA_FILES[char_id])
+        return wiki_thumb_url(EXTRA_FILES[char_id])
     return None
 
 

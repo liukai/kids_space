@@ -4,7 +4,7 @@
       "id": "steve",
       "name": "Steve",
       "kind": "hero",
-      "src": "https://minecraft.wiki/Special:FilePath/Steve_%28classic%29_JE2.png?width=128",
+      "src": "https://minecraft.wiki/images/thumb/Steve_%28classic%29_JE2.png/128px-Steve_%28classic%29_JE2.png?790ea",
       "living": true,
       "wikiKey": "steve"
     },
@@ -12,7 +12,7 @@
       "id": "alex",
       "name": "Alex",
       "kind": "hero",
-      "src": "https://minecraft.wiki/Special:FilePath/Alex_%28slim%29_JE2.png?width=128",
+      "src": "https://minecraft.wiki/images/thumb/Alex_%28slim%29_JE2.png/128px-Alex_%28slim%29_JE2.png?f1c0e",
       "living": true,
       "wikiKey": "alex"
     },
@@ -28,7 +28,7 @@
       "id": "librarian",
       "name": "Librarian",
       "kind": "hero",
-      "src": "https://minecraft.wiki/Special:FilePath/Plains_Librarian_Base_JE2.png?width=128",
+      "src": "https://minecraft.wiki/images/thumb/Plains_Librarian_Base_JE2.png/128px-Plains_Librarian_Base_JE2.png",
       "living": true,
       "wikiKey": "librarian"
     },
@@ -36,7 +36,7 @@
       "id": "farmer",
       "name": "Farmer",
       "kind": "hero",
-      "src": "https://minecraft.wiki/Special:FilePath/Plains_Farmer_Base_JE2.png?width=128",
+      "src": "https://minecraft.wiki/images/thumb/Plains_Farmer_Base_JE2.png/128px-Plains_Farmer_Base_JE2.png",
       "living": true,
       "wikiKey": "farmer"
     },
@@ -44,7 +44,7 @@
       "id": "wandering-trader",
       "name": "Wandering Trader",
       "kind": "hero",
-      "src": "https://minecraft.wiki/Special:FilePath/Wandering_Trader_JE2.png?width=128",
+      "src": "https://minecraft.wiki/images/thumb/Wandering_Trader_JE2.png/128px-Wandering_Trader_JE2.png",
       "living": true,
       "wikiKey": "wandering-trader"
     },
@@ -60,7 +60,7 @@
       "id": "cat",
       "name": "Cat",
       "kind": "hero",
-      "src": "https://minecraft.wiki/Special:FilePath/Tuxedo_Cat_JE2_BE2.png?width=128",
+      "src": "https://minecraft.wiki/images/thumb/Tuxedo_Cat_JE2_BE2.png/128px-Tuxedo_Cat_JE2_BE2.png",
       "living": true,
       "wikiKey": "cat"
     },
@@ -68,7 +68,7 @@
       "id": "horse",
       "name": "Horse",
       "kind": "hero",
-      "src": "https://minecraft.wiki/Special:FilePath/Chestnut_Horse_JE3_BE2.png?width=128",
+      "src": "https://minecraft.wiki/images/thumb/Chestnut_Horse_JE3_BE2.png/128px-Chestnut_Horse_JE3_BE2.png",
       "living": true,
       "wikiKey": "horse"
     },
@@ -76,7 +76,7 @@
       "id": "bee",
       "name": "Bee",
       "kind": "hero",
-      "src": "https://minecraft.wiki/Special:FilePath/Bee_JE2_BE2.gif?width=128",
+      "src": "https://minecraft.wiki/images/thumb/Bee_JE2_BE2.gif/128px-Bee_JE2_BE2.gif",
       "living": true,
       "wikiKey": "bee"
     },
@@ -84,7 +84,7 @@
       "id": "panda",
       "name": "Panda",
       "kind": "hero",
-      "src": "https://minecraft.wiki/Special:FilePath/Panda_JE2_BE2.png?width=128",
+      "src": "https://minecraft.wiki/images/thumb/Panda_JE2_BE2.png/128px-Panda_JE2_BE2.png",
       "living": true,
       "wikiKey": "panda"
     },
@@ -92,7 +92,7 @@
       "id": "fox",
       "name": "Fox",
       "kind": "hero",
-      "src": "https://minecraft.wiki/Special:FilePath/Fox_JE2_BE2.png?width=128",
+      "src": "https://minecraft.wiki/images/thumb/Fox_JE2_BE2.png/128px-Fox_JE2_BE2.png",
       "living": true,
       "wikiKey": "fox"
     },
@@ -132,7 +132,7 @@
       "id": "pig",
       "name": "Pig",
       "kind": "hero",
-      "src": "https://minecraft.wiki/Special:FilePath/Temperate_Pig_JE3_BE2.png?width=128",
+      "src": "https://minecraft.wiki/images/thumb/Temperate_Pig_JE3_BE2.png/128px-Temperate_Pig_JE3_BE2.png",
       "living": true,
       "wikiKey": "pig"
     },
@@ -140,7 +140,7 @@
       "id": "cow",
       "name": "Cow",
       "kind": "hero",
-      "src": "https://minecraft.wiki/Special:FilePath/Cow_JE5_BE3.png?width=128",
+      "src": "https://minecraft.wiki/images/thumb/Cow_JE5_BE3.png/128px-Cow_JE5_BE3.png",
       "living": true,
       "wikiKey": "cow"
     },
@@ -148,7 +148,7 @@
       "id": "sheep",
       "name": "Sheep",
       "kind": "hero",
-      "src": "https://minecraft.wiki/Special:FilePath/Sheep_JE4_BE3.png?width=128",
+      "src": "https://minecraft.wiki/images/thumb/Sheep_JE4_BE3.png/128px-Sheep_JE4_BE3.png",
       "living": true,
       "wikiKey": "sheep"
     },
@@ -196,7 +196,7 @@
       "id": "cave-spider",
       "name": "Cave Spider",
       "kind": "villain",
-      "src": "https://minecraft.wiki/Special:FilePath/Cave_Spider_JE2_BE2.png?width=128",
+      "src": "https://minecraft.wiki/images/thumb/Cave_Spider_JE2_BE2.png/128px-Cave_Spider_JE2_BE2.png",
       "living": true,
       "wikiKey": "cave-spider"
     },
@@ -212,7 +212,7 @@
       "id": "witch",
       "name": "Witch",
       "kind": "villain",
-      "src": "https://minecraft.wiki/Special:FilePath/Witch_JE2.png?width=128",
+      "src": "https://minecraft.wiki/images/thumb/Witch_JE2.png/128px-Witch_JE2.png",
       "living": true,
       "wikiKey": "witch"
     },
@@ -228,7 +228,7 @@
       "id": "zombified-piglin",
       "name": "Zombified Piglin",
       "kind": "villain",
-      "src": "https://minecraft.wiki/Special:FilePath/Zombified_Piglin_JE2_BE2.png?width=128",
+      "src": "https://minecraft.wiki/images/thumb/Zombified_Piglin_JE2_BE2.png/128px-Zombified_Piglin_JE2_BE2.png",
       "living": true,
       "wikiKey": "zombified-piglin"
     },
@@ -260,7 +260,7 @@
       "id": "magma-cube",
       "name": "Magma Cube",
       "kind": "villain",
-      "src": "https://minecraft.wiki/Special:FilePath/Magma_Cube_JE2_BE2.png?width=128",
+      "src": "https://minecraft.wiki/images/thumb/Magma_Cube_JE2_BE2.png/128px-Magma_Cube_JE2_BE2.png",
       "living": true,
       "wikiKey": "magma-cube"
     },

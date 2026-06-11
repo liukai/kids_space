@@ -5,10 +5,11 @@
 (function () {
   "use strict";
 
-  var LS_DATA = "reward_overworld_v1";
+  var LS_DATA = "reward_overworld_v2";
   var COOKIE_DATA = "reward_overworld_v1";
+  var SCHEMA_VERSION = 2;
   var MAX_PEOPLE = 12;
-  var MAX_EVENTS = 2000;
+  var MAX_LEDGER = 2000;
 
   var MC_ITEMS_LIKE = [];
   var MC_ITEMS_COMMON = [];
@@ -80,7 +81,7 @@
     BEHAVIOR_CATEGORY_PAIRS = nextPairs;
     BEHAVIOR_CATEGORIES = flat;
     rebuildCategoryIndex();
-    migrateEvents();
+    migrateLedgerCategories();
   }
 
   function loadBehaviorCategories() {
@@ -108,35 +109,40 @@
   var ITEM_SETUP_META = {
     like1: {
       label: "+1 reward · Common",
-      hint: "Everyday loot — dirt, coal, torches, chests, and starter blocks.",
+      hint: "Everyday blocks and goodies — pick your favorite!",
+      examples: ["dirt", "coal", "torch", "chest"],
       tier: "common",
       field: "like1",
       next: "like3",
     },
     like3: {
       label: "+3 reward · Rare",
-      hint: "Shinier finds — iron, gold, diamonds, redstone, even TNT!",
+      hint: "Shinier finds — iron, gold, diamonds, and more!",
+      examples: ["iron", "gold", "diamond", "emerald"],
       tier: "rare",
       field: "like3",
       next: "like5",
     },
     like5: {
       label: "+5 reward · Epic",
-      hint: "Legendary loot — netherite, beacons, enchanted gear, and big flex items.",
+      hint: "Legendary loot — the coolest flex items!",
+      examples: ["netherite", "beacon", "crystal", "enchantment"],
       tier: "epic",
       field: "like5",
       next: "dislike1",
     },
     dislike1: {
       label: "−1 oops · Yikes!",
-      hint: "Gross traps & creep-outs — slime, mushrooms, dispensers, observers, and nether junk.",
+      hint: "Gross traps and creep-outs — pick something icky!",
+      examples: ["slime", "mushroom", "dispenser", "gravel"],
       tier: "dislike_mild",
       field: "dislike1",
       next: "dislike3",
     },
     dislike3: {
       label: "−3 oops · BIG YIKES",
-      hint: "The scariest stuff — lava, TNT, sculk, the Warden, Wither, and bedrock!",
+      hint: "The scariest stuff — lava, TNT, and big boos!",
+      examples: ["lava", "tnt", "sculk", "warden"],
       tier: "dislike_severe",
       field: "dislike3",
       next: null,
@@ -182,9 +188,9 @@
   var charById = {};
 
   var state = {
-    version: 1,
+    version: SCHEMA_VERSION,
     people: [],
-    events: [],
+    ledger: [],
     dayNotes: [],
     settings: {
       filterPersonId: "all",
@@ -197,10 +203,10 @@
 
   var rewardContext = {
     personId: null,
-    step: "points",
-    pendingPoints: null,
-    pendingItemId: null,
-    pendingItemLabel: null,
+    step: "category",
+    pendingCategoryId: null,
+    pendingCategoryLabel: null,
+    pendingCategoryKind: null,
   };
 
   var playerModalDraft = {
@@ -282,6 +288,7 @@
   var elItemPickGrid = document.getElementById("item-pick-grid");
   var elItemPickStepLabel = document.getElementById("item-pick-step-label");
   var elItemPickStepHint = document.getElementById("item-pick-step-hint");
+  var elItemPickHintExamples = document.getElementById("item-pick-hint-examples");
   var elItemSetupProgress = document.getElementById("item-setup-progress");
   var elProfileSection = document.getElementById("player-profile-section");
   var elItemsWizard = document.getElementById("player-items-wizard");
@@ -293,6 +300,54 @@
   var elCharTabVillain = document.getElementById("char-tab-villain");
   var elAddSave = document.getElementById("add-player-save");
   var elToast = document.getElementById("toast");
+  var elImportModal = document.getElementById("import-modal");
+  var elImportBackdrop = document.getElementById("import-modal-backdrop");
+  var elImportTextarea = document.getElementById("import-textarea");
+  var elImportResult = document.getElementById("import-result");
+  var elImportCancel = document.getElementById("import-cancel");
+  var elImportMerge = document.getElementById("import-merge");
+  var elExportModal = document.getElementById("export-modal");
+  var elExportBackdrop = document.getElementById("export-modal-backdrop");
+  var elExportTextarea = document.getElementById("export-textarea");
+  var elExportResult = document.getElementById("export-result");
+  var elExportCopy = document.getElementById("export-copy");
+  var elExportDownload = document.getElementById("export-download");
+  var elExportDone = document.getElementById("export-done");
+  var exportDraft = { text: "", filename: "" };
+  var elCheatFx = document.getElementById("cheat-fx");
+  var elCheatHelpModal = document.getElementById("cheat-help-modal");
+  var elCheatHelpBackdrop = document.getElementById("cheat-help-backdrop");
+  var elCheatHelpClose = document.getElementById("cheat-help-close");
+  var elCheatList = document.getElementById("cheat-list");
+  var elCheatActions = document.getElementById("cheat-actions");
+  var elCheatLaunch = document.getElementById("cheat-launch");
+
+  var CHEAT_DEFS = [
+    {
+      code: "mine",
+      action: "mine",
+      label: "⛏️ Mine rain",
+      desc: "Shower of minerals and good loot raining from the sky!",
+    },
+    {
+      code: "craft",
+      action: "craft",
+      label: "⚔️ Craft battle",
+      desc: "Two random friends vs mob — they throw blocks until one goes BOOM!",
+    },
+    {
+      code: "?",
+      action: "help",
+      label: "❓ Cheat list",
+      desc: "Show this secret cheat list.",
+    },
+  ];
+
+  var cheatState = {
+    buffer: "",
+    lastAt: 0,
+    busy: false,
+  };
 
   function isHttpProto() {
     var p = location.protocol;
@@ -309,12 +364,128 @@
     );
   }
 
+  function wikiFilenamePathSegment(filename) {
+    return encodeURIComponent(String(filename).replace(/ /g, "_"));
+  }
+
+  function wikiThumbUrlFromFilename(filename, size) {
+    var file = String(filename || "").trim();
+    if (!file) return "";
+    var px = size || 128;
+    var seg = wikiFilenamePathSegment(file);
+    return "https://minecraft.wiki/images/thumb/" + seg + "/" + px + "px-" + seg;
+  }
+
+  function wikiThumbCandidatesFromFilename(filename, size) {
+    var file = String(filename || "").trim();
+    if (!file) return [];
+    var px = size || 128;
+    var seg = wikiFilenamePathSegment(file);
+    var base = "https://minecraft.wiki/images/thumb/" + seg + "/" + px + "px-";
+    var out = [base + seg];
+    if (/\.(png|gif|jpe?g)$/i.test(file)) {
+      var webpName = file.replace(/\.(png|gif|jpe?g)$/i, ".webp");
+      out.push(base + wikiFilenamePathSegment(webpName));
+    } else if (/\.webp$/i.test(file)) {
+      var pngName = file.replace(/\.webp$/i, ".png");
+      out.push(base + wikiFilenamePathSegment(pngName));
+    }
+    return out;
+  }
+
   function wikiFilePathUrl(filename) {
-    return (
-      "https://minecraft.wiki/Special:FilePath/" +
-      encodeURIComponent(filename) +
-      "?width=128"
+    return wikiThumbUrlFromFilename(filename, 128);
+  }
+
+  function wikiThumbUrlFromSpecialPath(url) {
+    var m = String(url || "").match(/Special:FilePath\/([^?#]+)/i);
+    if (!m) return "";
+    try {
+      return wikiThumbUrlFromFilename(decodeURIComponent(m[1]), 128);
+    } catch (e) {
+      return "";
+    }
+  }
+
+  function isWebpImageUrl(url) {
+    return /\.webp(\?|$)/i.test(String(url || ""));
+  }
+
+  function isGifImageUrl(url) {
+    return /\.gif(\?|$)/i.test(String(url || ""));
+  }
+
+  function sortCandidatesGifFirst(list) {
+    var gifs = [];
+    var rest = [];
+    var i;
+    for (i = 0; i < list.length; i++) {
+      if (isGifImageUrl(list[i])) gifs.push(list[i]);
+      else rest.push(list[i]);
+    }
+    return gifs.concat(rest);
+  }
+
+  function imageUrlVariants(url) {
+    var u = String(url || "").trim();
+    if (!u) return [];
+    var out = [];
+    var seen = {};
+    function add(candidate) {
+      var c = String(candidate || "").trim();
+      if (!c || seen[c]) return;
+      seen[c] = true;
+      out.push(c);
+    }
+    function addWithSwaps(candidate) {
+      if (!candidate || !/\/thumb\//i.test(candidate)) {
+        add(candidate);
+        return;
+      }
+      if (/\.png(\?|$)/i.test(candidate)) {
+        add(swapThumbExtension(candidate, "gif"));
+      }
+      add(candidate);
+      if (!/\.gif(\?|$)/i.test(candidate)) {
+        add(swapThumbExtension(candidate, "gif"));
+      }
+      add(swapThumbExtension(candidate, "webp"));
+      if (!/\.png(\?|$)/i.test(candidate)) {
+        add(swapThumbExtension(candidate, "png"));
+      }
+    }
+    var thumbFromSpecial = wikiThumbUrlFromSpecialPath(u);
+    if (thumbFromSpecial) addWithSwaps(thumbFromSpecial);
+    addWithSwaps(u);
+    if (isWebpImageUrl(u)) {
+      add(u.replace(/\.webp(\?[^#]*)?/i, ".png$1"));
+      add(u.replace(/\.webp(\?[^#]*)?/i, ".gif$1"));
+    }
+    return out;
+  }
+
+  function swapThumbExtension(url, ext) {
+    var target = String(ext || "png").toLowerCase();
+    return String(url || "").replace(
+      /(\/[^/?#]+?)\.(webp|png|gif|jpe?g)(\?[^#]*)?(#.*)?$/i,
+      function (_all, base, _oldExt, query, hash) {
+        return base + "." + target + (query || "") + (hash || "");
+      }
     );
+  }
+
+  function expandFailedImageUrl(url) {
+    var variants = imageUrlVariants(url);
+    var i;
+    var out = [];
+    var seen = {};
+    for (i = 0; i < variants.length; i++) {
+      if (variants[i] && !seen[variants[i]]) {
+        seen[variants[i]] = true;
+        out.push(variants[i]);
+      }
+    }
+    return out;
   }
 
   function resolveWikiThumb(wikiKey) {
@@ -324,25 +495,417 @@
       return window.REWARD_WIKI_IMAGES[key];
     }
     if (window.REWARD_EXTRA_WIKI_FILES && window.REWARD_EXTRA_WIKI_FILES[key]) {
-      return wikiFilePathUrl(window.REWARD_EXTRA_WIKI_FILES[key]);
+      return wikiThumbUrlFromFilename(window.REWARD_EXTRA_WIKI_FILES[key], 128);
     }
     return "";
   }
 
+  function resolveWikiThumbCandidates(wikiKey) {
+    var key = String(wikiKey || "").trim();
+    var out = [];
+    var seen = {};
+    var i;
+    var j;
+    var built;
+    function add(url) {
+      var variants = imageUrlVariants(url);
+      for (i = 0; i < variants.length; i++) {
+        if (variants[i] && !seen[variants[i]]) {
+          seen[variants[i]] = true;
+          out.push(variants[i]);
+        }
+      }
+    }
+    if (typeof mcWikiGifCache[key] === "string") {
+      add(mcWikiGifCache[key]);
+    }
+    if (window.REWARD_WIKI_GIF_URLS && window.REWARD_WIKI_GIF_URLS[key]) {
+      add(window.REWARD_WIKI_GIF_URLS[key]);
+    }
+    if (window.REWARD_WIKI_GIF_FILES && window.REWARD_WIKI_GIF_FILES[key]) {
+      var gifNames = window.REWARD_WIKI_GIF_FILES[key];
+      if (typeof gifNames === "string") gifNames = [gifNames];
+      for (i = 0; i < gifNames.length; i++) {
+        built = wikiThumbCandidatesFromFilename(gifNames[i], 128);
+        for (j = 0; j < built.length; j++) {
+          add(built[j]);
+        }
+      }
+    }
+    if (window.REWARD_WIKI_IMAGES && window.REWARD_WIKI_IMAGES[key]) {
+      add(window.REWARD_WIKI_IMAGES[key]);
+    }
+    if (window.REWARD_EXTRA_WIKI_FILES && window.REWARD_EXTRA_WIKI_FILES[key]) {
+      built = wikiThumbCandidatesFromFilename(
+        window.REWARD_EXTRA_WIKI_FILES[key],
+        128
+      );
+      for (i = 0; i < built.length; i++) {
+        add(built[i]);
+      }
+    }
+    if (window.REWARD_ALT_WIKI_FILES && window.REWARD_ALT_WIKI_FILES[key]) {
+      var altNames = window.REWARD_ALT_WIKI_FILES[key];
+      if (typeof altNames === "string") altNames = [altNames];
+      for (i = 0; i < altNames.length; i++) {
+        built = wikiThumbCandidatesFromFilename(altNames[i], 128);
+        for (j = 0; j < built.length; j++) {
+          add(built[j]);
+        }
+      }
+    }
+    return sortCandidatesGifFirst(out);
+  }
+
+  var mcWikiThumbCache = Object.create(null);
+  var mcWikiGifCache = Object.create(null);
+  var MC_WIKI_QUERY_API =
+    "https://minecraft.wiki/api.php?action=query&format=json&formatversion=2&origin=*&";
+  var MC_WIKI_IMG_API =
+    MC_WIKI_QUERY_API + "prop=pageimages&pithumbsize=128&titles=";
+
+  function wikiThumbFromApiPayload(data) {
+    var pages = data && data.query && data.query.pages;
+    var keys;
+    var i;
+    if (!pages) return null;
+    if (Array.isArray(pages)) {
+      for (i = 0; i < pages.length; i++) {
+        if (pages[i] && pages[i].thumbnail && pages[i].thumbnail.source) {
+          return pages[i].thumbnail.source;
+        }
+      }
+      return null;
+    }
+    keys = Object.keys(pages);
+    for (i = 0; i < keys.length; i++) {
+      if (
+        pages[keys[i]] &&
+        pages[keys[i]].thumbnail &&
+        pages[keys[i]].thumbnail.source
+      ) {
+        return pages[keys[i]].thumbnail.source;
+      }
+    }
+    return null;
+  }
+
+  function fetchMcWikiThumbJsonp(pageTitle, done) {
+    var key = String(pageTitle != null ? pageTitle : "").trim();
+    if (!key) {
+      done(null);
+      return;
+    }
+    if (mcWikiThumbCache[key] === false) {
+      done(null);
+      return;
+    }
+    if (typeof mcWikiThumbCache[key] === "string") {
+      done(mcWikiThumbCache[key]);
+      return;
+    }
+    var cb =
+      "rewardWikiThumbCb_" +
+      String(Date.now()) +
+      "_" +
+      Math.floor(Math.random() * 1e6);
+    var url =
+      MC_WIKI_IMG_API + encodeURIComponent(key) + "&callback=" + encodeURIComponent(cb);
+    var script = document.createElement("script");
+    var finished = false;
+    function finish(thumb) {
+      if (finished) return;
+      finished = true;
+      try {
+        delete window[cb];
+      } catch (e1) {
+        window[cb] = undefined;
+      }
+      if (script.parentNode) script.parentNode.removeChild(script);
+      mcWikiThumbCache[key] = thumb || false;
+      done(thumb);
+    }
+    window[cb] = function (data) {
+      finish(wikiThumbFromApiPayload(data));
+    };
+    script.src = url;
+    script.onerror = function () {
+      finish(null);
+    };
+    document.head.appendChild(script);
+    window.setTimeout(function () {
+      finish(null);
+    }, 12000);
+  }
+
+  function scoreWikiGifFilename(name, pageTitle) {
+    var n = String(name || "").toLowerCase();
+    var p = String(pageTitle || "").toLowerCase().replace(/\s+/g, "");
+    if (!/\.gif$/i.test(n)) return -999;
+    if (/icon|gui|inventory|screenshot|preview|chunk|render_|pixel|multiplayer|dedicated|disambig|unused|texture sheet/i.test(n)) {
+      return -999;
+    }
+    var score = 0;
+    if (p && n.replace(/_/g, "").indexOf(p) >= 0) score += 50;
+    String(pageTitle || "")
+      .toLowerCase()
+      .split(/\s+/)
+      .forEach(function (part) {
+        if (part && n.indexOf(part) >= 0) score += 15;
+      });
+    if (/je\d|be\d/i.test(n)) score += 8;
+    if (/idle|walk|sniff|ambient|swim/i.test(n)) score += 5;
+    score -= n.length * 0.02;
+    return score;
+  }
+
+  function wikiGifThumbFromImageinfo(data) {
+    var pages = data && data.query && data.query.pages;
+    var keys;
+    var i;
+    var info;
+    if (!pages) return null;
+    if (Array.isArray(pages)) {
+      for (i = 0; i < pages.length; i++) {
+        info = pages[i] && pages[i].imageinfo && pages[i].imageinfo[0];
+        if (info && info.thumburl && /\.gif/i.test(info.thumburl)) {
+          return info.thumburl;
+        }
+      }
+      return null;
+    }
+    keys = Object.keys(pages);
+    for (i = 0; i < keys.length; i++) {
+      info = pages[keys[i]] && pages[keys[i]].imageinfo && pages[keys[i]].imageinfo[0];
+      if (info && info.thumburl && /\.gif/i.test(info.thumburl)) {
+        return info.thumburl;
+      }
+    }
+    return null;
+  }
+
+  function fetchMcWikiGifJsonp(pageTitle, wikiKey, done) {
+    var page = String(pageTitle != null ? pageTitle : "").trim();
+    var key = String(wikiKey != null ? wikiKey : page).trim();
+    if (!page) {
+      done(null);
+      return;
+    }
+    if (mcWikiGifCache[key] === false) {
+      done(null);
+      return;
+    }
+    if (typeof mcWikiGifCache[key] === "string") {
+      done(mcWikiGifCache[key]);
+      return;
+    }
+    var cbList =
+      "rewardWikiGifListCb_" +
+      String(Date.now()) +
+      "_" +
+      Math.floor(Math.random() * 1e6);
+    var listUrl =
+      MC_WIKI_QUERY_API +
+      "prop=images&titles=" +
+      encodeURIComponent(page) +
+      "&callback=" +
+      encodeURIComponent(cbList);
+    var listScript = document.createElement("script");
+    var finished = false;
+    var listTimer;
+    var infoTimer;
+    function finish(url) {
+      if (finished) return;
+      finished = true;
+      if (listTimer) window.clearTimeout(listTimer);
+      if (infoTimer) window.clearTimeout(infoTimer);
+      try {
+        delete window[cbList];
+      } catch (e1) {
+        window[cbList] = undefined;
+      }
+      if (listScript.parentNode) listScript.parentNode.removeChild(listScript);
+      mcWikiGifCache[key] = url || false;
+      done(url);
+    }
+    window[cbList] = function (data) {
+      var pages = data && data.query && data.query.pages;
+      var gifs = [];
+      var i;
+      var ranked;
+      var pick;
+      if (!pages || !pages[0] || !pages[0].images) {
+        finish(null);
+        return;
+      }
+      for (i = 0; i < pages[0].images.length; i++) {
+        var title = String(pages[0].images[i].title || "").replace(/^File:/i, "");
+        if (/\.gif$/i.test(title)) gifs.push(title);
+      }
+      if (!gifs.length) {
+        finish(null);
+        return;
+      }
+      ranked = gifs
+        .map(function (name) {
+          return { name: name, score: scoreWikiGifFilename(name, page) };
+        })
+        .filter(function (row) {
+          return row.score >= 0;
+        })
+        .sort(function (a, b) {
+          return b.score - a.score;
+        });
+      if (!ranked.length) ranked = gifs.map(function (name) { return { name: name, score: 0 }; });
+      pick = ranked[0].name;
+      var infoScript = document.createElement("script");
+      var cbInfo =
+        "rewardWikiGifInfoCb_" +
+        String(Date.now()) +
+        "_" +
+        Math.floor(Math.random() * 1e6);
+      window[cbInfo] = function (infoData) {
+        try {
+          delete window[cbInfo];
+        } catch (e2) {
+          window[cbInfo] = undefined;
+        }
+        if (infoScript.parentNode) infoScript.parentNode.removeChild(infoScript);
+        finish(wikiGifThumbFromImageinfo(infoData));
+      };
+      infoScript.onerror = function () {
+        try {
+          delete window[cbInfo];
+        } catch (e3) {
+          window[cbInfo] = undefined;
+        }
+        if (infoScript.parentNode) infoScript.parentNode.removeChild(infoScript);
+        finish(null);
+      };
+      infoScript.src =
+        MC_WIKI_QUERY_API +
+        "prop=imageinfo&iiprop=url&iiurlwidth=128&titles=" +
+        encodeURIComponent("File:" + pick) +
+        "&callback=" +
+        encodeURIComponent(cbInfo);
+      document.head.appendChild(infoScript);
+      infoTimer = window.setTimeout(function () {
+        try {
+          delete window[cbInfo];
+        } catch (e4) {
+          window[cbInfo] = undefined;
+        }
+        if (infoScript.parentNode) infoScript.parentNode.removeChild(infoScript);
+        finish(null);
+      }, 12000);
+    };
+    listScript.onerror = function () {
+      finish(null);
+    };
+    listScript.src = listUrl;
+    document.head.appendChild(listScript);
+    listTimer = window.setTimeout(function () {
+      finish(null);
+    }, 12000);
+  }
+
+  function wikiGifKnownForKey(wikiKey) {
+    var key = String(wikiKey || "").trim();
+    if (!key) return false;
+    if (typeof mcWikiGifCache[key] === "string") return true;
+    if (window.REWARD_WIKI_GIF_URLS && window.REWARD_WIKI_GIF_URLS[key]) return true;
+    if (window.REWARD_WIKI_IMAGES && isGifImageUrl(window.REWARD_WIKI_IMAGES[key])) return true;
+    if (window.REWARD_WIKI_GIF_FILES && window.REWARD_WIKI_GIF_FILES[key]) return true;
+    if (window.REWARD_EXTRA_WIKI_FILES && /\.gif$/i.test(String(window.REWARD_EXTRA_WIKI_FILES[key] || ""))) {
+      return true;
+    }
+    return false;
+  }
+
+  function prefetchAnimatedWikiGifs() {
+    var queue = [];
+    var seen = {};
+    var i;
+    var c;
+    var arrays;
+    var a;
+    var item;
+    function enqueue(key, page) {
+      var k = String(key || "").trim();
+      var p = String(page || "").trim();
+      if (!k || !p || seen[k] || wikiGifKnownForKey(k)) return;
+      seen[k] = true;
+      queue.push({ key: k, page: p });
+    }
+    for (i = 0; i < characters.length; i++) {
+      c = characters[i];
+      enqueue(c.wikiKey || c.id, c.name);
+    }
+    arrays = [
+      MC_ITEMS_COMMON,
+      MC_ITEMS_RARE,
+      MC_ITEMS_EPIC,
+      MC_ITEMS_DISLIKE_MILD,
+      MC_ITEMS_DISLIKE_SEVERE,
+    ];
+    for (a = 0; a < arrays.length; a++) {
+      if (!arrays[a]) continue;
+      for (i = 0; i < arrays[a].length; i++) {
+        item = arrays[a][i];
+        enqueue(item.wikiKey || item.id, item.label);
+      }
+    }
+    var delay = 400;
+    for (i = 0; i < queue.length; i++) {
+      (function (row) {
+        window.setTimeout(function () {
+          fetchMcWikiGifJsonp(row.page, row.key, function (url) {
+            if (!url) return;
+            var j;
+            for (j = 0; j < characters.length; j++) {
+              if ((characters[j].wikiKey || characters[j].id) === row.key) {
+                if (!isGifImageUrl(characters[j].src)) {
+                  characters[j].src = url;
+                }
+              }
+            }
+          });
+        }, delay);
+        delay += 350;
+      })(queue[i]);
+    }
+  }
+
+  function mcHeadsSpriteUrl(mhfName, size) {
+    var name = String(mhfName || "").trim();
+    if (!name) return "";
+    return (
+      "https://mc-heads.net/avatar/" +
+      encodeURIComponent(name) +
+      "/" +
+      (size || 128) +
+      ".png"
+    );
+  }
+
+  function resolveMhfCandidates(id) {
+    var out = [];
+    var mhf =
+      window.REWARD_CHARACTER_MHF && window.REWARD_CHARACTER_MHF[id];
+    if (mhf) out.push(mcHeadsSpriteUrl(mhf, 128));
+    return out;
+  }
+
   function localSpriteCandidates(id) {
     var base = "assets/sprites/" + id;
-    return [base + ".png", base + ".gif", base + ".webp"];
+    return [base + ".gif", base + ".png"];
   }
 
   function isLocalSpritePlaceholder(src, id) {
     var local = String(src || "").trim();
     if (local.indexOf("assets/sprites/") !== 0) return false;
     var base = "assets/sprites/" + id;
-    return (
-      local === base + ".png" ||
-      local === base + ".gif" ||
-      local === base + ".webp"
-    );
+    return local === base + ".png" || local === base + ".gif" || local === base + ".webp";
   }
 
   function spriteSrcCandidates(id, wikiKey, jsonSrc) {
@@ -350,22 +913,33 @@
     var seen = {};
     var local = String(jsonSrc || "").trim();
     var key = String(wikiKey || id || "").trim();
-    var wiki = resolveWikiThumb(key);
     var placeholder = isLocalSpritePlaceholder(local, id);
     var i;
 
     function push(url) {
-      if (!url || seen[url]) return;
-      seen[url] = true;
-      candidates.push(url);
+      var variants = imageUrlVariants(url);
+      var j;
+      for (j = 0; j < variants.length; j++) {
+        if (!variants[j] || seen[variants[j]]) continue;
+        seen[variants[j]] = true;
+        candidates.push(variants[j]);
+      }
     }
 
-    if (wiki && placeholder) push(wiki);
-    if (local.indexOf("assets/") === 0 && !placeholder) push(local);
+    var wikiList = resolveWikiThumbCandidates(key);
     if (local.indexOf("http://") === 0 || local.indexOf("https://") === 0) {
       push(local);
     }
-    if (wiki) push(wiki);
+    for (i = 0; i < wikiList.length; i++) {
+      push(wikiList[i]);
+    }
+    var wiki = wikiList[0] || resolveWikiThumb(key);
+    var mhfList = resolveMhfCandidates(id);
+    if (local.indexOf("assets/") === 0 && !placeholder) push(local);
+    if (wiki && candidates.indexOf(wiki) === -1) push(wiki);
+    for (i = 0; i < mhfList.length; i++) {
+      push(mhfList[i]);
+    }
     if (local.indexOf("assets/") === 0) push(local);
     for (i = 0; i < localSpriteCandidates(id).length; i++) {
       push(localSpriteCandidates(id)[i]);
@@ -373,7 +947,7 @@
     if (local && local.indexOf("assets/") !== 0 && local.indexOf("http") !== 0) {
       push(local);
     }
-    return candidates;
+    return sortCandidatesGifFirst(candidates);
   }
 
   function resolvedSpriteSrc(id, wikiKey, jsonSrc) {
@@ -381,17 +955,67 @@
     return candidates[0] || localSpriteCandidates(id)[0];
   }
 
-  function attachSpriteImg(img, id, wikiKey, jsonSrc) {
+  function attachSpriteImg(img, id, wikiKey, jsonSrc, wikiPageTitle) {
     var candidates = spriteSrcCandidates(id, wikiKey, jsonSrc);
     var step = 0;
+    function markMissing() {
+      img.onerror = null;
+      img.classList.add("sprite-img--missing");
+    }
     img.onerror = function () {
+      var failed = img.src || "";
+      var extras = expandFailedImageUrl(failed);
+      var i;
+      for (i = 0; i < extras.length; i++) {
+        if (extras[i] && candidates.indexOf(extras[i]) === -1) {
+          candidates.push(extras[i]);
+        }
+      }
       step += 1;
       if (step < candidates.length) {
         img.src = candidates[step];
-      } else {
-        img.onerror = null;
-        img.classList.add("sprite-img--missing");
+        return;
       }
+      if (!img._wikiGifTried) {
+        var gifPage = String(wikiPageTitle || wikiKey || id || "")
+          .replace(/-/g, " ")
+          .replace(/\b\w/g, function (ch) {
+            return ch.toUpperCase();
+          });
+        if (gifPage) {
+          img._wikiGifTried = true;
+          fetchMcWikiGifJsonp(gifPage, wikiKey || id, function (gifUrl) {
+            if (gifUrl) {
+              var gifVariants = imageUrlVariants(gifUrl);
+              for (i = 0; i < gifVariants.length; i++) {
+                if (gifVariants[i] && candidates.indexOf(gifVariants[i]) === -1) {
+                  candidates.push(gifVariants[i]);
+                }
+              }
+              img.src = gifUrl;
+            } else if (!img._wikiApiTried) {
+              img._wikiApiTried = true;
+              fetchMcWikiThumbJsonp(gifPage, function (thumb) {
+                if (thumb) {
+                  var variants = imageUrlVariants(thumb);
+                  for (i = 0; i < variants.length; i++) {
+                    if (variants[i] && candidates.indexOf(variants[i]) === -1) {
+                      candidates.push(variants[i]);
+                    }
+                  }
+                  img.src = thumb;
+                } else {
+                  markMissing();
+                }
+              });
+            } else {
+              markMissing();
+            }
+          });
+          return;
+        }
+      }
+      markMissing();
     };
     img.src = candidates[0] || "";
   }
@@ -601,9 +1225,10 @@
   }
 
   function saveState() {
-    if (state.events.length > MAX_EVENTS) {
-      state.events = state.events.slice(-MAX_EVENTS);
+    if (state.ledger.length > MAX_LEDGER) {
+      state.ledger = state.ledger.slice(-MAX_LEDGER);
     }
+    state.version = SCHEMA_VERSION;
     var str = JSON.stringify(state);
     try {
       localStorage.setItem(LS_DATA, str);
@@ -643,22 +1268,35 @@
       } catch (e2) {}
     }
     if (!raw) {
+      try {
+        raw = localStorage.getItem("reward_overworld_v1");
+      } catch (e4) {}
+    }
+    if (!raw) {
       ensureSettingsDefaults();
       return;
     }
     try {
       var parsed = JSON.parse(raw);
-      if (parsed && Array.isArray(parsed.people) && Array.isArray(parsed.events)) {
+      if (parsed && Array.isArray(parsed.people)) {
         state.people = parsed.people;
-        state.events = parsed.events;
         state.dayNotes = Array.isArray(parsed.dayNotes) ? parsed.dayNotes : [];
         if (parsed.settings) {
           state.settings = parsed.settings;
         }
+        if (Array.isArray(parsed.ledger)) {
+          state.ledger = parsed.ledger;
+        } else if (Array.isArray(parsed.events)) {
+          state.ledger = parsed.events;
+        } else {
+          state.ledger = [];
+        }
+        migrateToLedger();
       }
     } catch (e3) {}
     ensureSettingsDefaults();
     migratePeople();
+    migrateToLedger();
   }
 
   function ensureSettingsDefaults() {
@@ -764,7 +1402,7 @@
   }
 
   function scoreForRange(range, personId) {
-    var evs = personId != null ? state.events.filter(function (e) { return e.personId === personId; }) : eventsForFilter();
+    var evs = personId != null ? state.ledger.filter(function (e) { return e.personId === personId; }) : eventsForFilter();
     var from = rangeStartTs(range);
     if (range === "all") return sumPoints(evs);
     if (range === "today") return sumPointsInRange(evs, from, from + 86400000);
@@ -776,8 +1414,8 @@
     var i;
     for (i = 0; i < events.length; i++) {
       var ev = events[i];
-      var id = ev.reasonId || ev.reasonLabel || "other";
-      var label = ev.reasonLabel || itemDisplay(id);
+      var id = lootIdFromEntry(ev);
+      var label = itemDisplay(id);
       var key = id + "|" + ev.points;
       if (!map[key]) {
         map[key] = {
@@ -1077,9 +1715,13 @@
       var li = document.createElement("li");
       li.className = "day-events-list__item";
       var lbl = document.createElement("span");
-      lbl.textContent =
-        (person ? personDisplayLabel(person) + " · " : "") +
-        eventItemAndCategory(ev);
+      lbl.className = "day-events-list__label event-detail";
+      if (person) {
+        lbl.appendChild(
+          document.createTextNode(personDisplayLabel(person) + " · ")
+        );
+      }
+      appendEventDetail(lbl, ev, { size: 18 });
       var pts = document.createElement("span");
       pts.className =
         ev.points >= 0
@@ -1122,8 +1764,8 @@
 
   function eventsForFilter(personId) {
     var pid = personId != null ? personId : filterPersonId();
-    if (pid === "all") return state.events.slice();
-    return state.events.filter(function (ev) {
+    if (pid === "all") return state.ledger.slice();
+    return state.ledger.filter(function (ev) {
       return ev.personId === pid;
     });
   }
@@ -1305,17 +1947,16 @@
     return id;
   }
 
-  function categoryDisplay(ev) {
-    if (!ev) return "";
-    if (ev.categoryLabel) return ev.categoryLabel;
-    var cat = behaviorCategoryById(resolveLegacyCategoryId(ev.categoryId));
+  function categoryDisplay(entry) {
+    if (!entry) return "";
+    var cat = behaviorCategoryById(resolveLegacyCategoryId(entry.categoryId));
     return cat ? cat.label : "";
   }
 
-  function eventItemAndCategory(ev) {
-    var item = itemDisplay(ev.reasonId || ev.reasonLabel);
-    var cat = categoryDisplay(ev);
-    return cat ? item + " · " + cat : item;
+  function eventItemAndCategory(entry) {
+    var item = itemDisplay(lootIdFromEntry(entry));
+    var cat = categoryDisplay(entry);
+    return cat ? cat + " · " + item : item;
   }
 
   function buildCategoryStats(events) {
@@ -1374,7 +2015,7 @@
       img.width = size;
       img.height = size;
     }
-    attachSpriteImg(img, character.id, character.wikiKey || character.id, character.src);
+    attachSpriteImg(img, character.id, character.wikiKey || character.id, character.src, character.name);
     parent.appendChild(img);
     return img;
   }
@@ -1392,6 +2033,127 @@
       attachSpriteImg(img, item.id, item.wikiKey, item.src);
     }
     parent.appendChild(img);
+  }
+
+  function createItemInline(itemOrId, options) {
+    options = options || {};
+    var item =
+      itemOrId && typeof itemOrId === "object"
+        ? itemOrId
+        : mcItemById(itemOrId);
+    var wrap = document.createElement("span");
+    wrap.className = options.className || "item-inline";
+    var imgSize = options.size || 20;
+    if (item) {
+      var img = document.createElement("img");
+      img.className = options.imgClass || "item-inline__img";
+      img.alt = item.label;
+      img.width = imgSize;
+      img.height = imgSize;
+      img.loading = "lazy";
+      img.decoding = "async";
+      attachSpriteImg(img, item.id, item.wikiKey, item.src);
+      wrap.appendChild(img);
+      var lbl = document.createElement("span");
+      lbl.className = options.labelClass || "item-inline__label";
+      lbl.textContent = item.label;
+      wrap.appendChild(lbl);
+    } else {
+      wrap.textContent = String(itemOrId || "?");
+    }
+    return wrap;
+  }
+
+  function appendLootSummarySep(parent) {
+    var sep = document.createElement("span");
+    sep.className = "loot-summary__sep";
+    sep.setAttribute("aria-hidden", "true");
+    sep.textContent = "·";
+    parent.appendChild(sep);
+  }
+
+  function appendLootTier(parent, prefix, itemId) {
+    var tier = document.createElement("span");
+    tier.className = "loot-tier";
+    if (prefix) {
+      var pre = document.createElement("span");
+      pre.className = "loot-tier__prefix";
+      pre.textContent = prefix;
+      tier.appendChild(pre);
+    }
+    tier.appendChild(createItemInline(itemId, { size: 18 }));
+    parent.appendChild(tier);
+  }
+
+  function appendPersonLootSummary(parent, person, options) {
+    if (!parent || !person) return;
+    options = options || {};
+    normalizePersonItems(person);
+    parent.replaceChildren();
+    parent.className = options.className || "loot-summary";
+    appendLootTier(parent, "+1 ", person.items.like1);
+    appendLootSummarySep(parent);
+    appendLootTier(parent, "+3 ", person.items.like3);
+    appendLootSummarySep(parent);
+    appendLootTier(parent, "+5 ", person.items.like5);
+    if (options.includeDislikes !== false) {
+      appendLootSummarySep(parent);
+      appendLootTier(parent, "−1 ", person.items.dislike1);
+      appendLootSummarySep(parent);
+      appendLootTier(parent, "−3 ", person.items.dislike3);
+    }
+  }
+
+  function appendEventDetail(parent, entry, options) {
+    if (!parent || !entry) return;
+    options = options || {};
+    var imgSize = options.size || 20;
+    var cat = behaviorCategoryById(resolveLegacyCategoryId(entry.categoryId));
+    if (cat) {
+      appendCategoryImg(
+        parent,
+        cat,
+        options.categoryImgClass || "event-detail__cat-img",
+        imgSize
+      );
+      var catLbl = document.createElement("span");
+      catLbl.className = "event-detail__cat-label";
+      catLbl.textContent = cat.label;
+      parent.appendChild(catLbl);
+      parent.appendChild(document.createTextNode(" · "));
+    }
+    parent.appendChild(
+      createItemInline(lootIdFromEntry(entry), {
+        size: imgSize,
+        className: "item-inline item-inline--event",
+      })
+    );
+  }
+
+  function renderItemHintExamples(exampleIds) {
+    if (!elItemPickHintExamples) return;
+    elItemPickHintExamples.replaceChildren("");
+    if (!exampleIds || !exampleIds.length) {
+      elItemPickHintExamples.hidden = true;
+      return;
+    }
+    elItemPickHintExamples.hidden = false;
+    elItemPickHintExamples.setAttribute("aria-hidden", "false");
+    var i;
+    for (i = 0; i < exampleIds.length; i++) {
+      (function (id) {
+        var item = mcItemById(id);
+        if (!item) return;
+        var chip = document.createElement("div");
+        chip.className = "item-hint-example";
+        appendMcItemImg(chip, item, "item-hint-example__img");
+        var lbl = document.createElement("span");
+        lbl.className = "item-hint-example__label";
+        lbl.textContent = item.label;
+        chip.appendChild(lbl);
+        elItemPickHintExamples.appendChild(chip);
+      })(exampleIds[i]);
+    }
   }
 
   function normalizePersonItems(person) {
@@ -1440,25 +2202,50 @@
     }
   }
 
-  function migrateEvents() {
+  function lootIdFromEntry(entry) {
+    if (!entry) return "unknown";
+    return String(entry.lootId || entry.reasonId || "").trim() || "unknown";
+  }
+
+  function normalizeLedgerEntry(entry) {
+    if (!entry || typeof entry !== "object") return null;
+    var id = String(entry.id || "").trim();
+    var personId = String(entry.personId || "").trim();
+    var points = Number(entry.points);
+    if (!id || !personId || !isFinite(points)) return null;
+    return {
+      id: id,
+      type: "score",
+      personId: personId,
+      ts: Number(entry.ts) || Date.now(),
+      points: points,
+      categoryId: resolveLegacyCategoryId(String(entry.categoryId || "other").trim()) || "other",
+      lootId: lootIdFromEntry(entry),
+      note: String(entry.note || "").trim(),
+    };
+  }
+
+  function migrateToLedger() {
+    if (!state.ledger) state.ledger = [];
+    var next = [];
     var i;
-    for (i = 0; i < state.events.length; i++) {
-      var ev = state.events[i];
-      if (!ev.categoryId && !ev.categoryLabel) {
-        ev.categoryId = "other";
-        ev.categoryLabel = "";
-        continue;
-      }
-      if (ev.categoryId) {
-        var resolved = resolveLegacyCategoryId(ev.categoryId);
-        if (resolved !== ev.categoryId) {
-          ev.categoryId = resolved;
-          if (!ev.categoryLabel) {
-            var cat = behaviorCategoryById(resolved);
-            if (cat) ev.categoryLabel = cat.label;
-          }
-        }
-      }
+    for (i = 0; i < state.ledger.length; i++) {
+      var norm = normalizeLedgerEntry(state.ledger[i]);
+      if (norm) next.push(norm);
+    }
+    state.ledger = next;
+    delete state.events;
+    state.version = SCHEMA_VERSION;
+    migrateLedgerCategories();
+  }
+
+  function migrateLedgerCategories() {
+    if (!state.ledger) return;
+    var i;
+    for (i = 0; i < state.ledger.length; i++) {
+      var entry = state.ledger[i];
+      if (!entry.categoryId) entry.categoryId = "other";
+      else entry.categoryId = resolveLegacyCategoryId(entry.categoryId);
     }
   }
 
@@ -1505,12 +2292,16 @@
     if (elPlayerSetupNext) {
       elPlayerSetupNext.hidden = !isProfile;
     }
-    if (isProfile) return;
+    if (isProfile) {
+      renderItemHintExamples([]);
+      return;
+    }
 
     var meta = ITEM_SETUP_META[step];
     if (!meta) return;
     if (elItemPickStepLabel) elItemPickStepLabel.textContent = meta.label;
     if (elItemPickStepHint) elItemPickStepHint.textContent = meta.hint;
+    renderItemHintExamples(meta.examples || []);
 
     if (elItemSetupProgress) {
       var dots = elItemSetupProgress.querySelectorAll(".item-setup-progress__dot");
@@ -1641,11 +2432,7 @@
     }
     btn.appendChild(span);
     btn.addEventListener("click", function () {
-      beginCategoryPick(
-        points,
-        item ? item.id : "unknown",
-        item ? item.label : "?"
-      );
+      logStar(points, item ? item.id : "unknown");
     });
     return btn;
   }
@@ -1681,7 +2468,7 @@
 
   function personScore(personId, range) {
     var now = Date.now();
-    var evs = state.events.filter(function (e) {
+    var evs = state.ledger.filter(function (e) {
       return e.personId === personId;
     });
     if (range === "today") {
@@ -2090,7 +2877,12 @@
 
   function showToast(msg, kind) {
     if (!elToast) return;
-    elToast.textContent = msg;
+    elToast.replaceChildren();
+    if (typeof msg === "string") {
+      elToast.appendChild(document.createTextNode(msg));
+    } else if (msg && msg.nodeType === 1) {
+      elToast.appendChild(msg);
+    }
     elToast.hidden = false;
     elToast.classList.remove("toast--mega", "toast--rare", "toast--oops", "toast--oops-big");
     if (kind === "mega") elToast.classList.add("toast--mega");
@@ -2101,6 +2893,28 @@
     showToast._t = window.setTimeout(function () {
       elToast.hidden = true;
     }, 2400);
+  }
+
+  function showStarToast(person, points, cat, lootId, kind) {
+    if (!elToast) return;
+    var wrap = document.createDocumentFragment();
+    if (person) {
+      wrap.appendChild(
+        document.createTextNode(personDisplayLabel(person) + ": ")
+      );
+    }
+    wrap.appendChild(document.createTextNode(formatScore(points) + " ⭐ · "));
+    if (cat) {
+      appendCategoryImg(wrap, cat, "toast__img", 22);
+      wrap.appendChild(document.createTextNode(cat.label + " · "));
+    }
+    wrap.appendChild(
+      createItemInline(lootId, {
+        size: 22,
+        className: "item-inline item-inline--toast",
+      })
+    );
+    showToast(wrap, kind);
   }
 
   function renderPersonFilter() {
@@ -2164,14 +2978,10 @@
 
         normalizePersonItems(person);
         var itemsPreview = document.createElement("p");
-        itemsPreview.className = "person-card__rewards";
-        itemsPreview.textContent =
-          "+1 " +
-          itemDisplay(person.items.like1) +
-          " · +3 " +
-          itemDisplay(person.items.like3) +
-          " · +5 " +
-          itemDisplay(person.items.like5);
+        appendPersonLootSummary(itemsPreview, person, {
+          className: "person-card__rewards loot-summary loot-summary--card",
+          includeDislikes: false,
+        });
         card.appendChild(itemsPreview);
 
         var score = personScore(person.id, "today");
@@ -2388,10 +3198,13 @@
 
       var mid = document.createElement("div");
       var title = document.createElement("div");
-      title.textContent =
-        (person ? personDisplayLabel(person) : "?") +
-        " · " +
-        eventItemAndCategory(ev);
+      title.className = "activity-log__title event-detail";
+      title.appendChild(
+        document.createTextNode(
+          (person ? personDisplayLabel(person) : "?") + " · "
+        )
+      );
+      appendEventDetail(title, ev, { size: 20 });
       var meta = document.createElement("div");
       meta.className = "activity-log__meta";
       meta.textContent = formatTime(ev.ts);
@@ -2478,17 +3291,17 @@
 
   function showRewardStep(step) {
     rewardContext.step = step;
-    if (elRewardStepPoints) elRewardStepPoints.hidden = step !== "points";
     if (elRewardStepCategory) elRewardStepCategory.hidden = step !== "category";
+    if (elRewardStepPoints) elRewardStepPoints.hidden = step !== "points";
   }
 
   function openRewardSheet(personId) {
     var person = personById(personId);
     if (!person || !elRewardSheet) return;
     rewardContext.personId = personId;
-    rewardContext.pendingPoints = null;
-    rewardContext.pendingItemId = null;
-    rewardContext.pendingItemLabel = null;
+    rewardContext.pendingCategoryId = null;
+    rewardContext.pendingCategoryLabel = null;
+    rewardContext.pendingCategoryKind = null;
 
     var ch = characterById(person.characterId);
     if (elRewardPerson) {
@@ -2497,85 +3310,109 @@
         appendCharacterImg(elRewardPerson, ch, "sheet__avatar");
       }
       var copy = document.createElement("div");
+      copy.className = "sheet__person-copy";
       var strong = document.createElement("strong");
       strong.textContent = personDisplayLabel(person);
       copy.appendChild(strong);
       if (ch) {
         var sub = document.createElement("span");
+        sub.className = "sheet__person-sub";
         sub.textContent = ch.name + (ch.kind === "villain" ? " · mob avatar" : " · hero");
         copy.appendChild(sub);
       }
       normalizePersonItems(person);
       var itemsLine = document.createElement("span");
-      itemsLine.className = "sheet__rewards-line";
-      itemsLine.textContent = personItemsSummary(person);
+      appendPersonLootSummary(itemsLine, person, {
+        className: "sheet__rewards-line loot-summary loot-summary--sheet",
+      });
       copy.appendChild(itemsLine);
       elRewardPerson.appendChild(copy);
     }
 
-    if (elRewardTierHint) elRewardTierHint.textContent = "Pick points";
-    showRewardStep("points");
-    renderPointPickers();
+    showRewardStep("category");
+    renderCategoryPicker();
     elRewardSheet.hidden = false;
   }
 
   function closeRewardSheet() {
     if (elRewardSheet) elRewardSheet.hidden = true;
     rewardContext.personId = null;
-    rewardContext.pendingPoints = null;
-    rewardContext.pendingItemId = null;
-    rewardContext.pendingItemLabel = null;
-    rewardContext.step = "points";
+    rewardContext.pendingCategoryId = null;
+    rewardContext.pendingCategoryLabel = null;
+    rewardContext.pendingCategoryKind = null;
+    rewardContext.step = "category";
   }
 
-  function beginCategoryPick(points, itemId, itemLabel) {
-    rewardContext.pendingPoints = points;
-    rewardContext.pendingItemId = itemId;
-    rewardContext.pendingItemLabel = itemLabel;
+  function beginPointsPick(cat) {
+    rewardContext.pendingCategoryId = cat.id;
+    rewardContext.pendingCategoryLabel = cat.label;
+    rewardContext.pendingCategoryKind = cat.kind;
     if (elRewardPendingSummary) {
-      elRewardPendingSummary.textContent =
-        formatScore(points) + " · " + itemDisplay(itemId);
+      elRewardPendingSummary.replaceChildren();
+      appendCategoryImg(elRewardPendingSummary, cat, "reward-pending-summary__img", 40);
+      var txt = document.createElement("span");
+      txt.textContent = cat.label;
+      elRewardPendingSummary.appendChild(txt);
       elRewardPendingSummary.className =
         "reward-pending-summary" +
-        (points < 0 ? " reward-pending-summary--oops" : " reward-pending-summary--good");
+        (cat.kind === "bad" ? " reward-pending-summary--oops" : " reward-pending-summary--good");
     }
-    renderCategoryPicker();
-    showRewardStep("category");
+    if (elRewardTierHint) {
+      elRewardTierHint.textContent =
+        cat.kind === "bad" ? "How big was the oops?" : "How many stars?";
+    }
+    renderPointPickers();
+    showRewardStep("points");
+  }
+
+  function renderCategoryChip(grid, cat) {
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className =
+      "category-chip category-chip--" + (cat.kind === "bad" ? "bad" : "good");
+    appendCategoryImg(btn, cat, "category-chip__img", 52);
+    var lbl = document.createElement("span");
+    lbl.className = "category-chip__label";
+    lbl.textContent = cat.label;
+    btn.appendChild(lbl);
+    btn.addEventListener("click", function () {
+      beginPointsPick(cat);
+    });
+    grid.appendChild(btn);
+  }
+
+  function renderCategoryGroup(container, title, kind) {
+    var section = document.createElement("section");
+    section.className =
+      "category-group category-group--" + (kind === "bad" ? "bad" : "good");
+    var heading = document.createElement("h3");
+    heading.className = "category-group__title";
+    heading.textContent = title;
+    section.appendChild(heading);
+    var grid = document.createElement("div");
+    grid.className = "category-group__grid";
+    grid.setAttribute("role", "group");
+    grid.setAttribute(
+      "aria-label",
+      kind === "bad" ? "Oops categories" : "Good categories"
+    );
+    section.appendChild(grid);
+    container.appendChild(section);
+    return grid;
   }
 
   function renderCategoryPicker() {
     if (!elCategoryPicker) return;
     elCategoryPicker.replaceChildren("");
-    var points = rewardContext.pendingPoints;
-    var cats = categoriesForPoints(points);
-    var stepHint = document.querySelector("#reward-step-category .point-picker-hint");
-    if (stepHint) {
-      stepHint.textContent =
-        points >= 0 ? "What did they do well?" : "What happened?";
-    }
+    elCategoryPicker.className = "category-groups";
+
+    var goodGrid = renderCategoryGroup(elCategoryPicker, "😊 Good things", "good");
+    var badGrid = renderCategoryGroup(elCategoryPicker, "😅 Oops — bad things", "bad");
+
     var i;
-    for (i = 0; i < cats.length; i++) {
-      (function (cat) {
-        var btn = document.createElement("button");
-        btn.type = "button";
-        btn.className =
-          "category-chip category-chip--" + (cat.kind === "bad" ? "bad" : "good");
-        appendCategoryImg(btn, cat, "category-chip__img", 44);
-        var lbl = document.createElement("span");
-        lbl.className = "category-chip__label";
-        lbl.textContent = cat.label;
-        btn.appendChild(lbl);
-        btn.addEventListener("click", function () {
-          logStar(
-            rewardContext.pendingPoints,
-            rewardContext.pendingItemId,
-            rewardContext.pendingItemLabel,
-            cat.id,
-            cat.label
-          );
-        });
-        elCategoryPicker.appendChild(btn);
-      })(cats[i]);
+    for (i = 0; i < BEHAVIOR_CATEGORIES.length; i++) {
+      var cat = BEHAVIOR_CATEGORIES[i];
+      renderCategoryChip(cat.kind === "bad" ? badGrid : goodGrid, cat);
     }
   }
 
@@ -2584,30 +3421,35 @@
     if (!person || !elPointAll) return;
     normalizePersonItems(person);
     elPointAll.replaceChildren("");
+    var kind = rewardContext.pendingCategoryKind;
+    elPointAll.classList.toggle("point-picker--oops-only", kind === "bad");
+    if (kind === "bad") {
+      elPointAll.appendChild(createPointButton(-1, mcItemById(person.items.dislike1)));
+      elPointAll.appendChild(createPointButton(-3, mcItemById(person.items.dislike3)));
+      return;
+    }
     elPointAll.appendChild(createPointButton(1, mcItemById(person.items.like1)));
     elPointAll.appendChild(createPointButton(3, mcItemById(person.items.like3)));
     elPointAll.appendChild(createPointButton(5, mcItemById(person.items.like5)));
-    elPointAll.appendChild(createPointButton(-1, mcItemById(person.items.dislike1)));
-    elPointAll.appendChild(createPointButton(-3, mcItemById(person.items.dislike3)));
   }
 
-  function logStar(points, itemId, itemLabel, categoryId, categoryLabel) {
+  function logStar(points, lootId) {
     if (rewardContext.personId == null) return;
-    var ev = {
-      id: uid("ev"),
+    var entry = {
+      id: uid("led"),
+      type: "score",
       personId: rewardContext.personId,
       points: points,
-      reasonId: itemId,
-      reasonLabel: itemLabel,
-      categoryId: categoryId || "other",
-      categoryLabel: categoryLabel || "",
+      categoryId: rewardContext.pendingCategoryId || "other",
+      lootId: lootId || "unknown",
       note: "",
       ts: Date.now(),
     };
-    state.events.push(ev);
+    state.ledger.push(entry);
     saveState();
 
     var person = personById(rewardContext.personId);
+    var cat = behaviorCategoryById(entry.categoryId);
     var kind =
       points >= 5
         ? "mega"
@@ -2618,15 +3460,7 @@
             : points < 0
               ? "oops"
               : null;
-    var catPart = categoryLabel ? " · " + categoryLabel : "";
-    showToast(
-      (person ? personDisplayLabel(person) + ": " : "") +
-        formatScore(points) +
-        " ⭐ · " +
-        itemDisplay(itemId) +
-        catPart,
-      kind
-    );
+    showStarToast(person, points, cat, lootId, kind);
     closeRewardSheet();
     renderAll();
   }
@@ -2644,7 +3478,7 @@
     state.people = state.people.filter(function (p) {
       return p.id !== personId;
     });
-    state.events = state.events.filter(function (e) {
+    state.ledger = state.ledger.filter(function (e) {
       return e.personId !== personId;
     });
     state.dayNotes = state.dayNotes.filter(function (n) {
@@ -2735,7 +3569,7 @@
         var img = document.createElement("img");
         img.alt = c.name;
         img.loading = "lazy";
-        attachSpriteImg(img, c.id, c.wikiKey || c.id, c.src);
+        attachSpriteImg(img, c.id, c.wikiKey || c.id, c.src, c.name);
         btn.appendChild(img);
         var lbl = document.createElement("span");
         lbl.textContent = c.name;
@@ -2822,19 +3656,854 @@
     renderAll();
   }
 
-  function exportBackup() {
-    var str = JSON.stringify(state, null, 2);
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(str).then(
-        function () {
-          showToast("Backup copied to clipboard.");
-        },
-        function () {
-          window.prompt("Copy this backup:", str);
+  function buildExportPayload() {
+    return {
+      schemaVersion: SCHEMA_VERSION,
+      exportedAt: new Date().toISOString(),
+      app: "reward_overworld",
+      people: state.people,
+      ledger: state.ledger,
+      dayNotes: state.dayNotes,
+    };
+  }
+
+  function parseImportPayload(raw) {
+    var text = String(raw || "").trim();
+    if (!text) {
+      throw new Error("Nothing to import.");
+    }
+
+    var chunks = [];
+    try {
+      var parsed = JSON.parse(text);
+      chunks = Array.isArray(parsed) ? parsed : [parsed];
+    } catch (e) {
+      chunks = extractJsonObjects(text);
+    }
+
+    if (!chunks.length) {
+      throw new Error("Invalid backup JSON.");
+    }
+
+    return mergeImportChunks(chunks);
+  }
+
+  function extractJsonObjects(text) {
+    var out = [];
+    var depth = 0;
+    var start = -1;
+    var inString = false;
+    var escape = false;
+    var i;
+    for (i = 0; i < text.length; i++) {
+      var ch = text.charAt(i);
+      if (inString) {
+        if (escape) {
+          escape = false;
+        } else if (ch === "\\") {
+          escape = true;
+        } else if (ch === '"') {
+          inString = false;
         }
-      );
-    } else {
-      window.prompt("Copy this backup:", str);
+        continue;
+      }
+      if (ch === '"') {
+        inString = true;
+        continue;
+      }
+      if (ch === "{") {
+        if (depth === 0) start = i;
+        depth += 1;
+      } else if (ch === "}") {
+        depth -= 1;
+        if (depth === 0 && start >= 0) {
+          try {
+            out.push(JSON.parse(text.slice(start, i + 1)));
+          } catch (err) {
+            /* skip malformed chunk */
+          }
+          start = -1;
+        }
+      }
+    }
+    if (!out.length) {
+      throw new Error("Invalid backup JSON.");
+    }
+    return out;
+  }
+
+  function importChunkFromObject(data) {
+    if (!data || typeof data !== "object") {
+      return { people: [], ledger: [], dayNotes: [] };
+    }
+    var ledger = [];
+    if (Array.isArray(data.ledger)) ledger = data.ledger;
+    else if (Array.isArray(data.events)) ledger = data.events;
+    return {
+      people: Array.isArray(data.people) ? data.people : [],
+      ledger: ledger,
+      dayNotes: Array.isArray(data.dayNotes) ? data.dayNotes : [],
+    };
+  }
+
+  function mergeImportChunks(chunks) {
+    var merged = { people: [], ledger: [], dayNotes: [] };
+    var ledgerIds = {};
+    var peopleIds = {};
+    var noteIds = {};
+    var c;
+    var i;
+
+    for (c = 0; c < chunks.length; c++) {
+      var chunk = importChunkFromObject(chunks[c]);
+
+      for (i = 0; i < chunk.ledger.length; i++) {
+        var entry = normalizeLedgerEntry(chunk.ledger[i]);
+        if (!entry || ledgerIds[entry.id]) continue;
+        merged.ledger.push(entry);
+        ledgerIds[entry.id] = true;
+      }
+
+      for (i = 0; i < chunk.people.length; i++) {
+        var person = chunk.people[i];
+        if (!person || !person.id || !person.name || peopleIds[person.id]) continue;
+        merged.people.push(person);
+        peopleIds[person.id] = true;
+      }
+
+      for (i = 0; i < chunk.dayNotes.length; i++) {
+        var note = chunk.dayNotes[i];
+        if (!note || !note.id || noteIds[note.id]) continue;
+        merged.dayNotes.push(note);
+        noteIds[note.id] = true;
+      }
+    }
+
+    return merged;
+  }
+
+  function formatImportStats(stats) {
+    var parts = [];
+    if (stats.ledgerAdded) parts.push("+" + stats.ledgerAdded + " stars");
+    if (stats.peopleAdded) parts.push("+" + stats.peopleAdded + " players");
+    if (stats.notesAdded) parts.push("+" + stats.notesAdded + " diary notes");
+    var skipped =
+      stats.ledgerSkipped + stats.peopleSkipped + stats.notesSkipped;
+    if (skipped) parts.push(skipped + " duplicates skipped");
+    return parts.length ? parts.join(" · ") : "Nothing new to merge";
+  }
+
+  function ledgerIdSet() {
+    var ids = {};
+    var i;
+    for (i = 0; i < state.ledger.length; i++) {
+      ids[state.ledger[i].id] = true;
+    }
+    return ids;
+  }
+
+  function peopleIdSet() {
+    var ids = {};
+    var i;
+    for (i = 0; i < state.people.length; i++) {
+      ids[state.people[i].id] = true;
+    }
+    return ids;
+  }
+
+  function noteIdSet() {
+    var ids = {};
+    var i;
+    for (i = 0; i < state.dayNotes.length; i++) {
+      if (state.dayNotes[i].id) ids[state.dayNotes[i].id] = true;
+    }
+    return ids;
+  }
+
+  function importBackupData(data) {
+    var stats = {
+      ledgerAdded: 0,
+      ledgerSkipped: 0,
+      peopleAdded: 0,
+      peopleSkipped: 0,
+      notesAdded: 0,
+      notesSkipped: 0,
+    };
+    var existingLedger = ledgerIdSet();
+    var existingPeople = peopleIdSet();
+    var existingNotes = noteIdSet();
+    var i;
+
+    for (i = 0; i < data.ledger.length; i++) {
+      var entry = normalizeLedgerEntry(data.ledger[i]);
+      if (!entry) continue;
+      if (existingLedger[entry.id]) {
+        stats.ledgerSkipped += 1;
+        continue;
+      }
+      state.ledger.push(entry);
+      existingLedger[entry.id] = true;
+      stats.ledgerAdded += 1;
+    }
+
+    for (i = 0; i < data.people.length; i++) {
+      var person = data.people[i];
+      if (!person || !person.id || !person.name) continue;
+      if (existingPeople[person.id]) {
+        stats.peopleSkipped += 1;
+        continue;
+      }
+      normalizePersonItems(person);
+      state.people.push(person);
+      existingPeople[person.id] = true;
+      stats.peopleAdded += 1;
+    }
+
+    for (i = 0; i < data.dayNotes.length; i++) {
+      var note = data.dayNotes[i];
+      if (!note || !note.id) continue;
+      if (existingNotes[note.id]) {
+        stats.notesSkipped += 1;
+        continue;
+      }
+      state.dayNotes.push(note);
+      existingNotes[note.id] = true;
+      stats.notesAdded += 1;
+    }
+
+    state.ledger.sort(function (a, b) {
+      return a.ts - b.ts;
+    });
+    saveState();
+    renderAll();
+    return stats;
+  }
+
+  function buildExportText() {
+    return JSON.stringify(buildExportPayload(), null, 2);
+  }
+
+  function exportFilename() {
+    return "reward-overworld-" + dayKeyFromTs(Date.now()) + ".json";
+  }
+
+  function exportSummaryLine() {
+    return (
+      state.people.length +
+      " players · " +
+      state.ledger.length +
+      " stars · " +
+      state.dayNotes.length +
+      " diary notes"
+    );
+  }
+
+  function copyTextToClipboard(text) {
+    return new Promise(function (resolve, reject) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(resolve).catch(reject);
+        return;
+      }
+      try {
+        var ta = document.createElement("textarea");
+        ta.value = text;
+        ta.setAttribute("readonly", "");
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.select();
+        var ok = document.execCommand("copy");
+        document.body.removeChild(ta);
+        if (ok) resolve();
+        else reject(new Error("copy failed"));
+      } catch (e) {
+        reject(e);
+      }
+    });
+  }
+
+  function downloadExportFile(text, filename) {
+    try {
+      var blob = new Blob([text], { type: "application/json" });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function setExportResult(message, isError) {
+    if (!elExportResult) return;
+    elExportResult.hidden = !message;
+    elExportResult.textContent = message || "";
+    elExportResult.classList.toggle("import-result--error", !!isError);
+  }
+
+  function copyExportToClipboard(showFeedback) {
+    var text = exportDraft.text;
+    if (!text) return Promise.reject(new Error("empty"));
+    return copyTextToClipboard(text).then(
+      function () {
+        if (showFeedback !== false) {
+          setExportResult(
+            "Copied to clipboard! (" + exportSummaryLine() + ")",
+            false
+          );
+          showToast("Copied to clipboard — paste into Import to merge.");
+        }
+      },
+      function () {
+        setExportResult(
+          "Could not copy automatically — tap Copy to clipboard or select all in the box.",
+          true
+        );
+        if (showFeedback !== false) {
+          showToast("Select the text and copy manually, or tap Copy.");
+        }
+        return Promise.reject(new Error("copy failed"));
+      }
+    );
+  }
+
+  function openExportModal() {
+    exportDraft.text = buildExportText();
+    exportDraft.filename = exportFilename();
+    if (elExportTextarea) {
+      elExportTextarea.value = exportDraft.text;
+    }
+    setExportResult("", false);
+    if (elExportModal) elExportModal.hidden = false;
+    copyExportToClipboard(false).then(
+      function () {
+        setExportResult(
+          "Copied to clipboard! (" + exportSummaryLine() + ")",
+          false
+        );
+        showToast("Copied to clipboard — paste into Import to merge.");
+      },
+      function () {
+        setExportResult(
+          "Tap Copy to clipboard, or select all in the box below.",
+          true
+        );
+      }
+    );
+    if (elExportTextarea) {
+      window.setTimeout(function () {
+        elExportTextarea.focus();
+        elExportTextarea.select();
+      }, 0);
+    }
+  }
+
+  function closeExportModal() {
+    if (elExportModal) elExportModal.hidden = true;
+  }
+
+  function exportBackup() {
+    openExportModal();
+  }
+
+  function importBackupFromText(text) {
+    var parsed;
+    try {
+      parsed = parseImportPayload(text);
+    } catch (e) {
+      showToast("Could not read backup — check the JSON.");
+      return null;
+    }
+    var stats = importBackupData(parsed);
+    showToast("Import done: " + formatImportStats(stats));
+    return stats;
+  }
+
+  function openImportModal() {
+    if (!elImportModal) return;
+    if (elImportTextarea) elImportTextarea.value = "";
+    if (elImportResult) {
+      elImportResult.hidden = true;
+      elImportResult.textContent = "";
+      elImportResult.classList.remove("import-result--error");
+    }
+    elImportModal.hidden = false;
+    if (elImportTextarea) {
+      window.setTimeout(function () {
+        elImportTextarea.focus();
+      }, 0);
+    }
+  }
+
+  function closeImportModal() {
+    if (elImportModal) elImportModal.hidden = true;
+  }
+
+  function runImportFromModal() {
+    if (!elImportTextarea) return;
+    var text = String(elImportTextarea.value || "").trim();
+    if (!text) {
+      if (elImportResult) {
+        elImportResult.hidden = false;
+        elImportResult.classList.add("import-result--error");
+        elImportResult.textContent = "Paste at least one export JSON first.";
+      }
+      return;
+    }
+    var stats;
+    try {
+      var parsed = parseImportPayload(text);
+      stats = importBackupData(parsed);
+    } catch (e) {
+      if (elImportResult) {
+        elImportResult.hidden = false;
+        elImportResult.classList.add("import-result--error");
+        elImportResult.textContent = "Could not read backup — check the JSON.";
+      }
+      showToast("Could not read backup — check the JSON.");
+      return;
+    }
+    if (elImportResult) {
+      elImportResult.hidden = false;
+      elImportResult.classList.remove("import-result--error");
+      elImportResult.textContent = "Merged: " + formatImportStats(stats);
+    }
+    showToast("Import done: " + formatImportStats(stats));
+    closeImportModal();
+  }
+
+  function isTypingInField() {
+    var el = document.activeElement;
+    if (!el) return false;
+    var tag = el.tagName;
+    return (
+      tag === "INPUT" ||
+      tag === "TEXTAREA" ||
+      tag === "SELECT" ||
+      el.isContentEditable
+    );
+  }
+
+  function randomPick(list) {
+    if (!list || !list.length) return null;
+    return list[Math.floor(Math.random() * list.length)];
+  }
+
+  function charactersByKind(kind) {
+    var out = [];
+    var i;
+    for (i = 0; i < characters.length; i++) {
+      if (characters[i].kind === kind) out.push(characters[i]);
+    }
+    return out;
+  }
+
+  function mineCheatItems() {
+    var pool = MC_ITEMS_COMMON.concat(MC_ITEMS_RARE, MC_ITEMS_EPIC);
+    var mineralIds = {
+      dirt: 1,
+      coal: 1,
+      iron: 1,
+      gold: 1,
+      diamond: 1,
+      emerald: 1,
+      redstone: 1,
+      netherite: 1,
+      cobblestone: 1,
+      torch: 1,
+      chest: 1,
+      plank: 1,
+    };
+    var picked = [];
+    var i;
+    for (i = 0; i < pool.length; i++) {
+      if (mineralIds[pool[i].id]) picked.push(pool[i]);
+    }
+    return picked.length ? picked : pool;
+  }
+
+  function clearCheatFx() {
+    if (!elCheatFx) return;
+    elCheatFx.replaceChildren();
+    elCheatFx.hidden = true;
+    elCheatFx.setAttribute("aria-hidden", "true");
+    cheatState.busy = false;
+  }
+
+  function runMineCheat() {
+    if (!elCheatFx || cheatState.busy) return;
+    var items = mineCheatItems();
+    if (!items.length) {
+      showToast("Nothing to mine yet — wait for items to load!");
+      return;
+    }
+    cheatState.busy = true;
+    elCheatFx.hidden = false;
+    elCheatFx.setAttribute("aria-hidden", "false");
+    elCheatFx.replaceChildren();
+
+    var count = 36;
+    var i;
+    for (i = 0; i < count; i++) {
+      (function (idx) {
+        var item = items[idx % items.length];
+        var img = document.createElement("img");
+        img.className = "cheat-mine-item";
+        img.alt = item.label;
+        img.style.left = 4 + Math.random() * 92 + "%";
+        img.style.animationDuration = 2.4 + Math.random() * 1.8 + "s";
+        img.style.animationDelay = Math.random() * 1.2 + "s";
+        img.style.setProperty(
+          "--cheat-drift",
+          (Math.random() * 80 - 40).toFixed(0) + "px"
+        );
+        img.style.width = 32 + Math.floor(Math.random() * 20) + "px";
+        img.style.height = img.style.width;
+        attachSpriteImg(img, item.id, item.wikiKey, item.src);
+        elCheatFx.appendChild(img);
+      })(i);
+    }
+
+    showToast("⛏️ Mine cheat! Look out below!");
+    window.setTimeout(clearCheatFx, 4800);
+  }
+
+  function spawnCheatBoom(parent, x, y, big) {
+    var boom = document.createElement("span");
+    boom.className =
+      "cheat-boom cheat-boom--pop" + (big ? " cheat-boom--big" : "");
+    boom.style.left = x + "px";
+    boom.style.top = y + "px";
+    parent.appendChild(boom);
+    var count = big ? 16 : 10;
+    var p;
+    for (p = 0; p < count; p++) {
+      (function (n) {
+        var spark = document.createElement("span");
+        spark.className =
+          "cheat-boom-particle" + (big ? " cheat-boom-particle--big" : "");
+        spark.style.left = x + "px";
+        spark.style.top = y + "px";
+        var angle = (Math.PI * 2 * n) / count + Math.random() * 0.4;
+        var dist = (big ? 40 : 28) + Math.random() * (big ? 55 : 42);
+        spark.style.setProperty("--sx", Math.cos(angle) * dist + "px");
+        spark.style.setProperty("--sy", Math.sin(angle) * dist + "px");
+        spark.style.background =
+          n % 3 === 0 ? "#ff5252" : n % 3 === 1 ? "#ffb300" : "#fff59d";
+        parent.appendChild(spark);
+      })(p);
+    }
+  }
+
+  function craftProjectileItems() {
+    return mineCheatItems();
+  }
+
+  function fighterCenterInArena(fighterEl, arenaEl) {
+    var fr = fighterEl.getBoundingClientRect();
+    var ar = arenaEl.getBoundingClientRect();
+    return {
+      x: fr.left - ar.left + fr.width / 2,
+      y: fr.top - ar.top + fr.height * 0.38,
+    };
+  }
+
+  function shootCheatProjectile(arena, fromEl, toEl, item, onDone) {
+    var from = fighterCenterInArena(fromEl, arena);
+    var to = fighterCenterInArena(toEl, arena);
+    var size = 26;
+    var proj = document.createElement("img");
+    proj.className = "cheat-projectile";
+    proj.alt = item.label;
+    proj.width = size;
+    proj.height = size;
+    proj.style.setProperty("--from-x", from.x - size / 2 + "px");
+    proj.style.setProperty("--from-y", from.y - size / 2 + "px");
+    proj.style.setProperty("--to-x", to.x - size / 2 + "px");
+    proj.style.setProperty("--to-y", to.y - size / 2 + "px");
+    proj.style.left = from.x - size / 2 + "px";
+    proj.style.top = from.y - size / 2 + "px";
+    attachSpriteImg(proj, item.id, item.wikiKey, item.src);
+    arena.appendChild(proj);
+    var done = false;
+    function finish() {
+      if (done) return;
+      done = true;
+      if (proj.parentNode) proj.parentNode.removeChild(proj);
+      if (onDone) onDone();
+    }
+    proj.addEventListener("animationend", finish);
+    window.setTimeout(finish, 520);
+  }
+
+  function buildCheatFighter(character, sideClass) {
+    var wrap = document.createElement("div");
+    wrap.className = "cheat-fighter " + sideClass;
+    var img = document.createElement("img");
+    img.alt = character.name;
+    attachSpriteImg(img, character.id, character.wikiKey || character.id, character.src, character.name);
+    wrap.appendChild(img);
+    var lbl = document.createElement("span");
+    lbl.className = "cheat-fighter__name";
+    lbl.textContent = character.name;
+    wrap.appendChild(lbl);
+    return wrap;
+  }
+
+  function runCraftCheat() {
+    if (!elCheatFx || cheatState.busy) return;
+    var heroes = charactersByKind("hero");
+    var villains = charactersByKind("villain");
+    var items = craftProjectileItems();
+    if (!heroes.length || !villains.length) {
+      showToast("Need heroes and mobs loaded first!");
+      return;
+    }
+    if (!items.length) {
+      showToast("Wait for items to load first!");
+      return;
+    }
+
+    var hero = randomPick(heroes);
+    var villain = randomPick(villains);
+    var heroWins = Math.random() < 0.5;
+    var loserSide = heroWins ? "villain" : "hero";
+    var winnerChar = loserSide === "hero" ? villain : hero;
+    var loserChar = loserSide === "hero" ? hero : villain;
+    var heroEl;
+    var villainEl;
+    var winnerEl;
+    var loserEl;
+
+    cheatState.busy = true;
+    elCheatFx.hidden = false;
+    elCheatFx.setAttribute("aria-hidden", "false");
+    elCheatFx.replaceChildren();
+
+    var stage = document.createElement("div");
+    stage.className = "cheat-fight";
+
+    var title = document.createElement("p");
+    title.className = "cheat-fight__title";
+    title.textContent = "Block battle!";
+    stage.appendChild(title);
+
+    var arena = document.createElement("div");
+    arena.className = "cheat-fight__arena";
+
+    heroEl = buildCheatFighter(hero, "cheat-fighter--hero");
+    villainEl = buildCheatFighter(villain, "cheat-fighter--villain");
+    arena.appendChild(heroEl);
+    arena.appendChild(villainEl);
+    winnerEl = loserSide === "hero" ? villainEl : heroEl;
+    loserEl = loserSide === "hero" ? heroEl : villainEl;
+    stage.appendChild(arena);
+    elCheatFx.appendChild(stage);
+
+    showToast("⚔️ Craft cheat! " + hero.name + " vs " + villain.name);
+
+    var volleys = [
+      { from: heroEl, to: villainEl, throwClass: "cheat-fighter--throw-left" },
+      { from: villainEl, to: heroEl, throwClass: "cheat-fighter--throw-right" },
+      { from: heroEl, to: villainEl, throwClass: "cheat-fighter--throw-left" },
+      { from: villainEl, to: heroEl, throwClass: "cheat-fighter--throw-right" },
+    ];
+    var volleyIdx = 0;
+
+    function runVolley() {
+      if (volleyIdx >= volleys.length) {
+        runFinalBarrage();
+        return;
+      }
+      var v = volleys[volleyIdx];
+      var item = randomPick(items);
+      v.from.classList.add(v.throwClass);
+      shootCheatProjectile(arena, v.from, v.to, item, function () {
+        v.from.classList.remove(v.throwClass);
+        v.to.classList.add("cheat-fighter--hit");
+        arena.classList.add("cheat-fight__arena--shake");
+        window.setTimeout(function () {
+          arena.classList.remove("cheat-fight__arena--shake");
+          v.to.classList.remove("cheat-fighter--hit");
+          volleyIdx += 1;
+          runVolley();
+        }, 220);
+      });
+    }
+
+    function runFinalBarrage() {
+      title.textContent = "FINISH HIM!";
+      title.classList.add("cheat-fight__title--dramatic");
+      var blasts = 0;
+      var maxBlasts = 6;
+
+      function nextBlast() {
+        if (blasts >= maxBlasts) {
+          window.setTimeout(koFinish, 350);
+          return;
+        }
+        var item = randomPick(items);
+        winnerEl.classList.add(
+          winnerEl === heroEl
+            ? "cheat-fighter--throw-left"
+            : "cheat-fighter--throw-right"
+        );
+        shootCheatProjectile(arena, winnerEl, loserEl, item, function () {
+          winnerEl.classList.remove(
+            "cheat-fighter--throw-left",
+            "cheat-fighter--throw-right"
+          );
+          loserEl.classList.add("cheat-fighter--hit");
+          arena.classList.add("cheat-fight__arena--shake");
+          window.setTimeout(function () {
+            arena.classList.remove("cheat-fight__arena--shake");
+            loserEl.classList.remove("cheat-fighter--hit");
+          }, 120);
+          blasts += 1;
+          window.setTimeout(nextBlast, 140);
+        });
+      }
+
+      nextBlast();
+    }
+
+    function koFinish() {
+      title.textContent = "K.O.! " + winnerChar.name + " wins!";
+      loserEl.classList.add("cheat-fighter--ko");
+
+      var rect = loserEl.getBoundingClientRect();
+      var arenaRect = arena.getBoundingClientRect();
+      var cx = rect.left - arenaRect.left + rect.width / 2;
+      var cy = rect.top - arenaRect.top + rect.height * 0.35;
+
+      spawnCheatBoom(arena, cx, cy, true);
+      window.setTimeout(function () {
+        spawnCheatBoom(arena, cx - 18, cy - 10, false);
+        spawnCheatBoom(arena, cx + 16, cy + 8, false);
+      }, 180);
+
+      window.setTimeout(function () {
+        loserEl.classList.remove("cheat-fighter--ko");
+        loserEl.classList.add("cheat-fighter--explode", "cheat-fighter--explode-big");
+        winnerEl.classList.add("cheat-fighter--win");
+      }, 420);
+
+      window.setTimeout(function () {
+        loserEl.classList.add("cheat-fighter--gone");
+      }, 1100);
+
+      showToast("💥 " + loserChar.name + " got block-blasted!");
+      window.setTimeout(clearCheatFx, 3200);
+    }
+
+    window.setTimeout(runVolley, 450);
+  }
+
+  function renderCheatList() {
+    if (!elCheatList) return;
+    elCheatList.replaceChildren("");
+    var i;
+    for (i = 0; i < CHEAT_DEFS.length; i++) {
+      (function (def) {
+        if (def.action === "help") return;
+        var li = document.createElement("li");
+        li.className = "cheat-list__item";
+        var code = document.createElement("span");
+        code.className = "cheat-list__code";
+        code.textContent = def.code;
+        var desc = document.createElement("span");
+        desc.className = "cheat-list__desc";
+        desc.textContent = def.desc;
+        li.appendChild(code);
+        li.appendChild(desc);
+        elCheatList.appendChild(li);
+      })(CHEAT_DEFS[i]);
+    }
+  }
+
+  function renderCheatActions() {
+    if (!elCheatActions) return;
+    elCheatActions.replaceChildren("");
+    var i;
+    for (i = 0; i < CHEAT_DEFS.length; i++) {
+      (function (def) {
+        if (def.action === "help") return;
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "cheat-action-btn cheat-action-btn--" + def.action;
+        btn.setAttribute("data-cheat-action", def.action);
+        var title = document.createElement("span");
+        title.className = "cheat-action-btn__label";
+        title.textContent = def.label || def.code;
+        var hint = document.createElement("span");
+        hint.className = "cheat-action-btn__hint";
+        hint.textContent = def.desc;
+        btn.appendChild(title);
+        btn.appendChild(hint);
+        btn.addEventListener("click", function (e) {
+          e.preventDefault();
+          runCheatAction(def.action);
+        });
+        elCheatActions.appendChild(btn);
+      })(CHEAT_DEFS[i]);
+    }
+  }
+
+  function runCheatAction(action) {
+    var key = String(action || "").trim();
+    if (key === "mine") {
+      closeCheatHelp();
+      runMineCheat();
+      return;
+    }
+    if (key === "craft") {
+      closeCheatHelp();
+      runCraftCheat();
+      return;
+    }
+    if (key === "help") {
+      openCheatHelp();
+    }
+  }
+
+  function openCheatHelp() {
+    if (!elCheatHelpModal) return;
+    renderCheatActions();
+    renderCheatList();
+    elCheatHelpModal.hidden = false;
+  }
+
+  function closeCheatHelp() {
+    if (elCheatHelpModal) elCheatHelpModal.hidden = true;
+  }
+
+  function tryCheatCodes(key) {
+    var now = Date.now();
+    if (now - cheatState.lastAt > 3500) cheatState.buffer = "";
+    cheatState.lastAt = now;
+
+    if (key.length !== 1) return;
+    cheatState.buffer += key === "?" ? "?" : key.toLowerCase();
+    if (cheatState.buffer.length > 12) {
+      cheatState.buffer = cheatState.buffer.slice(-12);
+    }
+
+    if (cheatState.buffer.slice(-4) === "mine") {
+      cheatState.buffer = "";
+      runMineCheat();
+      return;
+    }
+    if (cheatState.buffer.slice(-5) === "craft") {
+      cheatState.buffer = "";
+      runCraftCheat();
+      return;
+    }
+    if (cheatState.buffer.slice(-1) === "?") {
+      cheatState.buffer = "";
+      openCheatHelp();
     }
   }
 
@@ -2847,7 +4516,7 @@
       return;
     }
     state.people = [];
-    state.events = [];
+    state.ledger = [];
     state.dayNotes = [];
     state.settings.filterPersonId = "all";
     state.settings.selectedDayKey = dayKeyFromTs(Date.now());
@@ -2907,7 +4576,7 @@
     if (elRewardBackdrop) elRewardBackdrop.addEventListener("click", closeRewardSheet);
     if (elRewardStepBack) {
       elRewardStepBack.addEventListener("click", function () {
-        showRewardStep("points");
+        showRewardStep("category");
       });
     }
 
@@ -2950,6 +4619,40 @@
     }
     if (document.getElementById("btn-export")) {
       document.getElementById("btn-export").addEventListener("click", exportBackup);
+    }
+    if (elExportBackdrop) {
+      elExportBackdrop.addEventListener("click", closeExportModal);
+    }
+    if (elExportDone) {
+      elExportDone.addEventListener("click", closeExportModal);
+    }
+    if (elExportCopy) {
+      elExportCopy.addEventListener("click", function () {
+        copyExportToClipboard(true);
+      });
+    }
+    if (elExportDownload) {
+      elExportDownload.addEventListener("click", function () {
+        if (
+          downloadExportFile(exportDraft.text, exportDraft.filename)
+        ) {
+          showToast("Saved " + exportDraft.filename);
+        } else {
+          showToast("Could not save file here.");
+        }
+      });
+    }
+    if (document.getElementById("btn-import")) {
+      document.getElementById("btn-import").addEventListener("click", openImportModal);
+    }
+    if (elImportBackdrop) {
+      elImportBackdrop.addEventListener("click", closeImportModal);
+    }
+    if (elImportCancel) {
+      elImportCancel.addEventListener("click", closeImportModal);
+    }
+    if (elImportMerge) {
+      elImportMerge.addEventListener("click", runImportFromModal);
     }
     if (document.getElementById("btn-clear-data")) {
       document.getElementById("btn-clear-data").addEventListener("click", resetAllData);
@@ -3002,12 +4705,32 @@
         }
       });
     }
+    if (elCheatHelpBackdrop) {
+      elCheatHelpBackdrop.addEventListener("click", closeCheatHelp);
+    }
+    if (elCheatHelpClose) {
+      elCheatHelpClose.addEventListener("click", closeCheatHelp);
+    }
+    if (elCheatLaunch) {
+      elCheatLaunch.addEventListener("click", function (e) {
+        e.preventDefault();
+        openCheatHelp();
+      });
+    }
 
     document.addEventListener("keydown", function (e) {
       if (e.key === "Escape") {
+        if (elCheatHelpModal && !elCheatHelpModal.hidden) closeCheatHelp();
+        if (elCheatFx && !elCheatFx.hidden) clearCheatFx();
+        if (elImportModal && !elImportModal.hidden) closeImportModal();
+        if (elExportModal && !elExportModal.hidden) closeExportModal();
         if (elRewardSheet && !elRewardSheet.hidden) closeRewardSheet();
         if (elAddModal && !elAddModal.hidden) closeAddPlayerModal();
+        return;
       }
+      if (isTypingInField()) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      tryCheatCodes(e.key);
     });
   }
 
@@ -3018,6 +4741,7 @@
     Promise.all([loadCharacters(), loadMcItems(), loadBehaviorCategories()]).then(function () {
       setStatsPeriod(statsPeriod());
       renderAll();
+      prefetchAnimatedWikiGifs();
     });
   }
 
