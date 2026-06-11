@@ -8,7 +8,8 @@ Usage:
 from __future__ import annotations
 
 import json
-import re
+import shutil
+import sys
 import time
 import urllib.parse
 import urllib.request
@@ -16,7 +17,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 REWARD = ROOT / "rewards"
-WIKI_IMAGES = ROOT / "flashcards" / "tools" / "mc_wiki_images.json"
+WIKI_IMAGES = ROOT / "flashcards" / "tools" / "mc_wiki_images_remote.json"
 ITEMS_JSON = REWARD / "assets" / "mc_items.json"
 CHARS_JSON = REWARD / "assets" / "characters.json"
 SPRITES = REWARD / "assets" / "sprites"
@@ -83,10 +84,26 @@ def ext_for_url(url: str) -> str:
 
 
 def download(url: str, dest: Path) -> None:
-    dest.parent.mkdir(parents=True, exist_ok=True)
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     with urllib.request.urlopen(req, timeout=60) as resp:
         dest.write_bytes(resp.read())
+
+
+def is_remote(url: str) -> bool:
+    return url.strip().lower().startswith(("http://", "https://"))
+
+
+def copy_or_download(url: str, dest: Path) -> None:
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    if url.startswith("assets/wiki/"):
+        src = ROOT / "flashcards" / url
+        if src.is_file():
+            shutil.copyfile(src, dest)
+            return
+    if is_remote(url):
+        download(url, dest)
+        return
+    raise ValueError(f"cannot fetch sprite from {url}")
 
 
 def wiki_thumb_url(filename: str, size: int = 128) -> str:
@@ -103,6 +120,8 @@ def resolve_url(
 ) -> str | None:
     if key in wiki_images:
         url = wiki_images[key]
+        if url.startswith("assets/"):
+            return url
         if ".webp" in url.lower():
             return url.replace(".webp", ".png")
         return url
@@ -164,18 +183,33 @@ def patch_entry(
 
     download_url = url
     extra_name = EXTRA_FILES.get(wiki_key) or EXTRA_FILES.get(entry_id)
-    if extra_name:
+    if extra_name and is_remote(url):
         download_url = wiki_thumb_url(extra_name)
 
-    ext = ext_for_url(download_url)
+    ext = ext_for_url(download_url if is_remote(download_url) else url)
     extra_name = EXTRA_FILES.get(wiki_key) or EXTRA_FILES.get(entry_id)
     if extra_name and extra_name.lower().endswith(".gif"):
         ext = ".gif"
+    elif url.startswith("assets/wiki/"):
+        ext = Path(url).suffix or ext
     rel = f"assets/sprites/{entry_id}{ext}"
     dest = REWARD / rel
     if not dest.exists() or dest.stat().st_size < 32:
         print("  download:", entry_id, "->", rel)
-        download(download_url, dest)
+        source = url
+        flash_rel = flash_wiki_rel(wiki_key, url) if is_remote(url) else url
+        if flash_rel:
+            source = flash_rel
+        try:
+            copy_or_download(
+                download_url if is_remote(download_url) and not flash_rel else source,
+                dest,
+            )
+        except OSError as err:
+            print("  failed:", entry_id, err, file=sys.stderr)
+            entry["src"] = rel
+            downloaded[cache_key] = rel
+            return
         time.sleep(0.15)
     else:
         print("  cached:", entry_id)
@@ -184,7 +218,83 @@ def patch_entry(
     downloaded[cache_key] = rel
 
 
-def regenerate_embeds(items: dict, chars: dict) -> None:
+def ensure_wiki_key_sprite(key: str, url: str) -> None:
+    if sprite_rel_for_key(key):
+        return
+    rel = sprite_rel_for_remote(key, url)
+    dest = REWARD / rel
+    if dest.exists() and dest.stat().st_size >= 32:
+        return
+    print("  wiki key:", key, "->", rel)
+    source = url
+    if is_remote(url):
+        flash_rel = flash_wiki_rel(key, url)
+        if flash_rel:
+            source = flash_rel
+    try:
+        copy_or_download(source, dest)
+    except OSError as err:
+        print("  failed:", key, err, file=sys.stderr)
+        return
+    time.sleep(0.08)
+
+
+def sprite_rel_for_key(key: str) -> str | None:
+    for ext in (".png", ".gif", ".webp"):
+        rel = f"assets/sprites/{key}{ext}"
+        if (REWARD / rel).is_file():
+            return rel
+    return None
+
+
+def sprite_rel_for_remote(key: str, url: str) -> str:
+    ext = Path(url).suffix if url.startswith("assets/") else ext_for_url(url)
+    if url.startswith("assets/wiki/"):
+        ext = Path(url).suffix
+    if not ext:
+        ext = ".png"
+    return f"assets/sprites/{key}{ext}"
+
+
+def flash_wiki_rel(key: str, remote_url: str) -> str | None:
+    path = urllib.parse.urlparse(remote_url).path.lower()
+    if path.endswith(".gif"):
+        ext = ".gif"
+    elif path.endswith(".webp"):
+        ext = ".webp"
+    else:
+        ext = ".png"
+    rel = f"assets/wiki/{key}{ext}"
+    if (ROOT / "flashcards" / rel).is_file():
+        return rel
+    return None
+
+
+def regenerate_wiki_embed(wiki_images: dict[str, str]) -> None:
+    embed: dict[str, str] = {}
+    for key, value in wiki_images.items():
+        local = sprite_rel_for_key(key)
+        if local:
+            embed[key] = local
+            continue
+        url = str(value).strip()
+        if url.startswith("assets/wiki/"):
+            embed[key] = sprite_rel_for_remote(key, url)
+            continue
+        if is_remote(url):
+            embed[key] = sprite_rel_for_remote(key, url)
+            continue
+        if url.startswith("assets/sprites/"):
+            embed[key] = url
+    wiki_js = REWARD / "wiki-images-embed.js"
+    wiki_js.write_text(
+        "window.REWARD_WIKI_IMAGES=" + json.dumps(embed, ensure_ascii=False) + ";",
+        encoding="utf-8",
+    )
+    print("Regenerated wiki-images-embed.js")
+
+
+def regenerate_embeds(items: dict, chars: dict, wiki_images: dict[str, str]) -> None:
     items_js = REWARD / "mc-items-embed.js"
     chars_js = REWARD / "characters-embed.js"
     items_js.write_text(
@@ -197,6 +307,7 @@ def regenerate_embeds(items: dict, chars: dict) -> None:
         + ";",
         encoding="utf-8",
     )
+    regenerate_wiki_embed(wiki_images)
     print("Regenerated embed JS files")
 
 
@@ -216,9 +327,15 @@ def main() -> None:
     for entry in chars.get("characters", []):
         patch_entry(entry, wiki_images, api_cache, downloaded)
 
+    print("Syncing wiki-key sprites for embed...")
+    for key, url in wiki_images.items():
+        url = str(url).strip()
+        if url:
+            ensure_wiki_key_sprite(key, url)
+
     write_json(ITEMS_JSON, items)
     write_json(CHARS_JSON, chars)
-    regenerate_embeds(items, chars)
+    regenerate_embeds(items, chars, wiki_images)
     print("Done.", len(downloaded), "sprites referenced")
 
 

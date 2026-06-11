@@ -6,6 +6,7 @@ Source: https://minecraft.wiki (official Minecraft Wiki).
 from __future__ import annotations
 
 import json
+import urllib.parse
 from pathlib import Path
 
 
@@ -190,6 +191,7 @@ for raw_line in _LINES.strip().splitlines():
     _BY_WORD[word] = (page, blurb)
 
 _IMAGES_PATH = Path(__file__).resolve().parent / "mc_wiki_images.json"
+_REMOTE_IMAGES_PATH = Path(__file__).resolve().parent / "mc_wiki_images_remote.json"
 _KIDS_PATH = Path(__file__).resolve().parent / "mc_kids_blurbs.json"
 _STATS_PATH = Path(__file__).resolve().parent / "mc_word_stats.json"
 try:
@@ -198,6 +200,16 @@ try:
     )
 except (FileNotFoundError, json.JSONDecodeError, OSError):
     _IMAGE_URLS = {}
+try:
+    _REMOTE_IMAGE_URLS: dict[str, str] = json.loads(
+        _REMOTE_IMAGES_PATH.read_text(encoding="utf-8")
+    )
+except (FileNotFoundError, json.JSONDecodeError, OSError):
+    _REMOTE_IMAGE_URLS = {}
+if not _REMOTE_IMAGE_URLS:
+    _REMOTE_IMAGE_URLS = {
+        k: v for k, v in _IMAGE_URLS.items() if str(v).strip().startswith("http")
+    }
 try:
     _KIDS_BLURBS: dict[str, str] = json.loads(_KIDS_PATH.read_text(encoding="utf-8"))
 except (FileNotFoundError, json.JSONDecodeError, OSError):
@@ -236,6 +248,18 @@ def _normalize_mc_stats(raw: object) -> dict | None:
     return out
 
 
+def local_wiki_image_path(word: str, remote_url: str) -> str:
+    """Map a wiki thumbnail URL to a repo-relative cached file path."""
+    path = urllib.parse.urlparse(remote_url).path.lower()
+    if path.endswith(".gif"):
+        ext = ".gif"
+    elif path.endswith(".webp"):
+        ext = ".webp"
+    else:
+        ext = ".png"
+    return f"assets/wiki/{word.strip().lower()}{ext}"
+
+
 def mc_wiki_fields(word: str) -> dict:
     """Return Minecraft Wiki fields for a lowercase word."""
     key = (word or "").strip().lower()
@@ -248,9 +272,9 @@ def mc_wiki_fields(word: str) -> dict:
         stats = _normalize_mc_stats(_WORD_STATS.get(key))
         if stats:
             out["mcStats"] = stats
-        img = str(_IMAGE_URLS.get(key, "")).strip()
-        if img:
-            out["mcImageUrl"] = img
+        remote = str(_REMOTE_IMAGE_URLS.get(key, "")).strip()
+        if remote:
+            out["mcImageUrl"] = local_wiki_image_path(key, remote)
         return out
 
     fallback_title = key.replace("_", " ").title() if key else "Minecraft"

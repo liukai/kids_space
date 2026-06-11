@@ -1,61 +1,61 @@
 {
   "heroMinerals": [
-    { "src": "https://minecraft.wiki/images/thumb/Coal_JE4_BE3.png/128px-Coal_JE4_BE3.png?165e9" },
-    { "src": "https://minecraft.wiki/images/thumb/Iron_Ingot_JE3_BE2.png/128px-Iron_Ingot_JE3_BE2.png?849cb" },
-    { "src": "https://minecraft.wiki/images/thumb/Copper_Ingot_JE2_BE1.png/128px-Copper_Ingot_JE2_BE1.png?0d410" },
-    { "src": "https://minecraft.wiki/images/thumb/Gold_Ingot_JE4_BE2.png/128px-Gold_Ingot_JE4_BE2.png?80cd6" },
-    { "src": "https://minecraft.wiki/images/thumb/Lapis_Lazuli_JE2_BE2.png/128px-Lapis_Lazuli_JE2_BE2.png?03506" },
-    { "src": "https://minecraft.wiki/images/thumb/Redstone_Dust_JE2_BE2.png/128px-Redstone_Dust_JE2_BE2.png?8cf17" },
-    { "src": "https://minecraft.wiki/images/thumb/Emerald_JE3_BE3.png/128px-Emerald_JE3_BE3.png?4c5f3" },
-    { "src": "https://minecraft.wiki/images/thumb/Diamond_JE3_BE3.png/128px-Diamond_JE3_BE3.png?99d00" },
-    { "src": "https://minecraft.wiki/images/thumb/Netherite_Ingot_JE1_BE2.png/128px-Netherite_Ingot_JE1_BE2.png?79364" },
-    { "src": "https://minecraft.wiki/images/thumb/Nether_Quartz_JE2_BE2.png/128px-Nether_Quartz_JE2_BE2.png?d0049" }
+    { "src": "assets/wiki/coal.png" },
+    { "src": "assets/wiki/iron.png" },
+    { "src": "assets/wiki/copper.png" },
+    { "src": "assets/wiki/gold.png" },
+    { "src": "assets/wiki/lapis.png" },
+    { "src": "assets/wiki/redstone.png" },
+    { "src": "assets/wiki/emerald.png" },
+    { "src": "assets/wiki/diamond.png" },
+    { "src": "assets/wiki/netherite.png" },
+    { "src": "assets/wiki/quartz.png" }
   ],
   "mascots": [
     {
       "name": "Villager",
       "kind": "hero",
-      "src": "https://minecraft.wiki/images/thumb/Plains_Villager_Base_JE2.png/128px-Plains_Villager_Base_JE2.png?a2fcc"
+      "src": "assets/wiki/villager.png"
     },
     {
       "name": "Wolf",
       "kind": "hero",
-      "src": "https://minecraft.wiki/images/thumb/Wolf_JE2_BE2.png/128px-Wolf_JE2_BE2.png?ee46e"
+      "src": "assets/wiki/wolf.png"
     },
     {
       "name": "Allay",
       "kind": "hero",
-      "src": "https://minecraft.wiki/images/thumb/Allay_JE2_BE2.gif/128px-Allay_JE2_BE2.gif?aca63"
+      "src": "assets/wiki/allay.gif"
     },
     {
       "name": "Alex",
       "kind": "hero",
-      "src": "https://minecraft.wiki/images/thumb/Alex_%28slim%29_JE2.png/128px-Alex_%28slim%29_JE2.png?f1c0e"
+      "src": "assets/wiki/player.png"
     },
     {
       "name": "Axolotl",
       "kind": "hero",
-      "src": "https://minecraft.wiki/images/thumb/Axolotl_Idle_Floor_Underwater.gif/128px-Axolotl_Idle_Floor_Underwater.gif?20bba"
+      "src": "assets/wiki/axolotl.gif"
     },
     {
       "name": "Sniffer",
       "kind": "hero",
-      "src": "https://minecraft.wiki/images/thumb/Sniffer_sniffsniff.gif/128px-Sniffer_sniffsniff.gif?36ccd"
+      "src": "assets/wiki/sniffer.gif"
     },
     {
       "name": "Creeper",
       "kind": "villain",
-      "src": "https://minecraft.wiki/images/thumb/Creeper_JE3_BE1.png/128px-Creeper_JE3_BE1.png?dc7b2",
+      "src": "assets/wiki/creeper.png",
       "loot": [
-        { "src": "https://minecraft.wiki/images/thumb/TNT_JE3_BE2.png/128px-TNT_JE3_BE2.png?62989" },
-        { "src": "https://minecraft.wiki/images/thumb/Redstone_Dust_JE2_BE2.png/128px-Redstone_Dust_JE2_BE2.png?8cf17" },
-        { "src": "https://minecraft.wiki/images/thumb/Flint_JE3_BE3.png/128px-Flint_JE3_BE3.png?d10d1" }
+        { "src": "assets/wiki/tnt.png" },
+        { "src": "assets/wiki/redstone.png" },
+        { "src": "assets/wiki/flint.png" }
       ]
     },
     {
       "name": "Zombie",
       "kind": "villain",
-      "src": "https://minecraft.wiki/images/thumb/Zombie_JE3_BE2.png/128px-Zombie_JE3_BE2.png?c5423",
+      "src": "assets/wiki/zombie.png",
       "loot": [
         { "emoji": "🍖" },
         { "emoji": "🥕" },
@@ -65,61 +65,61 @@
     {
       "name": "Skeleton",
       "kind": "villain",
-      "src": "https://minecraft.wiki/images/thumb/Lefthandedskeleton.png/128px-Lefthandedskeleton.png?2221f",
+      "src": "assets/wiki/skeleton.png",
       "loot": [
-        { "src": "https://minecraft.wiki/images/thumb/Arrow_JE2_BE1.png/128px-Arrow_JE2_BE1.png?06482" },
+        { "src": "assets/wiki/arrow.png" },
         { "emoji": "🦴" },
-        { "src": "https://minecraft.wiki/images/thumb/Bow_JE2_BE1.png/128px-Bow_JE2_BE1.png?c428a" }
+        { "src": "assets/wiki/bow.png" }
       ]
     },
     {
       "name": "Spider",
       "kind": "villain",
-      "src": "https://minecraft.wiki/images/thumb/Spider_JE5_BE4.png/128px-Spider_JE5_BE4.png?b090e",
+      "src": "assets/wiki/spider.png",
       "loot": [
         { "emoji": "🕸️" },
         { "emoji": "👁️" },
-        { "src": "https://minecraft.wiki/images/thumb/Redstone_Dust_JE2_BE2.png/128px-Redstone_Dust_JE2_BE2.png?8cf17" }
+        { "src": "assets/wiki/redstone.png" }
       ]
     },
     {
       "name": "Enderman",
       "kind": "villain",
-      "src": "https://minecraft.wiki/images/thumb/Enderman_JE3.png/128px-Enderman_JE3.png?c6308",
+      "src": "assets/wiki/enderman.png",
       "loot": [
-        { "src": "https://minecraft.wiki/images/thumb/Ender_Pearl_JE3_BE2.png/128px-Ender_Pearl_JE3_BE2.png?829a7" },
-        { "src": "https://minecraft.wiki/images/thumb/Obsidian_JE3_BE2.png/128px-Obsidian_JE3_BE2.png?0a8ae" },
-        { "src": "https://minecraft.wiki/images/thumb/Chorus_Fruit_JE2_BE2.png/128px-Chorus_Fruit_JE2_BE2.png?c8e41" }
+        { "src": "assets/wiki/pearl.png" },
+        { "src": "assets/wiki/obsidian.png" },
+        { "src": "assets/wiki/chorus.png" }
       ]
     },
     {
       "name": "Ghast",
       "kind": "villain",
-      "src": "https://minecraft.wiki/images/thumb/Ghast_JE3_BE3.gif/128px-Ghast_JE3_BE3.gif?ae9fb",
+      "src": "assets/wiki/ghast.gif",
       "loot": [
         { "emoji": "💧" },
-        { "src": "https://minecraft.wiki/images/thumb/Flint_JE3_BE3.png/128px-Flint_JE3_BE3.png?d10d1" },
-        { "src": "https://minecraft.wiki/images/thumb/Lava_JE19.gif/128px-Lava_JE19.gif?792cb" }
+        { "src": "assets/wiki/flint.png" },
+        { "src": "assets/wiki/lava.gif" }
       ]
     },
     {
       "name": "Blaze",
       "kind": "villain",
-      "src": "https://minecraft.wiki/images/thumb/Blaze_JE2.gif/128px-Blaze_JE2.gif?29f6f",
+      "src": "assets/wiki/blaze.gif",
       "loot": [
         { "emoji": "🔥" },
-        { "src": "https://minecraft.wiki/images/thumb/Coal_JE4_BE3.png/128px-Coal_JE4_BE3.png?165e9" },
-        { "src": "https://minecraft.wiki/images/thumb/Redstone_Dust_JE2_BE2.png/128px-Redstone_Dust_JE2_BE2.png?8cf17" }
+        { "src": "assets/wiki/coal.png" },
+        { "src": "assets/wiki/redstone.png" }
       ]
     },
     {
       "name": "Warden",
       "kind": "villain",
-      "src": "https://minecraft.wiki/images/thumb/Warden.gif/128px-Warden.gif?d0f99",
+      "src": "assets/wiki/warden.gif",
       "loot": [
-        { "src": "https://minecraft.wiki/images/thumb/Sculk_JE1_BE1.gif/128px-Sculk_JE1_BE1.gif?e168f" },
+        { "src": "assets/wiki/sculk.gif" },
         { "emoji": "🔮" },
-        { "src": "https://minecraft.wiki/images/thumb/Obsidian_JE3_BE2.png/128px-Obsidian_JE3_BE2.png?0a8ae" }
+        { "src": "assets/wiki/obsidian.png" }
       ]
     }
   ]

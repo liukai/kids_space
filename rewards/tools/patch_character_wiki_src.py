@@ -12,7 +12,7 @@ import urllib.parse
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-WIKI_IMAGES = ROOT / "flashcards" / "tools" / "mc_wiki_images.json"
+WIKI_IMAGES = ROOT / "flashcards" / "tools" / "mc_wiki_images_remote.json"
 CHARS_JSON = ROOT / "rewards" / "assets" / "characters.json"
 CHARS_EMBED = ROOT / "rewards" / "characters-embed.js"
 

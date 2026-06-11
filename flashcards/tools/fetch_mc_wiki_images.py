@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Fetch Minecraft Wiki thumbnails for MC flashcard words.
 
-Writes tools/mc_wiki_images.json (word -> thumbnail URL). Then rebuild embed:
+Writes tools/mc_wiki_images_remote.json (word -> thumbnail URL). Then cache locally:
   python3 flashcards/tools/fetch_mc_wiki_images.py
-  python3 flashcards/tools/build_words_embed.py
+  python3 flashcards/tools/sync_wiki_assets.py
   python3 flashcards/tools/merge-pronunciations.py
 """
 
@@ -18,7 +18,7 @@ from pathlib import Path
 from minecraft_wiki_data import _BY_WORD
 
 ROOT = Path(__file__).resolve().parent
-OUT = ROOT / "mc_wiki_images.json"
+OUT = ROOT / "mc_wiki_images_remote.json"
 API = "https://minecraft.wiki/api.php"
 USER_AGENT = "kids_space-flashcards/1.0 (educational; contact: github.com/liukai/kids_space)"
 BATCH = 20

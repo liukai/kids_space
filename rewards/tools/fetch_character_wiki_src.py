@@ -18,7 +18,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 CHARS_JSON = ROOT / "rewards" / "assets" / "characters.json"
 CHARS_EMBED = ROOT / "rewards" / "characters-embed.js"
-WIKI_IMAGES = ROOT / "flashcards" / "tools" / "mc_wiki_images.json"
+WIKI_IMAGES = ROOT / "flashcards" / "tools" / "mc_wiki_images_remote.json"
 API = "https://minecraft.wiki/api.php"
 USER_AGENT = "kids_space-rewards/1.0 (educational; local cache)"
 THUMB = 128

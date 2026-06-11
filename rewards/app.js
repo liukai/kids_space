@@ -156,31 +156,31 @@
       id: "steve",
       name: "Steve",
       kind: "hero",
-      src: "https://minecraft.wiki/images/thumb/Steve_%28classic%29_JE2.png/128px-Steve_%28classic%29_JE2.png?790ea",
+      src: "assets/sprites/steve.png",
     },
     {
       id: "alex",
       name: "Alex",
       kind: "hero",
-      src: "https://minecraft.wiki/images/thumb/Alex_%28slim%29_JE2.png/128px-Alex_%28slim%29_JE2.png?f1c0e",
+      src: "assets/sprites/alex.png",
     },
     {
       id: "villager",
       name: "Villager",
       kind: "hero",
-      src: "https://minecraft.wiki/images/thumb/Plains_Villager_Base_JE2.png/128px-Plains_Villager_Base_JE2.png?a2fcc",
+      src: "assets/sprites/villager.png",
     },
     {
       id: "creeper",
       name: "Creeper",
       kind: "villain",
-      src: "https://minecraft.wiki/images/thumb/Creeper_JE3_BE1.png/128px-Creeper_JE3_BE1.png?dc7b2",
+      src: "assets/sprites/creeper.png",
     },
     {
       id: "zombie",
       name: "Zombie",
       kind: "villain",
-      src: "https://minecraft.wiki/images/thumb/Zombie_JE3_BE2.png/128px-Zombie_JE3_BE2.png?c5423",
+      src: "assets/sprites/zombie.png",
     },
   ];
 
@@ -490,12 +490,15 @@
 
   function resolveWikiThumb(wikiKey) {
     var key = String(wikiKey || "").trim();
+    var i;
+    var locals;
     if (!key) return "";
+    locals = localSpriteCandidates(key);
+    for (i = 0; i < locals.length; i++) {
+      if (locals[i]) return locals[i];
+    }
     if (window.REWARD_WIKI_IMAGES && window.REWARD_WIKI_IMAGES[key]) {
       return window.REWARD_WIKI_IMAGES[key];
-    }
-    if (window.REWARD_EXTRA_WIKI_FILES && window.REWARD_EXTRA_WIKI_FILES[key]) {
-      return wikiThumbUrlFromFilename(window.REWARD_EXTRA_WIKI_FILES[key], 128);
     }
     return "";
   }
@@ -505,54 +508,17 @@
     var out = [];
     var seen = {};
     var i;
-    var j;
-    var built;
+    var locals;
     function add(url) {
-      var variants = imageUrlVariants(url);
-      for (i = 0; i < variants.length; i++) {
-        if (variants[i] && !seen[variants[i]]) {
-          seen[variants[i]] = true;
-          out.push(variants[i]);
-        }
-      }
+      var u = String(url || "").trim();
+      if (!u || seen[u]) return;
+      seen[u] = true;
+      out.push(u);
     }
-    if (typeof mcWikiGifCache[key] === "string") {
-      add(mcWikiGifCache[key]);
-    }
-    if (window.REWARD_WIKI_GIF_URLS && window.REWARD_WIKI_GIF_URLS[key]) {
-      add(window.REWARD_WIKI_GIF_URLS[key]);
-    }
-    if (window.REWARD_WIKI_GIF_FILES && window.REWARD_WIKI_GIF_FILES[key]) {
-      var gifNames = window.REWARD_WIKI_GIF_FILES[key];
-      if (typeof gifNames === "string") gifNames = [gifNames];
-      for (i = 0; i < gifNames.length; i++) {
-        built = wikiThumbCandidatesFromFilename(gifNames[i], 128);
-        for (j = 0; j < built.length; j++) {
-          add(built[j]);
-        }
-      }
-    }
+    locals = localSpriteCandidates(key);
+    for (i = 0; i < locals.length; i++) add(locals[i]);
     if (window.REWARD_WIKI_IMAGES && window.REWARD_WIKI_IMAGES[key]) {
       add(window.REWARD_WIKI_IMAGES[key]);
-    }
-    if (window.REWARD_EXTRA_WIKI_FILES && window.REWARD_EXTRA_WIKI_FILES[key]) {
-      built = wikiThumbCandidatesFromFilename(
-        window.REWARD_EXTRA_WIKI_FILES[key],
-        128
-      );
-      for (i = 0; i < built.length; i++) {
-        add(built[i]);
-      }
-    }
-    if (window.REWARD_ALT_WIKI_FILES && window.REWARD_ALT_WIKI_FILES[key]) {
-      var altNames = window.REWARD_ALT_WIKI_FILES[key];
-      if (typeof altNames === "string") altNames = [altNames];
-      for (i = 0; i < altNames.length; i++) {
-        built = wikiThumbCandidatesFromFilename(altNames[i], 128);
-        for (j = 0; j < built.length; j++) {
-          add(built[j]);
-        }
-      }
     }
     return sortCandidatesGifFirst(out);
   }

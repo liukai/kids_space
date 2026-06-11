@@ -30,5 +30,6 @@ Only chomper.png is loaded by the current build; add others when you extend spri
        { "name": "Villager", "kind": "hero", "src": "https://…" },
        { "name": "Creeper", "kind": "villain", "src": "https://…", "loot": [ … ] }
      ] }
-   - Wiki image URLs from tools/fetch_mc_wiki_images.py work well for src.
+   - Wiki image URLs from tools/fetch_mc_wiki_images.py; cache locally with
+     tools/sync_wiki_assets.py (assets/wiki/*.png|gif).
    - Legacy PvZ PNGs in this folder are unused; safe to delete.

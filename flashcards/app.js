@@ -20,37 +20,37 @@
   var QUIZ_CYCLE_LEN = QUIZ_CYCLE_COLS * QUIZ_CYCLE_ROWS;
   /** Default MC trail roster (mirrors assets/set-maze/trail-mascots.json). */
   var DEFAULT_TRAIL_HERO_MINERALS = [
-    { src: "https://minecraft.wiki/images/thumb/Coal_JE4_BE3.png/128px-Coal_JE4_BE3.png?165e9" },
-    { src: "https://minecraft.wiki/images/thumb/Iron_Ingot_JE3_BE2.png/128px-Iron_Ingot_JE3_BE2.png?849cb" },
-    { src: "https://minecraft.wiki/images/thumb/Gold_Ingot_JE4_BE2.png/128px-Gold_Ingot_JE4_BE2.png?80cd6" },
-    { src: "https://minecraft.wiki/images/thumb/Diamond_JE3_BE3.png/128px-Diamond_JE3_BE3.png?99d00" },
-    { src: "https://minecraft.wiki/images/thumb/Emerald_JE3_BE3.png/128px-Emerald_JE3_BE3.png?4c5f3" },
-    { src: "https://minecraft.wiki/images/thumb/Lapis_Lazuli_JE2_BE2.png/128px-Lapis_Lazuli_JE2_BE2.png?03506" },
+    { src: "assets/wiki/coal.png" },
+    { src: "assets/wiki/iron.png" },
+    { src: "assets/wiki/gold.png" },
+    { src: "assets/wiki/diamond.png" },
+    { src: "assets/wiki/emerald.png" },
+    { src: "assets/wiki/lapis.png" },
   ];
   var DEFAULT_TRAIL_MASCOTS = [
     {
       name: "Villager",
       kind: "hero",
-      src: "https://minecraft.wiki/images/thumb/Plains_Villager_Base_JE2.png/128px-Plains_Villager_Base_JE2.png?a2fcc",
+      src: "assets/wiki/villager.png",
     },
     {
       name: "Wolf",
       kind: "hero",
-      src: "https://minecraft.wiki/images/thumb/Wolf_JE2_BE2.png/128px-Wolf_JE2_BE2.png?ee46e",
+      src: "assets/wiki/wolf.png",
     },
     {
       name: "Creeper",
       kind: "villain",
-      src: "https://minecraft.wiki/images/thumb/Creeper_JE3_BE1.png/128px-Creeper_JE3_BE1.png?dc7b2",
+      src: "assets/wiki/creeper.png",
       loot: [
-        { src: "https://minecraft.wiki/images/thumb/TNT_JE3_BE2.png/128px-TNT_JE3_BE2.png?62989" },
-        { src: "https://minecraft.wiki/images/thumb/Redstone_Dust_JE2_BE2.png/128px-Redstone_Dust_JE2_BE2.png?8cf17" },
+        { src: "assets/wiki/tnt.png" },
+        { src: "assets/wiki/redstone.png" },
       ],
     },
     {
       name: "Zombie",
       kind: "villain",
-      src: "https://minecraft.wiki/images/thumb/Zombie_JE3_BE2.png/128px-Zombie_JE3_BE2.png?c5423",
+      src: "assets/wiki/zombie.png",
       loot: [{ emoji: "\uD83C\uDF56" }, { emoji: "\uD83E\uDD55" }],
     },
   ];
