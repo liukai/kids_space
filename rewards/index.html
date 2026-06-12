@@ -18,7 +18,7 @@
     href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&family=Pixelify+Sans:wght@400;500;600;700&display=swap"
     rel="stylesheet"
   />
-  <link rel="stylesheet" href="styles.css?v=24" />
+  <link rel="stylesheet" href="styles.css?v=25" />
 </head>
 <body>
   <div class="app">
@@ -285,18 +285,22 @@
     <div class="modal__panel modal__panel--wide" role="dialog" aria-modal="true" aria-labelledby="import-modal-title">
       <h2 class="modal__title" id="import-modal-title">Import backup</h2>
       <p class="modal__hint">
-        Paste one or more Reward Overworld exports below. Everything merges by id — duplicates are skipped.
+        Pick a backup file or paste export JSON below. Everything merges by id — duplicates are skipped.
       </p>
+      <div class="modal__actions modal__actions--import-top">
+        <button type="button" class="btn btn--ghost" id="import-pick-file">Pick backup file</button>
+        <input type="file" id="import-file" accept=".json,application/json,text/json" hidden />
+      </div>
       <label class="sr-only" for="import-textarea">Export JSON</label>
       <textarea
         id="import-textarea"
         class="field-input import-textarea"
-        rows="12"
+        rows="10"
         spellcheck="false"
         placeholder='Paste export JSON here… you can paste several exports back-to-back.'
       ></textarea>
       <p class="import-result" id="import-result" hidden role="status"></p>
-      <div class="modal__actions">
+      <div class="modal__actions modal__actions--import">
         <button type="button" class="btn btn--ghost" id="import-cancel">Cancel</button>
         <button type="button" class="btn btn--primary" id="import-merge">Merge import</button>
       </div>
@@ -309,19 +313,20 @@
     <div class="modal__panel modal__panel--wide" role="dialog" aria-modal="true" aria-labelledby="export-modal-title">
       <h2 class="modal__title" id="export-modal-title">Export backup</h2>
       <p class="modal__hint" id="export-modal-hint">
-        Your full backup is below. It copies to the clipboard automatically — paste into Import on another device to merge.
+        Your full backup is below. On iPhone, Share is usually easiest — or copy and paste into Import on another device.
       </p>
       <label class="sr-only" for="export-textarea">Export JSON</label>
       <textarea
         id="export-textarea"
         class="field-input import-textarea"
-        rows="12"
+        rows="10"
         spellcheck="false"
         readonly
       ></textarea>
       <p class="import-result" id="export-result" hidden role="status"></p>
       <div class="modal__actions modal__actions--export">
-        <button type="button" class="btn btn--primary" id="export-copy">Copy to clipboard</button>
+        <button type="button" class="btn btn--primary" id="export-share">Share</button>
+        <button type="button" class="btn btn--ghost" id="export-copy">Copy</button>
         <button type="button" class="btn btn--ghost" id="export-download">Save file</button>
         <button type="button" class="btn btn--ghost" id="export-done">Done</button>
       </div>
@@ -358,6 +363,6 @@
   <script src="characters-embed.js?v=7"></script>
   <script src="mc-items-embed.js?v=8"></script>
   <script src="behavior-categories-embed.js?v=1"></script>
-  <script src="app.js?v=29" defer></script>
+  <script src="app.js?v=30" defer></script>
 </body>
 </html>

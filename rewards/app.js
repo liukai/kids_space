@@ -1,6 +1,6 @@
 /**
  * Reward Overworld — Minecraft-themed star board for kids.
- * Data stays in the browser (localStorage + cookie mirror for prefs).
+ * Data stays in the browser (localStorage primary; small http(s) cookie mirror as fallback).
  */
 (function () {
   "use strict";
@@ -312,7 +312,10 @@
   var elExportResult = document.getElementById("export-result");
   var elExportCopy = document.getElementById("export-copy");
   var elExportDownload = document.getElementById("export-download");
+  var elExportShare = document.getElementById("export-share");
   var elExportDone = document.getElementById("export-done");
+  var elImportFile = document.getElementById("import-file");
+  var elImportPickFile = document.getElementById("import-pick-file");
   var exportDraft = { text: "", filename: "" };
   var elCheatFx = document.getElementById("cheat-fx");
   var elCheatHelpModal = document.getElementById("cheat-help-modal");
@@ -1190,54 +1193,120 @@
       .catch(function () {});
   }
 
+  var COOKIE_MAX_BYTES = 3500;
+  var saveStateFailed = false;
+
+  function readCookieStateRaw() {
+    if (!isHttpProto()) return null;
+    var all = document.cookie.split("; ");
+    var i;
+    for (i = 0; i < all.length; i++) {
+      var ix = all[i].indexOf("=");
+      if (ix === -1) continue;
+      if (all[i].slice(0, ix) === COOKIE_DATA) {
+        try {
+          return decodeURIComponent(all[i].slice(ix + 1));
+        } catch (e) {
+          return null;
+        }
+      }
+    }
+    return null;
+  }
+
+  function readLocalStateRaw() {
+    var raw = null;
+    try {
+      raw = localStorage.getItem(LS_DATA);
+    } catch (e) {}
+    if (!raw) {
+      try {
+        raw = localStorage.getItem("reward_overworld_v1");
+      } catch (e2) {}
+    }
+    return raw;
+  }
+
+  function stateRawScore(raw) {
+    var parsed;
+    var ledgerLen;
+    if (!raw) return -1;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (e) {
+      return -1;
+    }
+    if (!parsed || !Array.isArray(parsed.people)) return -1;
+    ledgerLen = Array.isArray(parsed.ledger)
+      ? parsed.ledger.length
+      : Array.isArray(parsed.events)
+        ? parsed.events.length
+        : 0;
+    return parsed.people.length * 100000 + ledgerLen + (parsed.savedAt || 0) / 1e15;
+  }
+
+  function pickBestStateRaw(localRaw, cookieRaw) {
+    if (localRaw && !cookieRaw) return localRaw;
+    if (!localRaw && cookieRaw) return cookieRaw;
+    if (!localRaw && !cookieRaw) return null;
+    return stateRawScore(localRaw) >= stateRawScore(cookieRaw) ? localRaw : cookieRaw;
+  }
+
+  function clearStateCookie() {
+    if (!isHttpProto()) return;
+    try {
+      document.cookie =
+        COOKIE_DATA + "=;path=/;max-age=0;SameSite=Lax";
+    } catch (e) {}
+  }
+
   function saveState() {
     if (state.ledger.length > MAX_LEDGER) {
       state.ledger = state.ledger.slice(-MAX_LEDGER);
     }
     state.version = SCHEMA_VERSION;
+    state.savedAt = Date.now();
     var str = JSON.stringify(state);
+    var saved = false;
     try {
       localStorage.setItem(LS_DATA, str);
-    } catch (e) {}
-    if (isHttpProto() && str.length < 3500) {
-      try {
-        document.cookie =
-          COOKIE_DATA +
-          "=" +
-          encodeURIComponent(str) +
-          ";path=/;max-age=" +
-          365 * 86400 +
-          ";SameSite=Lax";
-      } catch (e2) {}
+      saved = true;
+      saveStateFailed = false;
+    } catch (e) {
+      saveStateFailed = true;
+      warnSaveFailedOnce();
     }
+    if (isHttpProto()) {
+      if (str.length < COOKIE_MAX_BYTES) {
+        try {
+          document.cookie =
+            COOKIE_DATA +
+            "=" +
+            encodeURIComponent(str) +
+            ";path=/;max-age=" +
+            365 * 86400 +
+            ";SameSite=Lax";
+        } catch (e2) {}
+      } else {
+        clearStateCookie();
+      }
+    }
+    return saved;
+  }
+
+  function warnSaveFailedOnce() {
+    if (!saveStateFailed || warnSaveFailedOnce._shown) return;
+    warnSaveFailedOnce._shown = true;
+    showToast(
+      "Could not save in this browser — export a backup now.",
+      "oops"
+    );
   }
 
   function loadState() {
-    var raw = null;
-    if (isHttpProto()) {
-      var all = document.cookie.split("; ");
-      var i;
-      for (i = 0; i < all.length; i++) {
-        var ix = all[i].indexOf("=");
-        if (ix === -1) continue;
-        if (all[i].slice(0, ix) === COOKIE_DATA) {
-          try {
-            raw = decodeURIComponent(all[i].slice(ix + 1));
-          } catch (e) {}
-          break;
-        }
-      }
-    }
-    if (!raw) {
-      try {
-        raw = localStorage.getItem(LS_DATA);
-      } catch (e2) {}
-    }
-    if (!raw) {
-      try {
-        raw = localStorage.getItem("reward_overworld_v1");
-      } catch (e4) {}
-    }
+    var localRaw = readLocalStateRaw();
+    var cookieRaw = readCookieStateRaw();
+    var raw = pickBestStateRaw(localRaw, cookieRaw);
     if (!raw) {
       ensureSettingsDefaults();
       return;
@@ -1263,6 +1332,11 @@
     ensureSettingsDefaults();
     migratePeople();
     migrateToLedger();
+    if (raw === cookieRaw && !localRaw) {
+      saveState();
+    } else if (localRaw && cookieRaw && raw === localRaw && cookieRaw !== localRaw) {
+      saveState();
+    }
   }
 
   function ensureSettingsDefaults() {
@@ -2841,8 +2915,29 @@
     return d.toLocaleDateString(undefined, { weekday: "short" });
   }
 
+  function hideToast() {
+    if (!elToast) return;
+    window.clearTimeout(showToast._t);
+    elToast.replaceChildren();
+    elToast.hidden = true;
+    elToast.classList.remove(
+      "toast--mega",
+      "toast--rare",
+      "toast--oops",
+      "toast--oops-big"
+    );
+  }
+
   function showToast(msg, kind) {
     if (!elToast) return;
+    if (
+      msg == null ||
+      (typeof msg === "string" && !String(msg).trim()) ||
+      (msg.nodeType === 1 && !msg.textContent && !msg.childNodes.length)
+    ) {
+      hideToast();
+      return;
+    }
     elToast.replaceChildren();
     if (typeof msg === "string") {
       elToast.appendChild(document.createTextNode(msg));
@@ -2850,15 +2945,18 @@
       elToast.appendChild(msg);
     }
     elToast.hidden = false;
-    elToast.classList.remove("toast--mega", "toast--rare", "toast--oops", "toast--oops-big");
+    elToast.classList.remove(
+      "toast--mega",
+      "toast--rare",
+      "toast--oops",
+      "toast--oops-big"
+    );
     if (kind === "mega") elToast.classList.add("toast--mega");
     if (kind === "rare") elToast.classList.add("toast--rare");
     if (kind === "oops") elToast.classList.add("toast--oops");
     if (kind === "oops-big") elToast.classList.add("toast--oops-big");
     window.clearTimeout(showToast._t);
-    showToast._t = window.setTimeout(function () {
-      elToast.hidden = true;
-    }, 2400);
+    showToast._t = window.setTimeout(hideToast, 2400);
   }
 
   function showStarToast(person, points, cat, lootId, kind) {
@@ -3920,29 +4018,64 @@
             "Copied to clipboard! (" + exportSummaryLine() + ")",
             false
           );
-          showToast("Copied to clipboard — paste into Import to merge.");
         }
       },
       function () {
         setExportResult(
-          "Could not copy automatically — tap Copy to clipboard or select all in the box.",
+          "Could not copy automatically — tap Copy, Share, or select all in the box.",
           true
         );
-        if (showFeedback !== false) {
-          showToast("Select the text and copy manually, or tap Copy.");
-        }
         return Promise.reject(new Error("copy failed"));
       }
     );
   }
 
+  function shareExportBackup() {
+    var text = exportDraft.text;
+    var filename = exportDraft.filename || exportFilename();
+    if (!text) return Promise.reject(new Error("empty"));
+    if (typeof navigator === "undefined" || !navigator.share) {
+      return Promise.reject(new Error("share unavailable"));
+    }
+    var sharePromise;
+    try {
+      if (typeof File !== "undefined" && navigator.canShare) {
+        var file = new File([text], filename, { type: "application/json" });
+        if (navigator.canShare({ files: [file] })) {
+          sharePromise = navigator.share({
+            files: [file],
+            title: "Reward Overworld backup",
+          });
+          return Promise.resolve(sharePromise).then(function () {
+            setExportResult("Shared " + filename + " (" + exportSummaryLine() + ")", false);
+          });
+        }
+      }
+      sharePromise = navigator.share({
+        title: "Reward Overworld backup",
+        text: text,
+      });
+      return Promise.resolve(sharePromise).then(function () {
+        setExportResult("Shared backup (" + exportSummaryLine() + ")", false);
+      });
+    } catch (e) {
+      return Promise.reject(e);
+    }
+  }
+
   function openExportModal() {
+    hideToast();
     exportDraft.text = buildExportText();
     exportDraft.filename = exportFilename();
     if (elExportTextarea) {
       elExportTextarea.value = exportDraft.text;
     }
     setExportResult("", false);
+    if (elExportShare) {
+      elExportShare.hidden = !(
+        typeof navigator !== "undefined" && typeof navigator.share === "function"
+      );
+    }
     if (elExportModal) elExportModal.hidden = false;
     copyExportToClipboard(false).then(
       function () {
@@ -3950,11 +4083,10 @@
           "Copied to clipboard! (" + exportSummaryLine() + ")",
           false
         );
-        showToast("Copied to clipboard — paste into Import to merge.");
       },
       function () {
         setExportResult(
-          "Tap Copy to clipboard, or select all in the box below.",
+          "Tap Copy, Share, or select all in the box below.",
           true
         );
       }
@@ -3968,6 +4100,7 @@
   }
 
   function closeExportModal() {
+    hideToast();
     if (elExportModal) elExportModal.hidden = true;
   }
 
@@ -3980,15 +4113,13 @@
     try {
       parsed = parseImportPayload(text);
     } catch (e) {
-      showToast("Could not read backup — check the JSON.");
       return null;
     }
-    var stats = importBackupData(parsed);
-    showToast("Import done: " + formatImportStats(stats));
-    return stats;
+    return importBackupData(parsed);
   }
 
   function openImportModal() {
+    hideToast();
     if (!elImportModal) return;
     if (elImportTextarea) elImportTextarea.value = "";
     if (elImportResult) {
@@ -4005,18 +4136,22 @@
   }
 
   function closeImportModal() {
+    hideToast();
     if (elImportModal) elImportModal.hidden = true;
+  }
+
+  function setImportResult(message, isError) {
+    if (!elImportResult) return;
+    elImportResult.hidden = !message;
+    elImportResult.textContent = message || "";
+    elImportResult.classList.toggle("import-result--error", !!isError);
   }
 
   function runImportFromModal() {
     if (!elImportTextarea) return;
     var text = String(elImportTextarea.value || "").trim();
     if (!text) {
-      if (elImportResult) {
-        elImportResult.hidden = false;
-        elImportResult.classList.add("import-result--error");
-        elImportResult.textContent = "Paste at least one export JSON first.";
-      }
+      setImportResult("Paste or pick a backup file first.", true);
       return;
     }
     var stats;
@@ -4024,21 +4159,25 @@
       var parsed = parseImportPayload(text);
       stats = importBackupData(parsed);
     } catch (e) {
-      if (elImportResult) {
-        elImportResult.hidden = false;
-        elImportResult.classList.add("import-result--error");
-        elImportResult.textContent = "Could not read backup — check the JSON.";
-      }
-      showToast("Could not read backup — check the JSON.");
+      setImportResult("Could not read backup — check the JSON.", true);
       return;
     }
-    if (elImportResult) {
-      elImportResult.hidden = false;
-      elImportResult.classList.remove("import-result--error");
-      elImportResult.textContent = "Merged: " + formatImportStats(stats);
-    }
-    showToast("Import done: " + formatImportStats(stats));
-    closeImportModal();
+    setImportResult("Merged: " + formatImportStats(stats), false);
+    window.setTimeout(closeImportModal, 900);
+  }
+
+  function importFromSelectedFile(file) {
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      var text = String(reader.result || "");
+      if (elImportTextarea) elImportTextarea.value = text;
+      runImportFromModal();
+    };
+    reader.onerror = function () {
+      setImportResult("Could not read that file.", true);
+    };
+    reader.readAsText(file);
   }
 
   function isTypingInField() {
@@ -4489,8 +4628,9 @@
     saveState();
     try {
       localStorage.removeItem(LS_DATA);
+      localStorage.removeItem("reward_overworld_v1");
     } catch (e) {}
-    document.cookie = COOKIE_DATA + "=;path=/;max-age=0;SameSite=Lax";
+    clearStateCookie();
     renderAll();
     showToast("All data cleared.");
   }
@@ -4602,14 +4742,31 @@
         if (
           downloadExportFile(exportDraft.text, exportDraft.filename)
         ) {
-          showToast("Saved " + exportDraft.filename);
+          setExportResult("Saved " + exportDraft.filename, false);
         } else {
-          showToast("Could not save file here.");
+          setExportResult("Could not save file here — try Share or Copy.", true);
         }
+      });
+    }
+    if (elExportShare) {
+      elExportShare.addEventListener("click", function () {
+        shareExportBackup().catch(function () {
+          setExportResult("Share not available — use Copy or Save file.", true);
+        });
       });
     }
     if (document.getElementById("btn-import")) {
       document.getElementById("btn-import").addEventListener("click", openImportModal);
+    }
+    if (elImportPickFile && elImportFile) {
+      elImportPickFile.addEventListener("click", function () {
+        elImportFile.click();
+      });
+      elImportFile.addEventListener("change", function () {
+        var file = elImportFile.files && elImportFile.files[0];
+        elImportFile.value = "";
+        importFromSelectedFile(file);
+      });
     }
     if (elImportBackdrop) {
       elImportBackdrop.addEventListener("click", closeImportModal);
@@ -4684,6 +4841,13 @@
       });
     }
 
+    window.addEventListener("pagehide", function () {
+      saveState();
+    });
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "hidden") saveState();
+    });
+
     document.addEventListener("keydown", function (e) {
       if (e.key === "Escape") {
         if (elCheatHelpModal && !elCheatHelpModal.hidden) closeCheatHelp();
@@ -4701,6 +4865,7 @@
   }
 
   function init() {
+    hideToast();
     rebuildItemIndex();
     loadState();
     bind();
