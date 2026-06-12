@@ -35,7 +35,9 @@
   var LEGACY_CATEGORY_IDS = {
     kind: "kind_heart",
     listen: "listening_ears",
-    try_hard: "brave_tryer",
+    try_hard: "do_hard_things",
+    brave_tryer: "do_hard_things",
+    giving_up_soon: "dont_try_hard",
     responsible: "helping_hands",
     calm: "clean_up_star",
   };
@@ -279,6 +281,7 @@
   var elRewardStepBack = document.getElementById("reward-step-back");
   var elRewardNoteInput = document.getElementById("reward-note-input");
   var elRewardEditActions = document.getElementById("reward-edit-actions");
+  var elRewardSaveEntry = document.getElementById("reward-save-entry");
   var elRewardDeleteEntry = document.getElementById("reward-delete-entry");
   var elHeroDeeds = document.getElementById("hero-deeds");
   var elHeroDeedsToday = document.getElementById("hero-deeds-today");
@@ -1288,6 +1291,7 @@
   function stateRawScore(raw) {
     var parsed;
     var ledgerLen;
+    var savedAt;
     if (!raw) return -1;
     try {
       parsed = JSON.parse(raw);
@@ -1300,14 +1304,21 @@
       : Array.isArray(parsed.events)
         ? parsed.events.length
         : 0;
-    return parsed.people.length * 100000 + ledgerLen + (parsed.savedAt || 0) / 1e15;
+    savedAt = Number(parsed.savedAt);
+    if (isFinite(savedAt) && savedAt > 0) return savedAt;
+    return parsed.people.length * 100000 + ledgerLen;
   }
 
   function pickBestStateRaw(localRaw, cookieRaw) {
     if (localRaw && !cookieRaw) return localRaw;
     if (!localRaw && cookieRaw) return cookieRaw;
     if (!localRaw && !cookieRaw) return null;
-    return stateRawScore(localRaw) >= stateRawScore(cookieRaw) ? localRaw : cookieRaw;
+    var localScore = stateRawScore(localRaw);
+    var cookieScore = stateRawScore(cookieRaw);
+    if (localScore !== cookieScore) {
+      return localScore > cookieScore ? localRaw : cookieRaw;
+    }
+    return localRaw;
   }
 
   function clearStateCookie() {
@@ -1508,6 +1519,25 @@
       parts.push(personDisplayLabel(winners[i].person));
     }
     return parts.join(" & ");
+  }
+
+  function chartWinnersForDay(winners) {
+    if (!winners || !winners.length) return [];
+    if (winners[0].score === 0) return [];
+    return winners;
+  }
+
+  function formatWinnerNamesWithScores(winners) {
+    var list = chartWinnersForDay(winners);
+    var i;
+    var parts = [];
+    if (!list.length) return "No winner";
+    for (i = 0; i < list.length; i++) {
+      parts.push(
+        personDisplayLabel(list[i].person) + " " + formatScore(list[i].score)
+      );
+    }
+    return parts.join(" · ");
   }
 
   function personIsWinnerForRange(personId, range) {
@@ -1717,17 +1747,75 @@
     return out;
   }
 
-  function groupNotesByDay(notes) {
+  function dayNoteToDiaryItem(note) {
+    return {
+      kind: "note",
+      id: note.id,
+      dayKey: note.dayKey,
+      ts: note.ts,
+      personId: note.personId,
+      text: note.text,
+    };
+  }
+
+  function ledgerEntryToDiaryStarItem(entry, dayKey) {
+    var text = ledgerEntryNote(entry);
+    if (!text) return null;
+    return {
+      kind: "star",
+      id: entry.id,
+      dayKey: dayKey || dayKeyFromTs(entry.ts),
+      ts: entry.ts,
+      personId: entry.personId,
+      text: text,
+      entryId: entry.id,
+      points: entry.points,
+      categoryId: entry.categoryId,
+      lootId: lootIdFromEntry(entry),
+    };
+  }
+
+  function ledgerStarNotesMatchingFilter() {
+    var pid = filterPersonId();
+    var out = [];
+    var i;
+    for (i = 0; i < state.ledger.length; i++) {
+      var entry = state.ledger[i];
+      if (pid !== "all" && entry.personId !== pid) continue;
+      var item = ledgerEntryToDiaryStarItem(entry);
+      if (item) out.push(item);
+    }
+    return out;
+  }
+
+  function diaryItemsMatchingFilter() {
+    var out = [];
+    var notes = notesMatchingFilter();
+    var stars = ledgerStarNotesMatchingFilter();
+    var i;
+    for (i = 0; i < notes.length; i++) {
+      out.push(dayNoteToDiaryItem(notes[i]));
+    }
+    for (i = 0; i < stars.length; i++) {
+      out.push(stars[i]);
+    }
+    out.sort(function (a, b) {
+      return b.ts - a.ts;
+    });
+    return out;
+  }
+
+  function groupDiaryItemsByDay(items) {
     var map = {};
     var order = [];
     var i;
-    for (i = 0; i < notes.length; i++) {
-      var key = notes[i].dayKey;
+    for (i = 0; i < items.length; i++) {
+      var key = items[i].dayKey;
       if (!map[key]) {
         map[key] = [];
         order.push(key);
       }
-      map[key].push(notes[i]);
+      map[key].push(items[i]);
     }
     order.sort(function (a, b) {
       return startOfDayKey(b) - startOfDayKey(a);
@@ -1738,59 +1826,126 @@
       map[dayKey].sort(function (a, b) {
         return b.ts - a.ts;
       });
-      groups.push({ dayKey: dayKey, notes: map[dayKey] });
+      groups.push({ dayKey: dayKey, items: map[dayKey] });
     }
     return groups;
   }
 
-  function renderDiaryNoteEntry(note, listEl, showPerson) {
-    var li = document.createElement("li");
-    li.className = "diary-entry";
-    var body = document.createElement("div");
-    body.className = "diary-entry__body";
-    var text = document.createElement("p");
-    text.className = "diary-entry__text";
-    text.textContent = note.text;
-    body.appendChild(text);
-    var meta = document.createElement("p");
-    meta.className = "diary-entry__meta";
-    var metaParts = [formatNoteTime(note.ts)];
-    if (showPerson && note.personId) {
-      var person = personById(note.personId);
-      if (person) metaParts.push(personDisplayLabel(person));
+  function diaryItemMetaParts(item, options) {
+    options = options || {};
+    var parts = [formatNoteTime(item.ts)];
+    if (item.kind === "star") {
+      parts.push(formatScore(item.points));
+      var cat = categoryDisplay({ categoryId: item.categoryId });
+      if (cat) parts.push(cat);
     }
-    meta.textContent = metaParts.join(" · ");
-    body.appendChild(meta);
-    var rm = document.createElement("button");
-    rm.type = "button";
-    rm.className = "day-notes-list__remove";
-    rm.textContent = "✕";
-    rm.setAttribute("aria-label", "Remove diary entry");
-    rm.addEventListener("click", function () {
-      removeDayNote(note.id);
-      renderDayNotesPanels();
-      renderDiaryTimeline();
-      showToast("Diary entry removed.");
+    return parts;
+  }
+
+  function appendDiaryPersonByline(parent, personId, compact) {
+    if (!parent || !personId) return false;
+    var person = personById(personId);
+    if (!person) return false;
+    var byline = document.createElement("div");
+    byline.className = compact ? "day-notes-list__byline" : "diary-entry__byline";
+    var ch = characterById(person.characterId);
+    if (ch) {
+      appendCharacterImg(
+        byline,
+        ch,
+        compact ? "day-notes-list__byline-avatar" : "diary-entry__byline-avatar",
+        compact ? 18 : 20
+      );
+    }
+    var name = document.createElement("span");
+    name.className = compact ? "day-notes-list__byline-name" : "diary-entry__byline-name";
+    name.textContent = personDisplayLabel(person);
+    byline.appendChild(name);
+    parent.appendChild(byline);
+    return true;
+  }
+
+  function attachDiaryStarEntryHandlers(el, entryId) {
+    function openEntry() {
+      openEditLedgerEntry(entryId);
+    }
+    el.addEventListener("click", openEntry);
+    el.addEventListener("keydown", function (ev) {
+      if (ev.key === "Enter" || ev.key === " ") {
+        ev.preventDefault();
+        openEntry();
+      }
     });
+  }
+
+  function renderDiaryItemEntry(item, listEl, options) {
+    options = options || {};
+    var compact = !!options.compact;
+    var showPerson = options.showPerson !== false;
+    var li = document.createElement("li");
+    li.className = compact
+      ? "day-notes-list__item" +
+        (item.kind === "star" ? " day-notes-list__item--star" : "")
+      : "diary-entry" + (item.kind === "star" ? " diary-entry--star" : "");
+    if (item.kind === "star") {
+      li.setAttribute("role", "button");
+      li.tabIndex = 0;
+      li.setAttribute("aria-label", "Edit points entry");
+      attachDiaryStarEntryHandlers(li, item.entryId);
+      if (item.lootId) {
+        appendMcItemImg(
+          li,
+          item.lootId,
+          compact ? "day-notes-list__loot" : "diary-entry__loot",
+          compact ? 28 : 32
+        );
+      }
+    }
+    var body = document.createElement("div");
+    body.className = compact ? "day-notes-list__text" : "diary-entry__body";
+    if (showPerson && item.personId) {
+      appendDiaryPersonByline(body, item.personId, compact);
+    }
+    var text = document.createElement(compact ? "p" : "p");
+    text.className = compact ? "day-notes-list__sentence" : "diary-entry__text";
+    text.textContent = item.text;
+    body.appendChild(text);
+    var meta = document.createElement(compact ? "div" : "p");
+    meta.className = compact ? "day-notes-list__meta" : "diary-entry__meta";
+    meta.textContent = diaryItemMetaParts(item).join(" · ");
+    body.appendChild(meta);
     li.appendChild(body);
-    li.appendChild(rm);
+    if (item.kind === "note") {
+      var rm = document.createElement("button");
+      rm.type = "button";
+      rm.className = "day-notes-list__remove";
+      rm.textContent = "✕";
+      rm.setAttribute("aria-label", "Remove diary entry");
+      rm.addEventListener("click", function (ev) {
+        ev.stopPropagation();
+        removeDayNote(item.id);
+        renderDayNotesPanels();
+        showToast("Diary entry removed.");
+      });
+      li.appendChild(rm);
+    }
     listEl.appendChild(li);
   }
 
   function renderDiaryTimeline() {
     if (!elDiaryTimeline) return;
     elDiaryTimeline.replaceChildren("");
-    var notes = notesMatchingFilter();
-    var groups = groupNotesByDay(notes);
+    var items = diaryItemsMatchingFilter();
+    var groups = groupDiaryItemsByDay(items);
     var showPerson = filterPersonId() === "all";
     if (elDiaryEmpty) elDiaryEmpty.hidden = groups.length > 0;
     if (elDiaryCount) {
       if (groups.length) {
         elDiaryCount.hidden = false;
         elDiaryCount.textContent =
-          notes.length +
+          items.length +
           " " +
-          (notes.length === 1 ? "entry" : "entries") +
+          (items.length === 1 ? "entry" : "entries") +
           " across " +
           groups.length +
           " " +
@@ -1816,8 +1971,8 @@
         var list = document.createElement("ul");
         list.className = "diary-day__entries";
         var j;
-        for (j = 0; j < group.notes.length; j++) {
-          renderDiaryNoteEntry(group.notes[j], list, showPerson);
+        for (j = 0; j < group.items.length; j++) {
+          renderDiaryItemEntry(group.items[j], list, { showPerson: showPerson });
         }
         section.appendChild(list);
         elDiaryTimeline.appendChild(section);
@@ -1825,7 +1980,7 @@
     }
   }
 
-  function notesForDay(dayKey) {
+  function diaryItemsForDay(dayKey) {
     var pid = filterPersonId();
     var out = [];
     var i;
@@ -1833,10 +1988,17 @@
       var n = state.dayNotes[i];
       if (n.dayKey !== dayKey) continue;
       if (pid === "all") {
-        out.push(n);
+        out.push(dayNoteToDiaryItem(n));
       } else if (!n.personId || n.personId === pid) {
-        out.push(n);
+        out.push(dayNoteToDiaryItem(n));
       }
+    }
+    for (i = 0; i < state.ledger.length; i++) {
+      var entry = state.ledger[i];
+      if (dayKeyFromTs(entry.ts) !== dayKey) continue;
+      if (pid !== "all" && entry.personId !== pid) continue;
+      var starItem = ledgerEntryToDiaryStarItem(entry, dayKey);
+      if (starItem) out.push(starItem);
     }
     out.sort(function (a, b) {
       return a.ts - b.ts;
@@ -1870,42 +2032,15 @@
   function renderDayNotesList(listEl, emptyEl, dayKey) {
     if (!listEl) return;
     listEl.replaceChildren();
-    var notes = notesForDay(dayKey);
-    if (emptyEl) emptyEl.hidden = notes.length > 0;
+    var items = diaryItemsForDay(dayKey);
+    if (emptyEl) emptyEl.hidden = items.length > 0;
     var showPerson = filterPersonId() === "all";
     var i;
-    for (i = 0; i < notes.length; i++) {
-      (function (note) {
-        var li = document.createElement("li");
-        li.className = "day-notes-list__item";
-        var body = document.createElement("div");
-        body.className = "day-notes-list__text";
-        var text = document.createElement("span");
-        text.textContent = note.text;
-        body.appendChild(text);
-        var meta = document.createElement("div");
-        meta.className = "day-notes-list__meta";
-        var metaParts = [formatNoteTime(note.ts)];
-        if (showPerson && note.personId) {
-          var person = personById(note.personId);
-          if (person) metaParts.push(personDisplayLabel(person));
-        }
-        meta.textContent = metaParts.join(" · ");
-        body.appendChild(meta);
-        var rm = document.createElement("button");
-        rm.type = "button";
-        rm.className = "day-notes-list__remove";
-        rm.textContent = "✕";
-        rm.setAttribute("aria-label", "Remove diary entry");
-        rm.addEventListener("click", function () {
-          removeDayNote(note.id);
-          renderDayNotesPanels();
-          showToast("Diary entry removed.");
-        });
-        li.appendChild(body);
-        li.appendChild(rm);
-        listEl.appendChild(li);
-      })(notes[i]);
+    for (i = 0; i < items.length; i++) {
+      renderDiaryItemEntry(items[i], listEl, {
+        compact: true,
+        showPerson: showPerson,
+      });
     }
   }
 
@@ -3219,65 +3354,72 @@
       elWinnerBannerBody.appendChild(empty);
       return;
     }
-    var range = winnerRange();
+
+    var dual = document.createElement("div");
+    dual.className = "winner-banner__dual";
+    appendPersonPeriodStat(dual, person, "week");
+    appendPersonPeriodStat(dual, person, "month");
+    elWinnerBannerBody.appendChild(dual);
+
+    if (elBreakdownTitle) {
+      var range = winnerRange();
+      elBreakdownTitle.textContent =
+        "Loot (" + (range === "month" ? "this month" : "this week") + ")";
+    }
+  }
+
+  function appendPersonPeriodStat(parent, person, range) {
     var score = scoreForRange(range, person.id);
     var isChamp = personIsWinnerForRange(person.id, range);
-    var winners = winnersForRange(range);
-    var ch = characterById(person.characterId);
-    var card = document.createElement("div");
-    card.className = "winner-banner__personal";
+    var leaders = winnersForRange(range);
+    var card = document.createElement("article");
+    card.className = "winner-banner__period";
+
+    var heading = document.createElement("h3");
+    heading.className = "winner-banner__period-title";
+    heading.textContent = range === "month" ? "This month" : "This week";
+    card.appendChild(heading);
 
     if (isChamp) {
       var crown = document.createElement("p");
       crown.className = "winner-banner__crown";
       crown.textContent =
-        (range === "month" ? "Monthly champ" : "Weekly champ") +
-        (winners.length > 1 ? " · tied with " + winners.length + "!" : "!");
+        range === "month" ? "Monthly champ" : "Weekly champ";
+      if (leaders.length > 1) crown.textContent += " · tied!";
       card.appendChild(crown);
     }
 
-    var row = document.createElement("div");
-    row.className = "winner-banner__winners";
-    var hero = document.createElement("div");
-    hero.className = "winner-banner__winner winner-banner__winner--static";
-    if (ch) {
-      appendCharacterImg(hero, ch, "winner-banner__avatar", 56);
-    }
-    var copy = document.createElement("span");
-    copy.className = "winner-banner__copy";
-    var name = document.createElement("strong");
-    name.textContent = personDisplayLabel(person);
-    copy.appendChild(name);
-    var scoreEl = document.createElement("span");
-    scoreEl.className = "winner-banner__score";
+    var scoreEl = document.createElement("p");
+    scoreEl.className = "winner-banner__period-score";
     if (score < 0) scoreEl.classList.add("winner-banner__score--neg");
-    scoreEl.textContent =
-      (range === "month" ? "This month" : "This week") +
-      " · " +
-      formatScore(score) +
-      " ⭐";
-    copy.appendChild(scoreEl);
-    hero.appendChild(copy);
-    row.appendChild(hero);
-    card.appendChild(row);
+    scoreEl.textContent = formatScore(score) + " ⭐";
+    card.appendChild(scoreEl);
 
-    if (winners.length > 1) {
-      var tie = document.createElement("p");
-      tie.className = "winner-banner__tie";
-      tie.textContent =
-        "Tied leaders: " +
-        formatWinnerNames(winners) +
-        " · " +
-        formatScore(winners[0].score) +
-        " ⭐";
-      card.appendChild(tie);
+    if (leaders.length) {
+      if (isChamp && leaders.length > 1) {
+        var tieMeta = document.createElement("p");
+        tieMeta.className = "winner-banner__period-meta winner-banner__tie winner-banner__tie--compact";
+        tieMeta.textContent =
+          "Tied leaders: " +
+          formatWinnerNames(leaders) +
+          " · " +
+          formatScore(leaders[0].score) +
+          " ⭐";
+        card.appendChild(tieMeta);
+      } else if (!isChamp) {
+        var leaderMeta = document.createElement("p");
+        leaderMeta.className = "winner-banner__period-meta";
+        leaderMeta.textContent =
+          "Leader: " +
+          formatWinnerNames(leaders) +
+          " · " +
+          formatScore(leaders[0].score) +
+          " ⭐";
+        card.appendChild(leaderMeta);
+      }
     }
 
-    elWinnerBannerBody.appendChild(card);
-    if (elBreakdownTitle) {
-      elBreakdownTitle.textContent =
-        "Loot (" + (range === "month" ? "this month" : "this week") + ")";
-    }
+    parent.appendChild(card);
   }
 
   function renderLeaderboard() {
@@ -3745,39 +3887,72 @@
     var now = Date.now();
     var dayMs = 86400000;
     var days = [];
-    var maxAbs = 1;
     var d;
     if (period === "month") {
       var monthStart = startOfMonth(now);
       var todayStart = startOfDay(now);
       for (d = monthStart; d <= todayStart; d += dayMs) {
         var dayKey = dayKeyFromTs(d);
-        var winners = winnersForDayKey(dayKey);
-        var topScore = winners.length ? winners[0].score : 0;
-        if (Math.abs(topScore) > maxAbs) maxAbs = Math.abs(topScore);
         days.push({
           start: d,
           dayKey: dayKey,
-          winners: winners,
-          topScore: topScore,
+          winners: winnersForDayKey(dayKey),
         });
       }
     } else {
       for (d = 6; d >= 0; d--) {
         var dayStart = startOfDay(now - d * dayMs);
         var dayKeyW = dayKeyFromTs(dayStart);
-        var winnersW = winnersForDayKey(dayKeyW);
-        var topW = winnersW.length ? winnersW[0].score : 0;
-        if (Math.abs(topW) > maxAbs) maxAbs = Math.abs(topW);
         days.push({
           start: dayStart,
           dayKey: dayKeyW,
-          winners: winnersW,
-          topScore: topW,
+          winners: winnersForDayKey(dayKeyW),
         });
       }
     }
-    return { days: days, maxAbs: maxAbs };
+    return { days: days };
+  }
+
+  function appendTrendDayWinners(wrap, winners, compact) {
+    var list = chartWinnersForDay(winners);
+    var box = document.createElement("div");
+    box.className =
+      "trend-bar__winners" + (compact ? " trend-bar__winners--compact" : "");
+    if (!list.length) {
+      var empty = document.createElement("span");
+      empty.className = "trend-bar__empty";
+      empty.textContent = "—";
+      box.appendChild(empty);
+      wrap.appendChild(box);
+      return;
+    }
+    var w;
+    for (w = 0; w < list.length; w++) {
+      (function (entry) {
+        var person = entry.person;
+        var ch = characterById(person.characterId);
+        var row = document.createElement("div");
+        row.className = "trend-bar__winner-row";
+        if (list.length > 1) row.classList.add("trend-bar__winner-row--tie");
+        if (ch) {
+          appendCharacterImg(row, ch, "trend-bar__winner-avatar", compact ? 20 : 28);
+        }
+        var copy = document.createElement("div");
+        copy.className = "trend-bar__winner-copy";
+        var name = document.createElement("span");
+        name.className = "trend-bar__winner-name";
+        name.textContent = personDisplayLabel(person);
+        copy.appendChild(name);
+        var score = document.createElement("span");
+        score.className = "trend-bar__winner-score";
+        if (entry.score < 0) score.classList.add("trend-bar__winner-score--neg");
+        score.textContent = formatScore(entry.score) + " ⭐";
+        copy.appendChild(score);
+        row.appendChild(copy);
+        box.appendChild(row);
+      })(list[w]);
+    }
+    wrap.appendChild(box);
   }
 
   function renderTrendChart() {
@@ -3793,50 +3968,22 @@
     elTrendChart.classList.toggle("trend-chart--month", period === "month");
     var built = buildTrendDays(period);
     var days = built.days;
-    var maxAbs = built.maxAbs;
+    var compact = period === "month";
     var sel = selectedDayKey();
     var i;
     for (i = 0; i < days.length; i++) {
       (function (day) {
         var winners = day.winners || [];
-        var topScore = day.topScore || 0;
         var wrap = document.createElement("button");
         wrap.type = "button";
-        wrap.className = "trend-bar trend-bar--selectable";
+        wrap.className = "trend-bar trend-bar--selectable trend-bar--winners";
         if (day.dayKey === sel) wrap.classList.add("trend-bar--selected");
         wrap.setAttribute(
           "aria-label",
-          formatDayKeyLong(day.dayKey) +
-            " · " +
-            formatWinnerNames(winners) +
-            " · " +
-            formatScore(topScore)
+          formatDayKeyLong(day.dayKey) + " · " + formatWinnerNamesWithScores(winners)
         );
 
-        var val = document.createElement("span");
-        val.className = "trend-bar__val";
-        val.textContent = formatScore(topScore);
-        wrap.appendChild(val);
-
-        var fill = document.createElement("div");
-        fill.className = "trend-bar__fill";
-        fill.setAttribute("aria-hidden", "true");
-        if (topScore === 0) {
-          fill.classList.add("trend-bar__fill--zero");
-          fill.style.height = "4px";
-        } else if (topScore < 0) {
-          fill.classList.add("trend-bar__fill--neg");
-          fill.style.height =
-            Math.round((Math.abs(topScore) / maxAbs) * 100) + "%";
-        } else {
-          fill.style.height = Math.round((topScore / maxAbs) * 100) + "%";
-        }
-        wrap.appendChild(fill);
-
-        var winner = document.createElement("span");
-        winner.className = "trend-bar__winner";
-        winner.textContent = formatWinnerNames(winners);
-        wrap.appendChild(winner);
+        appendTrendDayWinners(wrap, winners, compact);
 
         var label = document.createElement("span");
         label.className = "trend-bar__label";
@@ -4084,9 +4231,30 @@
     if (elRewardEditActions) {
       elRewardEditActions.hidden = !editing || rewardContext.step !== "points";
     }
-    if (elRewardTierHint && editing && rewardContext.step === "points") {
-      elRewardTierHint.textContent = "Tap new stars to update, edit reason, or delete";
+    if (elRewardSaveEntry) {
+      elRewardSaveEntry.hidden = !editing || rewardContext.step !== "points";
     }
+    if (elRewardTierHint && editing && rewardContext.step === "points") {
+      elRewardTierHint.textContent =
+        "Tap stars to change points, edit reason, then Save — or tap a star tier";
+    }
+  }
+
+  function ledgerEntryNote(entry) {
+    if (!entry) return "";
+    return String(entry.note || entry.reason || "").trim();
+  }
+
+  function saveEditedLedgerEntry(points) {
+    if (!rewardContext.editEntryId) return;
+    var existing = ledgerEntryById(rewardContext.editEntryId);
+    if (!existing) {
+      closeRewardSheet();
+      return;
+    }
+    var pts =
+      typeof points === "number" && isFinite(points) ? points : existing.points;
+    logStar(pts, existing.lootId);
   }
 
   function renderRewardSheetPerson(person) {
@@ -4141,7 +4309,7 @@
     rewardContext.editEntryId = entryId;
     rewardContext.personId = entry.personId;
     renderRewardSheetPerson(person);
-    if (elRewardNoteInput) elRewardNoteInput.value = entry.note || "";
+    if (elRewardNoteInput) elRewardNoteInput.value = ledgerEntryNote(entry);
     var cat = behaviorCategoryById(entry.categoryId);
     if (cat) {
       rewardContext.pendingCategoryId = cat.id;
@@ -4367,6 +4535,7 @@
       showStarToast(person, points, cat, resolvedLoot, toastKind, note);
       closeRewardSheet();
       renderAll();
+      showToast("Entry updated.");
       return;
     }
 
@@ -5758,6 +5927,19 @@
     if (elRewardDeleteEntry) {
       elRewardDeleteEntry.addEventListener("click", function () {
         if (rewardContext.editEntryId) deleteLedgerEntry(rewardContext.editEntryId);
+      });
+    }
+    if (elRewardSaveEntry) {
+      elRewardSaveEntry.addEventListener("click", function () {
+        saveEditedLedgerEntry();
+      });
+    }
+    if (elRewardNoteInput) {
+      elRewardNoteInput.addEventListener("keydown", function (e) {
+        if (e.key !== "Enter") return;
+        if (!rewardContext.editEntryId || rewardContext.step !== "points") return;
+        e.preventDefault();
+        saveEditedLedgerEntry();
       });
     }
 

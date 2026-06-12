@@ -269,27 +269,33 @@ body::after {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+  margin-bottom: 0.5rem;
+}
+
+.players-section {
   margin-bottom: 1rem;
 }
 
-@media (min-width: 22rem) {
-  .people-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
+.players-section .section-title {
+  margin-bottom: 0.65rem;
 }
 
 .person-card {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 0.85rem 0.55rem 0.95rem;
-  min-height: 7.5rem;
+  justify-content: flex-start;
+  gap: 0.25rem;
+  width: 100%;
+  aspect-ratio: 1;
+  min-height: 0;
+  padding: 0.5rem 0.45rem 0.45rem;
   border: 2px solid var(--card-edge);
   border-radius: 16px;
   background: linear-gradient(180deg, #fff 0%, #eef4e4 100%);
   touch-action: manipulation;
   box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.8), 0 3px 0 rgba(45, 70, 40, 0.12);
+  overflow: hidden;
 }
 
 .person-card--villain {
@@ -298,8 +304,9 @@ body::after {
 }
 
 .person-card__avatar {
-  width: 72px;
-  height: 72px;
+  width: min(64px, 46%);
+  height: min(64px, 46%);
+  flex-shrink: 0;
   object-fit: contain;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
@@ -307,23 +314,32 @@ body::after {
 
 .person-card__name {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 0.82rem;
   font-weight: 600;
   color: var(--ink);
   text-align: center;
   line-height: 1.15;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .person-card__char {
-  margin: 0;
-  font-size: 0.68rem;
+  margin: -0.1rem 0 0;
+  font-size: 0.6rem;
   color: var(--muted);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .person-card__score {
   font-family: var(--font-display);
-  font-size: 1.1rem;
+  font-size: 0.92rem;
   color: var(--green);
+  line-height: 1.1;
 }
 
 .person-card__score--neg {
@@ -334,16 +350,17 @@ body::after {
   display: flex;
   gap: 0.35rem;
   width: 100%;
-  margin-top: 0.15rem;
+  margin-top: auto;
+  padding-top: 0.15rem;
 }
 
 .person-card__log-btn {
   flex: 1;
   min-width: 0;
   font: inherit;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 700;
-  padding: 0.45rem 0.35rem;
+  padding: 0.38rem 0.25rem;
   border: 2px solid transparent;
   border-radius: 999px;
   cursor: pointer;
@@ -383,7 +400,8 @@ body::after {
   display: flex;
   gap: 0.35rem;
   justify-content: center;
-  margin-top: 2px;
+  margin-top: 0.1rem;
+  flex-shrink: 0;
 }
 
 .person-card__delete,
@@ -572,7 +590,7 @@ body::after {
 
 .btn--add-player {
   width: 100%;
-  margin-top: 1.25rem;
+  margin-top: 0.65rem;
   padding: 0.85rem 1rem;
   font-size: 1rem;
   color: var(--green);
@@ -632,6 +650,11 @@ body::after {
   border-radius: 12px;
   background: rgba(238, 244, 228, 0.55);
   border: 2px dashed rgba(91, 130, 68, 0.28);
+}
+
+.panel--home .day-notes-card {
+  margin-top: 1rem;
+  margin-bottom: 0;
 }
 
 .day-note-form {
@@ -949,16 +972,59 @@ body::after {
   min-width: 0;
 }
 
-.diary-entry__text {
+.diary-entry__text,
+.day-notes-list__sentence {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: inherit;
   line-height: 1.35;
+}
+
+.diary-entry__byline,
+.day-notes-list__byline {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0 0 0.15rem;
+  font-size: inherit;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.diary-entry__byline-avatar,
+.day-notes-list__byline-avatar {
+  flex-shrink: 0;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.diary-entry__byline-name,
+.day-notes-list__byline-name {
+  min-width: 0;
 }
 
 .diary-entry__meta {
   margin: 0.2rem 0 0;
   font-size: 0.68rem;
   color: var(--muted);
+}
+
+.diary-entry--star,
+.day-notes-list__item--star {
+  cursor: pointer;
+}
+
+.diary-entry--star:focus-visible,
+.day-notes-list__item--star:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+
+.diary-entry__loot,
+.day-notes-list__loot {
+  flex-shrink: 0;
+  object-fit: contain;
+  image-rendering: pixelated;
+  margin-top: 0.1rem;
 }
 
 .day-notes-list__text span {
@@ -1062,6 +1128,63 @@ body::after {
 .winner-banner__tie {
   color: #e65100;
   font-weight: 700;
+}
+
+.winner-banner__tie--compact {
+  font-size: 0.72rem;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.winner-banner__range-hint {
+  margin: 0.65rem 0 0.45rem;
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.winner-banner__dual {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.winner-banner__period {
+  margin: 0;
+  padding: 0.55rem 0.5rem;
+  border-radius: 12px;
+  border: 2px solid rgba(255, 179, 0, 0.35);
+  background: rgba(255, 255, 255, 0.88);
+  text-align: center;
+}
+
+.winner-banner__period-title {
+  margin: 0 0 0.25rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #bf360c;
+}
+
+.winner-banner__period-score {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  color: var(--green);
+  line-height: 1.1;
+}
+
+.winner-banner__period-meta {
+  margin: 0.35rem 0 0;
+  font-size: 0.68rem;
+  line-height: 1.25;
+  color: var(--muted);
+}
+
+.winner-banner--personal .winner-banner__crown {
+  margin: 0 0 0.2rem;
+  font-size: 0.68rem;
 }
 
 .winner-banner__winners {
@@ -1361,8 +1484,12 @@ body::after {
 }
 
 .trend-chart--month .trend-bar {
-  flex: 0 0 1.55rem;
-  min-width: 1.55rem;
+  flex: 0 0 3.25rem;
+  min-width: 3.25rem;
+}
+
+.trend-chart--month .trend-bar__winners {
+  min-height: 4rem;
 }
 
 .trend-bar--selectable {
@@ -1462,11 +1589,108 @@ body::after {
 
 .trend-chart {
   display: flex;
-  align-items: flex-end;
+  align-items: stretch;
   justify-content: space-between;
   gap: 6px;
-  height: 9.5rem;
+  min-height: 9.5rem;
+  height: auto;
   padding: 0.5rem 0.25rem 0;
+}
+
+.trend-bar--winners {
+  justify-content: flex-end;
+}
+
+.trend-bar__winners {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 3px;
+  width: 100%;
+  min-height: 5.5rem;
+  padding: 0.15rem 0.1rem;
+}
+
+.trend-bar__winners--compact {
+  min-height: 4.5rem;
+  gap: 2px;
+}
+
+.trend-bar__winner-row {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  width: 100%;
+  min-width: 0;
+  padding: 0.12rem 0.1rem;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(91, 130, 68, 0.18);
+}
+
+.trend-bar__winner-row--tie {
+  border-color: rgba(255, 179, 0, 0.45);
+  background: rgba(255, 248, 225, 0.85);
+}
+
+.trend-bar__winner-avatar {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.trend-bar__winners--compact .trend-bar__winner-avatar {
+  width: 20px;
+  height: 20px;
+}
+
+.trend-bar__winner-copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  line-height: 1.1;
+}
+
+.trend-bar__winner-name {
+  font-size: 0.5rem;
+  font-weight: 700;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trend-bar__winners--compact .trend-bar__winner-name {
+  font-size: 0.42rem;
+}
+
+.trend-bar__winner-score {
+  font-family: var(--font-display);
+  font-size: 0.58rem;
+  color: var(--green);
+}
+
+.trend-bar__winners--compact .trend-bar__winner-score {
+  font-size: 0.5rem;
+}
+
+.trend-bar__winner-score--neg {
+  color: var(--oops);
+}
+
+.trend-bar__empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  color: var(--muted);
+  min-height: 3rem;
 }
 
 .trend-bar {
@@ -1502,34 +1726,7 @@ body::after {
   font-size: 0.58rem;
   color: var(--muted);
   white-space: nowrap;
-}
-
-.trend-bar__val {
-  font-size: 0.62rem;
-  font-weight: 600;
-  color: var(--green);
-}
-
-.trend-bar__winner {
-  width: 100%;
-  max-width: 4.5rem;
-  font-size: 0.52rem;
-  font-weight: 700;
-  line-height: 1.15;
-  text-align: center;
-  color: #5d4037;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  word-break: break-word;
-}
-
-.trend-chart--month .trend-bar__winner {
-  max-width: 1.55rem;
-  font-size: 0.48rem;
-  -webkit-line-clamp: 3;
+  flex-shrink: 0;
 }
 
 .day-detail__winner {
@@ -1978,8 +2175,15 @@ body::after {
 }
 
 .reward-edit-actions {
-  margin-top: 0.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
   text-align: center;
+}
+
+.reward-edit-actions .btn--block {
+  margin-top: 0.15rem;
 }
 
 .point-btn--selected {
@@ -2541,6 +2745,8 @@ body::after {
 .person-card__avatar,
 .person-stat-card__avatar,
 .activity-log__avatar,
+.diary-entry__byline-avatar,
+.day-notes-list__byline-avatar,
 .sheet__avatar {
   image-rendering: pixelated;
 }

@@ -18,7 +18,7 @@
     href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&family=Pixelify+Sans:wght@400;500;600;700&display=swap"
     rel="stylesheet"
   />
-  <link rel="stylesheet" href="styles.css?v=36" />
+  <link rel="stylesheet" href="styles.css?v=43" />
 </head>
 <body>
   <div class="app">
@@ -58,9 +58,22 @@
         </div>
       </div>
 
+      <section class="players-section" aria-label="Players">
+        <h2 class="section-title">Players</h2>
+        <div class="people-grid" id="people-grid" aria-label="Player cards"></div>
+
+        <p class="empty-hint" id="empty-people" hidden>
+          No players yet. Tap <strong>Add player</strong> to pick a name and Minecraft character.
+        </p>
+
+        <button type="button" class="btn btn--add-player" id="btn-add-player">
+          ➕ Add player
+        </button>
+      </section>
+
       <section class="day-notes-card" aria-label="Diary today">
         <h2 class="section-title">Diary · today</h2>
-        <p class="day-notes-card__hint">Quick jot — everything saves in your diary over time.</p>
+        <p class="day-notes-card__hint">Notes and star reasons — saved day by day.</p>
         <form class="day-note-form" id="day-note-form-home">
           <input
             type="text"
@@ -76,22 +89,12 @@
         <p class="day-notes-empty" id="day-notes-empty-home" hidden>Nothing yet today — open Diary to browse past entries.</p>
         <button type="button" class="btn btn--secondary btn--block day-notes-card__more" id="btn-open-diary">Browse full diary →</button>
       </section>
-
-      <div class="people-grid" id="people-grid" aria-label="Players"></div>
-
-      <p class="empty-hint" id="empty-people" hidden>
-        No players yet. Tap <strong>Add player</strong> to pick a name and Minecraft character.
-      </p>
-
-      <button type="button" class="btn btn--add-player" id="btn-add-player">
-        ➕ Add player
-      </button>
     </section>
 
     <section id="panel-diary" class="panel panel--diary" role="tabpanel" aria-labelledby="tab-diary" hidden>
       <section class="diary-card" aria-label="Family diary">
         <h2 class="section-title">Family diary</h2>
-        <p class="diary-card__hint">Highlights, moods, and memories — kept day by day, forever in your browser.</p>
+        <p class="diary-card__hint">Jotted notes and star reasons — kept day by day, forever in your browser.</p>
         <form class="day-note-form" id="day-note-form-diary">
           <input
             type="text"
@@ -105,7 +108,7 @@
         </form>
         <p class="diary-count" id="diary-count" hidden></p>
         <div class="diary-timeline" id="diary-timeline" aria-label="Diary entries by day"></div>
-        <p class="diary-empty" id="diary-empty" hidden>No diary entries yet. Jot the first one above!</p>
+        <p class="diary-empty" id="diary-empty" hidden>No diary entries yet. Jot a note above or log stars with a reason.</p>
       </section>
     </section>
 
@@ -148,7 +151,7 @@
       </div>
 
       <h2 class="section-title" id="trend-title">Daily winners · this week</h2>
-      <p class="calendar-hint">Each day shows who earned the most stars. Tap a day for details.</p>
+      <p class="calendar-hint">Who won each day — tied winners shown with their scores. Tap a day for the full log.</p>
       <div class="trend-chart-wrap">
         <div class="trend-chart" id="trend-chart" aria-label="Daily winner calendar"></div>
       </div>
@@ -179,11 +182,13 @@
       <div class="person-stats-detail" id="person-stats-detail" aria-live="polite"></div>
 
       <section class="winner-banner winner-banner--personal" id="winner-banner" aria-label="Weekly and monthly stats">
-        <div class="winner-banner__tabs" role="tablist" aria-label="Stats period">
+        <h2 class="section-title">Weekly &amp; monthly</h2>
+        <div class="winner-banner__body" id="winner-banner-body"></div>
+        <p class="winner-banner__range-hint">Switch period for deeds, log &amp; loot below</p>
+        <div class="winner-banner__tabs" role="tablist" aria-label="Activity period">
           <button type="button" class="winner-banner__tab winner-banner__tab--active" id="winner-tab-week" data-winner-range="week">This week</button>
           <button type="button" class="winner-banner__tab" id="winner-tab-month" data-winner-range="month">This month</button>
         </div>
-        <div class="winner-banner__body" id="winner-banner-body"></div>
       </section>
 
       <section class="hero-deeds" id="hero-deeds" aria-label="Top good deeds and biggest oops">
@@ -245,6 +250,9 @@
         <p class="point-picker-hint" id="reward-tier-hint">How many stars?</p>
         <div class="point-picker point-picker--all" id="point-picker-all" role="group" aria-label="Points"></div>
         <div class="reward-edit-actions" id="reward-edit-actions" hidden>
+          <button type="button" class="btn btn--primary btn--block" id="reward-save-entry">
+            Save changes
+          </button>
           <button type="button" class="link-btn link-btn--danger" id="reward-delete-entry">Delete this entry</button>
         </div>
         <button type="button" class="link-btn reward-step-back" id="reward-step-back">← Change category</button>
@@ -394,7 +402,7 @@
   <script src="character-fallbacks-embed.js?v=1"></script>
   <script src="characters-embed.js?v=7"></script>
   <script src="mc-items-embed.js?v=8"></script>
-  <script src="behavior-categories-embed.js?v=1"></script>
-  <script src="app.js?v=43" defer></script>
+  <script src="behavior-categories-embed.js?v=3"></script>
+  <script src="app.js?v=49" defer></script>
 </body>
 </html>

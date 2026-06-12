@@ -2,12 +2,12 @@
 """Download character GIFs from Giphy and patch rewards/assets/characters.json.
 
 Usage:
-  python3 rewards/tools/fetch_giphy_character_sprites.py
+  python3 rewards/tools/fetch_giphy_character_sprites.py --png-only
+  python3 rewards/tools/fetch_giphy_character_sprites.py --only steve
   python3 rewards/tools/fetch_giphy_character_sprites.py --dry-run
-  python3 rewards/tools/fetch_giphy_character_sprites.py --only alex,wolf,creeper
 
 Optional:
-  export GIPHY_API_KEY=...   # uses official search when set; otherwise scrapes giphy.com
+  export GIPHY_API_KEY=...   # official search; prefers stickers when sticker=true
 """
 
 from __future__ import annotations
@@ -28,9 +28,9 @@ REWARD = ROOT / "rewards"
 CHARS_JSON = REWARD / "assets" / "characters.json"
 CHARS_EMBED = REWARD / "characters-embed.js"
 SOURCES_JSON = Path(__file__).with_name("giphy_character_sources.json")
-SPRITES = REWARD / "assets" / "sprites"
 USER_AGENT = "kids_space-rewards/1.0 (local sprite cache; educational)"
-GIPHY_API = "https://api.giphy.com/v1/gifs/search"
+GIPHY_GIF_API = "https://api.giphy.com/v1/gifs/search"
+GIPHY_STICKER_API = "https://api.giphy.com/v1/stickers/search"
 
 
 def load_json(path: Path) -> dict:
@@ -57,11 +57,19 @@ def extract_giphy_id(value: str) -> str | None:
         return None
     if re.fullmatch(r"[A-Za-z0-9]{6,20}", value):
         return value
-    path = urllib.parse.urlparse(value).path.rstrip("/")
+    parsed = urllib.parse.urlparse(value)
+    if parsed.path.endswith(".gif"):
+        m = re.search(r"/media/(?:v1\.[^/]+/)?([^/]+)/giphy\.gif", parsed.path)
+        if m:
+            return m.group(1)
+        m = re.search(r"/([^/]+)\.gif$", parsed.path)
+        if m and re.fullmatch(r"[A-Za-z0-9]{6,20}", m.group(1)):
+            return m.group(1)
+    path = parsed.path.rstrip("/")
     if not path:
         return None
     slug = path.split("/")[-1]
-    if slug in {"gifs", "clips", "stickers"}:
+    if slug in {"gifs", "clips", "stickers", "search"}:
         return None
     parts = slug.split("-")
     for part in reversed(parts):
@@ -112,31 +120,41 @@ def resolve_from_page(page_url: str) -> str | None:
     return extract_giphy_id(page_url)
 
 
-def search_via_api(query: str, api_key: str) -> str | None:
-    params = {
-        "api_key": api_key,
-        "q": query,
-        "limit": "10",
-        "rating": "g",
-        "lang": "en",
-    }
-    url = GIPHY_API + "?" + urllib.parse.urlencode(params)
-    payload = json.loads(fetch_url(url, timeout=45).decode("utf-8"))
-    for item in payload.get("data", []):
+def pick_from_api_items(items: list, query: str) -> str | None:
+    q = query.lower()
+    for item in items:
         title = str(item.get("title", "")).lower()
-        gif_id = item.get("id")
-        if not gif_id:
-            continue
-        if "minecraft" in title or "minecraft" in query.lower():
+        tags = " ".join(str(t) for t in item.get("tags", [])).lower()
+        blob = title + " " + tags
+        if "minecraft" in blob or "minecraft" in q:
+            gif_id = item.get("id")
+            if gif_id:
+                return str(gif_id)
+    if items:
+        gif_id = items[0].get("id")
+        if gif_id:
             return str(gif_id)
-    if payload.get("data"):
-        return str(payload["data"][0]["id"])
     return None
 
 
-def search_via_scrape(query: str) -> str | None:
+def search_via_api(query: str, api_key: str, stickers: bool) -> str | None:
+    params = {
+        "api_key": api_key,
+        "q": query,
+        "limit": "15",
+        "rating": "g",
+        "lang": "en",
+    }
+    endpoint = GIPHY_STICKER_API if stickers else GIPHY_GIF_API
+    url = endpoint + "?" + urllib.parse.urlencode(params)
+    payload = json.loads(fetch_url(url, timeout=45).decode("utf-8"))
+    return pick_from_api_items(payload.get("data", []), query)
+
+
+def search_via_scrape(query: str, stickers: bool) -> str | None:
     slug = urllib.parse.quote(query.replace(" ", "-"))
-    url = f"https://giphy.com/search/{slug}"
+    kind = "stickers" if stickers else "gifs"
+    url = f"https://giphy.com/{kind}/search/{slug}"
     html = fetch_url(url, timeout=45).decode("utf-8", errors="replace")
     nxt = re.search(
         r'<script id="__NEXT_DATA__" type="application/json">(.*?)</script>',
@@ -147,60 +165,76 @@ def search_via_scrape(query: str) -> str | None:
         return None
     data = json.loads(nxt.group(1))
     gifs = data.get("props", {}).get("pageProps", {}).get("gifs", [])
-    for gif in gifs:
-        title = str(gif.get("title", "")).lower()
-        tags = " ".join(str(t) for t in gif.get("tags", [])).lower()
-        blob = title + " " + tags
-        if "minecraft" in blob:
-            gif_id = gif.get("id")
+    return pick_from_api_items(gifs, query)
+
+
+def search_giphy_id(query: str, api_key: str | None, prefer_sticker: bool) -> tuple[str | None, str]:
+    order = (True, False) if prefer_sticker else (False, True)
+    for stickers in order:
+        label = "sticker" if stickers else "gif"
+        if api_key:
+            try:
+                gif_id = search_via_api(query, api_key, stickers)
+                if gif_id:
+                    return gif_id, f"api-{label}:{query}"
+            except urllib.error.URLError as exc:
+                print(f"  warn: api {label} search failed:", exc)
+        try:
+            gif_id = search_via_scrape(query, stickers)
             if gif_id:
-                return str(gif_id)
-    if gifs:
-        gif_id = gifs[0].get("id")
-        if gif_id:
-            return str(gif_id)
-    return None
+                return gif_id, f"search-{label}:{query}"
+        except urllib.error.URLError as exc:
+            print(f"  warn: {label} scrape failed:", exc)
+    return None, f"no results for {query}"
 
 
 def resolve_gif_id(spec: dict, api_key: str | None) -> tuple[str | None, str]:
     if spec.get("skip"):
         return None, "skipped"
+
+    if spec.get("url"):
+        url = str(spec["url"]).strip()
+        gif_id = extract_giphy_id(url)
+        if gif_id and not url.startswith("http"):
+            return gif_id, "url-id"
+        if url.startswith("http") and url.lower().endswith(".gif"):
+            return url, "direct-url"
+        if gif_id:
+            return gif_id, "url"
+        return None, "invalid url"
+
     if spec.get("id"):
         return str(spec["id"]), "id"
+
     if spec.get("giphy"):
-        gif_id = extract_giphy_id(str(spec["giphy"]))
-        if not gif_id:
-            return None, "invalid giphy url"
-        if str(spec["giphy"]).startswith("http"):
+        page = str(spec["giphy"]).strip()
+        if page.startswith("http"):
             try:
-                resolved = resolve_from_page(str(spec["giphy"]))
+                resolved = resolve_from_page(page)
                 if resolved:
                     return resolved, "page"
             except urllib.error.URLError as exc:
                 print("  warn: page lookup failed:", exc)
-        return gif_id, "url"
+        gif_id = extract_giphy_id(page)
+        if gif_id:
+            return gif_id, "giphy"
+        return None, "invalid giphy url"
+
     query = str(spec.get("search", "")).strip()
     if not query:
         return None, "no source"
-    if api_key:
-        try:
-            gif_id = search_via_api(query, api_key)
-            if gif_id:
-                return gif_id, f"api:{query}"
-        except urllib.error.URLError as exc:
-            print("  warn: api search failed:", exc)
-    try:
-        gif_id = search_via_scrape(query)
-        if gif_id:
-            return gif_id, f"search:{query}"
-    except urllib.error.URLError as exc:
-        return None, f"search failed: {exc}"
-    return None, f"no results for {query}"
+    prefer_sticker = bool(spec.get("sticker", True))
+    return search_giphy_id(query, api_key, prefer_sticker)
 
 
-def download_gif(gif_id: str, dest: Path, dry_run: bool) -> None:
+def download_gif(gif_id_or_url: str, dest: Path, dry_run: bool) -> None:
+    urls = (
+        [gif_id_or_url]
+        if gif_id_or_url.startswith("http")
+        else giphy_media_urls(gif_id_or_url)
+    )
     last_err: Exception | None = None
-    for url in giphy_media_urls(gif_id):
+    for url in urls:
         try:
             if dry_run:
                 print("  would download:", url, "->", dest.name)
@@ -212,14 +246,20 @@ def download_gif(gif_id: str, dest: Path, dry_run: bool) -> None:
             dest.write_bytes(data)
             print("  saved:", dest.relative_to(ROOT), f"({len(data)} bytes)")
             return
-        except Exception as exc:  # noqa: BLE001 - try next mirror
+        except Exception as exc:  # noqa: BLE001
             last_err = exc
-    raise RuntimeError(f"could not download gif {gif_id}: {last_err}")
+    raise RuntimeError(f"could not download {gif_id_or_url}: {last_err}")
+
+
+def is_png_character(entry: dict) -> bool:
+    src = str(entry.get("src", "")).lower()
+    return src.endswith(".png")
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--png-only", action="store_true", help="Only characters still using .png sprites")
     parser.add_argument("--only", help="Comma-separated character ids")
     args = parser.parse_args()
 
@@ -245,7 +285,10 @@ def main() -> int:
             continue
         if only and char_id not in only:
             continue
-        spec = sources.get(char_id, {"search": f"minecraft {entry.get('name', char_id)}"})
+        if args.png_only and not is_png_character(entry):
+            continue
+
+        spec = sources.get(char_id, {"search": f"minecraft {entry.get('name', char_id)} sticker", "sticker": True})
         gif_id, reason = resolve_gif_id(spec, api_key)
         if spec.get("skip") or reason == "skipped":
             print(f"[skip] {char_id}: custom/local")

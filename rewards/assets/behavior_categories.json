@@ -9,7 +9,7 @@
       },
       "bad": {
         "id": "mean_words",
-        "label": "Mean Words",
+        "label": "Not Nice",
         "wikiKey": "tnt"
       }
     },
@@ -37,19 +37,6 @@
         "id": "not_helping",
         "label": "Not Helping",
         "wikiKey": "hopper"
-      }
-    },
-    {
-      "id": "trying",
-      "good": {
-        "id": "brave_tryer",
-        "label": "Brave Tryer",
-        "wikiKey": "pickaxe"
-      },
-      "bad": {
-        "id": "giving_up_soon",
-        "label": "Giving Up Too Soon",
-        "wikiKey": "sand"
       }
     },
     {
