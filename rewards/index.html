@@ -18,7 +18,7 @@
     href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&family=Pixelify+Sans:wght@400;500;600;700&display=swap"
     rel="stylesheet"
   />
-  <link rel="stylesheet" href="styles.css?v=25" />
+  <link rel="stylesheet" href="styles.css?v=32" />
 </head>
 <body>
   <div class="app">
@@ -33,17 +33,13 @@
         <button type="button" class="view-tabs__btn" id="tab-diary" role="tab" aria-selected="false" aria-controls="panel-diary">
           Diary
         </button>
-        <button type="button" class="view-tabs__btn" id="tab-stats" role="tab" aria-selected="false" aria-controls="panel-stats">
-          Stats
+        <button type="button" class="view-tabs__btn" id="tab-leaderboard" role="tab" aria-selected="false" aria-controls="panel-leaderboard">
+          Leaderboard
+        </button>
+        <button type="button" class="view-tabs__btn" id="tab-hero-scrolls" role="tab" aria-selected="false" aria-controls="panel-hero-scrolls">
+          Hero Scrolls
         </button>
       </nav>
-
-      <div class="filter-row filter-row--global">
-        <label class="filter-row__label" for="person-filter">Showing</label>
-        <select id="person-filter" class="filter-row__select">
-          <option value="all">Everyone</option>
-        </select>
-      </div>
     </header>
 
     <section id="panel-home" class="panel panel--home" role="tabpanel" aria-labelledby="tab-home">
@@ -113,8 +109,8 @@
       </section>
     </section>
 
-    <section id="panel-stats" class="panel panel--stats" role="tabpanel" aria-labelledby="tab-stats" hidden>
-      <div class="score-strip score-strip--stats score-strip--quad" aria-label="Filtered scores">
+    <section id="panel-leaderboard" class="panel panel--stats" role="tabpanel" aria-labelledby="tab-leaderboard" hidden>
+      <div class="score-strip score-strip--stats score-strip--quad" aria-label="Household scores">
         <div class="score-strip__item">
           <span class="score-strip__label">Today</span>
           <strong class="score-strip__val" id="stats-today">0</strong>
@@ -133,7 +129,7 @@
         </div>
       </div>
 
-      <h2 class="section-title">Leaderboard</h2>
+      <h2 class="section-title">Rankings</h2>
       <div class="leaderboard-tabs" role="tablist" aria-label="Leaderboard period">
         <button type="button" class="leaderboard-tabs__btn leaderboard-tabs__btn--active" id="leaderboard-today" data-range="today">Today</button>
         <button type="button" class="leaderboard-tabs__btn" id="leaderboard-week" data-range="week">Week</button>
@@ -142,11 +138,7 @@
       </div>
       <ol class="leaderboard" id="leaderboard" aria-label="Player rankings"></ol>
 
-      <h2 class="section-title">Each player</h2>
-      <p class="person-stats-grid__hint">Tap a player to expand week & month stats, loot breakdown, and where they shine.</p>
-      <div class="person-stats-grid" id="person-stats-grid" aria-label="Scores by player"></div>
-
-      <div class="period-tabs" role="tablist" aria-label="Chart period">
+      <div class="period-tabs" role="tablist" aria-label="Calendar period">
         <button type="button" class="period-tabs__btn period-tabs__btn--active" id="period-week" role="tab" aria-selected="true">
           Week
         </button>
@@ -155,45 +147,54 @@
         </button>
       </div>
 
-      <h2 class="section-title" id="trend-title">This week</h2>
+      <h2 class="section-title" id="trend-title">Daily winners · this week</h2>
+      <p class="calendar-hint">Each day shows who earned the most stars. Tap a day for details.</p>
       <div class="trend-chart-wrap">
-        <div class="trend-chart" id="trend-chart" aria-label="Daily net points chart"></div>
+        <div class="trend-chart" id="trend-chart" aria-label="Daily winner calendar"></div>
       </div>
-
-      <section class="stats-diary-card" aria-label="Diary on stats">
-        <h2 class="section-title">Diary</h2>
-        <p class="stats-diary-card__hint">Recent notes for whoever you're viewing — tap a chart day below for that day's full detail.</p>
-        <div class="stats-diary-feed" id="stats-diary-feed"></div>
-        <p class="stats-diary-empty" id="stats-diary-empty" hidden>No diary entries yet.</p>
-      </section>
 
       <section class="day-detail" id="day-detail" aria-label="Selected day">
         <h2 class="section-title" id="day-detail-title">Today</h2>
-        <p class="day-detail__score" id="day-detail-score"></p>
-        <h3 class="subsection-title">Diary that day</h3>
-        <form class="day-note-form" id="day-note-form-stats">
-          <input
-            type="text"
-            id="day-note-input-stats"
-            class="day-note-form__input"
-            maxlength="240"
-            placeholder="Add a diary note for this day…"
-            autocomplete="off"
-          />
-          <button type="submit" class="btn btn--primary btn--small">Add</button>
-        </form>
-        <ul class="day-notes-list" id="day-notes-list-stats"></ul>
-        <p class="day-notes-empty" id="day-notes-empty-stats" hidden>No diary entries for this day.</p>
+        <div class="day-detail__winner" id="day-detail-winner"></div>
         <h3 class="subsection-title">Stars that day</h3>
         <ul class="day-events-list" id="day-events-list"></ul>
       </section>
+    </section>
 
-      <h2 class="section-title" id="breakdown-title">By item (this week)</h2>
-      <ul class="breakdown-list" id="breakdown-list"></ul>
+    <section id="panel-hero-scrolls" class="panel panel--stats" role="tabpanel" aria-labelledby="tab-hero-scrolls" hidden>
+      <p class="person-stats-view__hint">Swipe or tap faces — each scroll is one adventurer's loot log.</p>
+      <div class="person-switcher" id="person-switcher">
+        <div class="person-switcher__stage" id="person-switcher-stage">
+          <button type="button" class="person-switcher__nav" id="person-stats-prev" aria-label="Previous player">‹</button>
+          <div class="person-switcher__focus" id="person-switcher-focus">
+            <div class="person-switcher__avatar" id="person-switcher-avatar" aria-hidden="true"></div>
+            <p class="person-switcher__name" id="person-switcher-name"></p>
+            <p class="person-switcher__hint">Swipe or use arrows</p>
+          </div>
+          <button type="button" class="person-switcher__nav" id="person-stats-next" aria-label="Next player">›</button>
+        </div>
+        <div class="person-switcher__strip" id="person-switcher-strip" role="listbox" aria-label="Players"></div>
+      </div>
 
-      <h2 class="section-title">Activity log</h2>
-      <ul class="activity-log" id="activity-log" aria-live="polite"></ul>
-      <p class="empty-hint" id="empty-log" hidden>No stars logged yet — go feed a hero!</p>
+      <div class="person-stats-detail" id="person-stats-detail" aria-live="polite"></div>
+
+      <section class="winner-banner winner-banner--personal" id="winner-banner" aria-label="Weekly and monthly stats">
+        <div class="winner-banner__tabs" role="tablist" aria-label="Stats period">
+          <button type="button" class="winner-banner__tab winner-banner__tab--active" id="winner-tab-week" data-winner-range="week">This week</button>
+          <button type="button" class="winner-banner__tab" id="winner-tab-month" data-winner-range="month">This month</button>
+        </div>
+        <div class="winner-banner__body" id="winner-banner-body"></div>
+      </section>
+
+      <div id="hero-scrolls-log">
+        <h2 class="section-title" id="activity-log-title">Activity log · this week</h2>
+        <ul class="activity-log" id="activity-log" aria-live="polite"></ul>
+        <p class="empty-hint" id="empty-log" hidden>No stars logged yet for this hero.</p>
+
+        <h2 class="section-title" id="breakdown-title">Loot this week</h2>
+        <ul class="breakdown-list" id="breakdown-list"></ul>
+      </div>
+      <p class="person-stats-empty" id="person-stats-empty" hidden>Add players on the home tab first.</p>
     </section>
 
     <footer class="site-footer">
@@ -242,12 +243,23 @@
         <input type="text" id="player-name-input" class="field-input" maxlength="24" placeholder="Sam" autocomplete="off" required />
 
         <p class="field-label">Pick a character</p>
-        <p class="modal__hint modal__hint--tight">Animals, villagers, and mobs — living things only.</p>
-        <div class="char-tabs" role="tablist">
-          <button type="button" class="char-tabs__btn char-tabs__btn--active" id="char-tab-hero" data-kind="hero">🐾 Friends</button>
-          <button type="button" class="char-tabs__btn" id="char-tab-villain" data-kind="villain">👾 Mobs</button>
+        <p class="modal__hint modal__hint--tight">Swipe the big face or flick the row — made for one-thumb phone use.</p>
+        <div class="char-picker" id="char-picker">
+          <div class="char-tabs" role="tablist" aria-label="Character type">
+            <button type="button" class="char-tabs__btn char-tabs__btn--active" id="char-tab-hero" data-kind="hero">🐾 Friends</button>
+            <button type="button" class="char-tabs__btn" id="char-tab-villain" data-kind="villain">👾 Mobs</button>
+          </div>
+          <div class="char-picker__stage" id="char-picker-stage">
+            <button type="button" class="char-picker__nav" id="char-prev" aria-label="Previous character">‹</button>
+            <div class="char-picker__focus">
+              <div class="char-picker__avatar" id="char-picker-avatar" aria-hidden="true"></div>
+              <p class="char-picker__name" id="char-picker-name"></p>
+              <p class="char-picker__hint">Swipe or use arrows</p>
+            </div>
+            <button type="button" class="char-picker__nav" id="char-next" aria-label="Next character">›</button>
+          </div>
+          <div class="char-grid" id="char-grid" role="listbox" aria-label="Characters"></div>
         </div>
-        <div class="char-grid" id="char-grid"></div>
         <p class="char-grid-empty" id="char-grid-empty" hidden>No characters loaded.</p>
 
         <button type="button" class="btn btn--primary btn--block" id="player-setup-next">Next · pick +1 reward →</button>
@@ -363,6 +375,6 @@
   <script src="characters-embed.js?v=7"></script>
   <script src="mc-items-embed.js?v=8"></script>
   <script src="behavior-categories-embed.js?v=1"></script>
-  <script src="app.js?v=30" defer></script>
+  <script src="app.js?v=38" defer></script>
 </body>
 </html>

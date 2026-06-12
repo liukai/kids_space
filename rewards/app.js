@@ -225,10 +225,12 @@
   /* —— DOM —— */
   var elTabHome = document.getElementById("tab-home");
   var elTabDiary = document.getElementById("tab-diary");
-  var elTabStats = document.getElementById("tab-stats");
+  var elTabLeaderboard = document.getElementById("tab-leaderboard");
+  var elTabHeroScrolls = document.getElementById("tab-hero-scrolls");
   var elPanelHome = document.getElementById("panel-home");
   var elPanelDiary = document.getElementById("panel-diary");
-  var elPanelStats = document.getElementById("panel-stats");
+  var elPanelLeaderboard = document.getElementById("panel-leaderboard");
+  var elPanelHeroScrolls = document.getElementById("panel-hero-scrolls");
   var elScoreToday = document.getElementById("score-today");
   var elScoreWeek = document.getElementById("score-week");
   var elScoreMonth = document.getElementById("score-month");
@@ -236,25 +238,21 @@
   var elStatsWeek = document.getElementById("stats-week");
   var elStatsMonth = document.getElementById("stats-month");
   var elStatsAll = document.getElementById("stats-all");
-  var elPersonFilter = document.getElementById("person-filter");
   var elPeopleGrid = document.getElementById("people-grid");
   var elEmptyPeople = document.getElementById("empty-people");
   var elTrendChart = document.getElementById("trend-chart");
   var elTrendTitle = document.getElementById("trend-title");
   var elBreakdownTitle = document.getElementById("breakdown-title");
+  var elActivityLogTitle = document.getElementById("activity-log-title");
   var elPeriodWeek = document.getElementById("period-week");
   var elPeriodMonth = document.getElementById("period-month");
   var elDayDetailTitle = document.getElementById("day-detail-title");
-  var elDayDetailScore = document.getElementById("day-detail-score");
+  var elDayDetailWinner = document.getElementById("day-detail-winner");
   var elDayEventsList = document.getElementById("day-events-list");
   var elDayNoteFormHome = document.getElementById("day-note-form-home");
   var elDayNoteInputHome = document.getElementById("day-note-input-home");
   var elDayNotesListHome = document.getElementById("day-notes-list-home");
   var elDayNotesEmptyHome = document.getElementById("day-notes-empty-home");
-  var elDayNoteFormStats = document.getElementById("day-note-form-stats");
-  var elDayNoteInputStats = document.getElementById("day-note-input-stats");
-  var elDayNotesListStats = document.getElementById("day-notes-list-stats");
-  var elDayNotesEmptyStats = document.getElementById("day-notes-empty-stats");
   var elDayNoteFormDiary = document.getElementById("day-note-form-diary");
   var elDayNoteInputDiary = document.getElementById("day-note-input-diary");
   var elDiaryTimeline = document.getElementById("diary-timeline");
@@ -263,8 +261,6 @@
   var elBtnOpenDiary = document.getElementById("btn-open-diary");
   var elBreakdownList = document.getElementById("breakdown-list");
   var elLeaderboard = document.getElementById("leaderboard");
-  var elStatsDiaryFeed = document.getElementById("stats-diary-feed");
-  var elStatsDiaryEmpty = document.getElementById("stats-diary-empty");
   var elActivityLog = document.getElementById("activity-log");
   var elEmptyLog = document.getElementById("empty-log");
   var elRewardSheet = document.getElementById("reward-sheet");
@@ -277,7 +273,22 @@
   var elRewardPendingSummary = document.getElementById("reward-pending-summary");
   var elCategoryPicker = document.getElementById("category-picker");
   var elRewardStepBack = document.getElementById("reward-step-back");
-  var elPersonStatsGrid = document.getElementById("person-stats-grid");
+  var elPersonStatsDetail = document.getElementById("person-stats-detail");
+  var elPersonStatsEmpty = document.getElementById("person-stats-empty");
+  var elPersonSwitcher = document.getElementById("person-switcher");
+  var elPersonSwitcherStage = document.getElementById("person-switcher-stage");
+  var elPersonSwitcherAvatar = document.getElementById("person-switcher-avatar");
+  var elPersonSwitcherName = document.getElementById("person-switcher-name");
+  var elPersonSwitcherFocus = document.getElementById("person-switcher-focus");
+  var elPersonSwitcherStrip = document.getElementById("person-switcher-strip");
+  var elPersonStatsPrev = document.getElementById("person-stats-prev");
+  var elPersonStatsNext = document.getElementById("person-stats-next");
+  var elWinnerBanner = document.getElementById("winner-banner");
+  var elWinnerBannerBody = document.getElementById("winner-banner-body");
+  var elWinnerTabWeek = document.getElementById("winner-tab-week");
+  var elWinnerTabMonth = document.getElementById("winner-tab-month");
+  var elHeroScrollsLog = document.getElementById("hero-scrolls-log");
+  var personSwitcherTouchX = 0;
   var elRewardTierHint = document.getElementById("reward-tier-hint");
   var elAddModal = document.getElementById("add-player-modal");
   var elAddBackdrop = document.getElementById("add-player-backdrop");
@@ -294,8 +305,15 @@
   var elItemsWizard = document.getElementById("player-items-wizard");
   var elPlayerSetupNext = document.getElementById("player-setup-next");
   var elItemSetupBack = document.getElementById("item-setup-back");
+  var elCharPicker = document.getElementById("char-picker");
+  var elCharPickerStage = document.getElementById("char-picker-stage");
+  var elCharPickerAvatar = document.getElementById("char-picker-avatar");
+  var elCharPickerName = document.getElementById("char-picker-name");
+  var elCharPrev = document.getElementById("char-prev");
+  var elCharNext = document.getElementById("char-next");
   var elCharGrid = document.getElementById("char-grid");
   var elCharGridEmpty = document.getElementById("char-grid-empty");
+  var charPickerTouchX = 0;
   var elCharTabHero = document.getElementById("char-tab-hero");
   var elCharTabVillain = document.getElementById("char-tab-villain");
   var elAddSave = document.getElementById("add-player-save");
@@ -429,6 +447,17 @@
     return gifs.concat(rest);
   }
 
+  function resolveAssetUrl(path) {
+    var p = String(path || "").trim();
+    if (!p) return "";
+    if (/^(https?:|data:|blob:)/i.test(p)) return p;
+    try {
+      return new URL(p, document.baseURI).href;
+    } catch (e) {
+      return p;
+    }
+  }
+
   function imageUrlVariants(url) {
     var u = String(url || "").trim();
     if (!u) return [];
@@ -437,6 +466,7 @@
     function add(candidate) {
       var c = String(candidate || "").trim();
       if (!c || seen[c]) return;
+      if (c.indexOf("assets/") === 0) c = resolveAssetUrl(c);
       seen[c] = true;
       out.push(c);
     }
@@ -515,6 +545,7 @@
     function add(url) {
       var u = String(url || "").trim();
       if (!u || seen[u]) return;
+      if (u.indexOf("assets/") === 0) u = resolveAssetUrl(u);
       seen[u] = true;
       out.push(u);
     }
@@ -916,7 +947,22 @@
     if (local && local.indexOf("assets/") !== 0 && local.indexOf("http") !== 0) {
       push(local);
     }
-    return sortCandidatesGifFirst(candidates);
+    var sorted = sortCandidatesGifFirst(candidates);
+    if (local.indexOf("assets/") === 0) {
+      var preferred = resolveAssetUrl(local);
+      var out = [];
+      var seenPref = {};
+      out.push(preferred);
+      seenPref[preferred] = true;
+      for (i = 0; i < sorted.length; i++) {
+        if (!seenPref[sorted[i]]) {
+          seenPref[sorted[i]] = true;
+          out.push(sorted[i]);
+        }
+      }
+      return out;
+    }
+    return sorted;
   }
 
   function resolvedSpriteSrc(id, wikiKey, jsonSrc) {
@@ -942,7 +988,7 @@
       }
       step += 1;
       if (step < candidates.length) {
-        img.src = candidates[step];
+        img.src = resolveAssetUrl(candidates[step]);
         return;
       }
       if (!img._wikiGifTried) {
@@ -986,7 +1032,7 @@
       }
       markMissing();
     };
-    img.src = candidates[0] || "";
+    img.src = resolveAssetUrl(candidates[0] || "");
   }
 
   function patchItemSpriteSrc(item) {
@@ -1349,6 +1395,150 @@
     }
     if (!state.settings.filterPersonId) state.settings.filterPersonId = "all";
     if (!state.settings.personStatsExpanded) state.settings.personStatsExpanded = {};
+    if (!state.settings.winnerRange) state.settings.winnerRange = "week";
+  }
+
+  function statsPersonId() {
+    var id = String(state.settings.statsPersonId || "").trim();
+    if (id && personById(id)) return id;
+    if (state.people.length) return state.people[0].id;
+    return null;
+  }
+
+  function setStatsPersonId(id) {
+    if (!id || !personById(id)) return;
+    state.settings.statsPersonId = id;
+    saveState();
+    renderPersonStats();
+  }
+
+  function winnerRange() {
+    return state.settings.winnerRange === "month" ? "month" : "week";
+  }
+
+  function setWinnerRange(range) {
+    state.settings.winnerRange = range === "month" ? "month" : "week";
+    saveState();
+    if (elWinnerTabWeek) {
+      elWinnerTabWeek.classList.toggle("winner-banner__tab--active", range !== "month");
+    }
+    if (elWinnerTabMonth) {
+      elWinnerTabMonth.classList.toggle("winner-banner__tab--active", range === "month");
+    }
+    renderPersonWinnerBanner();
+    renderBreakdown();
+    renderActivityLog();
+  }
+
+  function leaderboardRowsForRange(range) {
+    var rows = [];
+    var i;
+    for (i = 0; i < state.people.length; i++) {
+      rows.push({
+        person: state.people[i],
+        score: scoreForRange(range, state.people[i].id),
+      });
+    }
+    rows.sort(function (a, b) {
+      return b.score - a.score || a.person.name.localeCompare(b.person.name);
+    });
+    return rows;
+  }
+
+  function winnersForRange(range) {
+    var rows = leaderboardRowsForRange(range);
+    var top;
+    var i;
+    var out = [];
+    if (!rows.length) return out;
+    top = rows[0].score;
+    for (i = 0; i < rows.length; i++) {
+      if (rows[i].score === top) out.push(rows[i]);
+    }
+    return out;
+  }
+
+  function winnersForDayKey(dayKey) {
+    var start = startOfDayKey(dayKey);
+    var end = start + 86400000;
+    var rows = [];
+    var top;
+    var i;
+    var out = [];
+    if (!state.people.length) return out;
+    for (i = 0; i < state.people.length; i++) {
+      var person = state.people[i];
+      rows.push({
+        person: person,
+        score: sumPointsInRange(
+          state.ledger.filter(function (ev) {
+            return ev.personId === person.id;
+          }),
+          start,
+          end
+        ),
+      });
+    }
+    rows.sort(function (a, b) {
+      return b.score - a.score || a.person.name.localeCompare(b.person.name);
+    });
+    top = rows[0].score;
+    for (i = 0; i < rows.length; i++) {
+      if (rows[i].score === top) out.push(rows[i]);
+    }
+    return out;
+  }
+
+  function formatWinnerNames(winners) {
+    var i;
+    var parts = [];
+    if (!winners || !winners.length) return "No players yet";
+    for (i = 0; i < winners.length; i++) {
+      parts.push(personDisplayLabel(winners[i].person));
+    }
+    return parts.join(" & ");
+  }
+
+  function personIsWinnerForRange(personId, range) {
+    var winners = winnersForRange(range);
+    var i;
+    for (i = 0; i < winners.length; i++) {
+      if (winners[i].person.id === personId) return true;
+    }
+    return false;
+  }
+
+  function openPlayerStatsForPerson(personId) {
+    if (!personById(personId)) return;
+    state.settings.statsPersonId = personId;
+    saveState();
+    setView("hero-scrolls");
+    renderPersonStats();
+  }
+
+  function cycleStatsPerson(delta) {
+    var people = state.people.slice();
+    var i;
+    var idx = -1;
+    var pid = statsPersonId();
+    if (!people.length) return;
+    for (i = 0; i < people.length; i++) {
+      if (people[i].id === pid) {
+        idx = i;
+        break;
+      }
+    }
+    if (idx < 0) idx = 0;
+    idx = (idx + delta + people.length) % people.length;
+    setStatsPersonId(people[idx].id);
+  }
+
+  function scrollSelectedPersonIntoView() {
+    if (!elPersonSwitcherStrip) return;
+    var sel = elPersonSwitcherStrip.querySelector(".person-switcher__pick--selected");
+    if (sel && sel.scrollIntoView) {
+      sel.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+    }
   }
 
   function isPersonStatsExpanded(personId) {
@@ -1568,7 +1758,6 @@
     rm.addEventListener("click", function () {
       removeDayNote(note.id);
       renderDayNotesPanels();
-      renderStatsDiary();
       renderDiaryTimeline();
       showToast("Diary entry removed.");
     });
@@ -1609,7 +1798,7 @@
         head.className = "diary-day__head";
         head.textContent = formatDayKeyLong(group.dayKey);
         head.addEventListener("click", function () {
-          setView("stats");
+          setView("leaderboard");
           setSelectedDayKey(group.dayKey);
         });
         section.appendChild(head);
@@ -1711,13 +1900,7 @@
   function renderDayNotesPanels() {
     var todayKey = dayKeyFromTs(Date.now());
     renderDayNotesList(elDayNotesListHome, elDayNotesEmptyHome, todayKey);
-    renderDayNotesList(
-      elDayNotesListStats,
-      elDayNotesEmptyStats,
-      selectedDayKey()
-    );
     renderDiaryTimeline();
-    renderStatsDiary();
   }
 
   function eventsForDay(dayKey) {
@@ -1730,19 +1913,47 @@
 
   function renderDayDetail() {
     var dayKey = selectedDayKey();
+    var winners = winnersForDayKey(dayKey);
     if (elDayDetailTitle) {
       elDayDetailTitle.textContent = formatDayKeyLong(dayKey);
     }
-    var net = sumPointsInRange(
-      eventsForFilter(),
-      startOfDayKey(dayKey),
-      startOfDayKey(dayKey) + 86400000
-    );
-    if (elDayDetailScore) {
-      elDayDetailScore.textContent = formatScore(net) + " ⭐ this day";
-      elDayDetailScore.style.color = net < 0 ? "var(--oops)" : "var(--green)";
+    if (elDayDetailWinner) {
+      elDayDetailWinner.replaceChildren("");
+      if (!winners.length || !state.people.length) {
+        elDayDetailWinner.textContent = "No players yet.";
+      } else {
+        var w;
+        for (w = 0; w < winners.length; w++) {
+          (function (entry) {
+            var person = entry.person;
+            var ch = characterById(person.characterId);
+            var row = document.createElement("div");
+            row.className = "day-detail__winner-row";
+            if (ch) {
+              appendCharacterImg(row, ch, "day-detail__winner-avatar", 40);
+            }
+            var copy = document.createElement("div");
+            copy.className = "day-detail__winner-copy";
+            var title = document.createElement("strong");
+            title.textContent =
+              winners.length > 1
+                ? "Tied winner · " + personDisplayLabel(person)
+                : "Day winner · " + personDisplayLabel(person);
+            copy.appendChild(title);
+            var score = document.createElement("span");
+            score.className = "day-detail__winner-score";
+            if (entry.score < 0) score.classList.add("day-detail__winner-score--neg");
+            score.textContent = formatScore(entry.score) + " ⭐";
+            copy.appendChild(score);
+            row.appendChild(copy);
+            row.addEventListener("click", function () {
+              openPlayerStatsForPerson(person.id);
+            });
+            elDayDetailWinner.appendChild(row);
+          })(winners[w]);
+        }
+      }
     }
-    renderDayNotesList(elDayNotesListStats, elDayNotesEmptyStats, dayKey);
     if (!elDayEventsList) return;
     elDayEventsList.replaceChildren();
     var evs = eventsForDay(dayKey).sort(function (a, b) {
@@ -1761,7 +1972,7 @@
           document.createTextNode(personDisplayLabel(person) + " · ")
         );
       }
-      appendEventDetail(lbl, ev, { size: 18 });
+      appendEventDetail(lbl, ev, { size: 22 });
       var pts = document.createElement("span");
       pts.className =
         ev.points >= 0
@@ -1799,7 +2010,7 @@
   }
 
   function filterPersonId() {
-    return state.settings.filterPersonId || "all";
+    return "all";
   }
 
   function eventsForFilter(personId) {
@@ -1864,6 +2075,19 @@
 
   function mcItemById(id) {
     return itemById[id] || null;
+  }
+
+  function itemForDisplay(id) {
+    var key = String(id || "").trim();
+    if (!key) return null;
+    var item = mcItemById(key);
+    if (item) return item;
+    return {
+      id: key,
+      label: itemLabel(key),
+      wikiKey: key,
+      src: localSpriteCandidates(key)[0] || "",
+    };
   }
 
   function defaultPersonItems() {
@@ -2060,19 +2284,25 @@
     return img;
   }
 
-  function appendMcItemImg(parent, item, className) {
-    if (!parent) return;
+  function appendMcItemImg(parent, itemOrId, className, size) {
+    if (!parent) return null;
+    var item =
+      itemOrId && typeof itemOrId === "object"
+        ? itemOrId
+        : itemForDisplay(itemOrId);
     var img = document.createElement("img");
     img.className = className || "item-pick__img";
     img.alt = item ? item.label : "";
     img.loading = "lazy";
     img.decoding = "async";
-    img.width = 48;
-    img.height = 48;
+    var px = size || 48;
+    img.width = px;
+    img.height = px;
     if (item) {
       attachSpriteImg(img, item.id, item.wikiKey, item.src);
     }
     parent.appendChild(img);
+    return img;
   }
 
   function createItemInline(itemOrId, options) {
@@ -2080,7 +2310,7 @@
     var item =
       itemOrId && typeof itemOrId === "object"
         ? itemOrId
-        : mcItemById(itemOrId);
+        : itemForDisplay(itemOrId);
     var wrap = document.createElement("span");
     wrap.className = options.className || "item-inline";
     var imgSize = options.size || 20;
@@ -2547,20 +2777,22 @@
       (function (row) {
         var li = document.createElement("li");
         li.className = "person-stat-card__breakdown-item";
-        var item = mcItemById(row.id);
-        if (item) {
-          appendMcItemImg(li, item, "person-stat-card__breakdown-img");
-        }
+        appendMcItemImg(li, row.id, "person-stat-card__breakdown-img", 36);
         var text = document.createElement("span");
         text.className = "person-stat-card__breakdown-text";
-        text.textContent =
-          row.label +
-          " (" +
-          formatScore(row.points) +
-          ") × " +
-          row.count +
-          " = " +
-          formatScore(row.total);
+        var name = document.createElement("strong");
+        name.textContent = row.label;
+        text.appendChild(name);
+        text.appendChild(
+          document.createTextNode(
+            " · " +
+              formatScore(row.points) +
+              " × " +
+              row.count +
+              " = " +
+              formatScore(row.total)
+          )
+        );
         li.appendChild(text);
         list.appendChild(li);
       })(breakdown[b]);
@@ -2687,21 +2919,83 @@
     parent.appendChild(block);
   }
 
+  function renderPersonWinnerBanner() {
+    if (!elWinnerBannerBody) return;
+    elWinnerBannerBody.replaceChildren("");
+    var person = personById(statsPersonId());
+    if (!person) {
+      var empty = document.createElement("p");
+      empty.className = "winner-banner__empty";
+      empty.textContent = "Pick a hero to see their scroll.";
+      elWinnerBannerBody.appendChild(empty);
+      return;
+    }
+    var range = winnerRange();
+    var score = scoreForRange(range, person.id);
+    var isChamp = personIsWinnerForRange(person.id, range);
+    var winners = winnersForRange(range);
+    var ch = characterById(person.characterId);
+    var card = document.createElement("div");
+    card.className = "winner-banner__personal";
+
+    if (isChamp) {
+      var crown = document.createElement("p");
+      crown.className = "winner-banner__crown";
+      crown.textContent =
+        (range === "month" ? "Monthly champ" : "Weekly champ") +
+        (winners.length > 1 ? " · tied with " + winners.length + "!" : "!");
+      card.appendChild(crown);
+    }
+
+    var row = document.createElement("div");
+    row.className = "winner-banner__winners";
+    var hero = document.createElement("div");
+    hero.className = "winner-banner__winner winner-banner__winner--static";
+    if (ch) {
+      appendCharacterImg(hero, ch, "winner-banner__avatar", 56);
+    }
+    var copy = document.createElement("span");
+    copy.className = "winner-banner__copy";
+    var name = document.createElement("strong");
+    name.textContent = personDisplayLabel(person);
+    copy.appendChild(name);
+    var scoreEl = document.createElement("span");
+    scoreEl.className = "winner-banner__score";
+    if (score < 0) scoreEl.classList.add("winner-banner__score--neg");
+    scoreEl.textContent =
+      (range === "month" ? "This month" : "This week") +
+      " · " +
+      formatScore(score) +
+      " ⭐";
+    copy.appendChild(scoreEl);
+    hero.appendChild(copy);
+    row.appendChild(hero);
+    card.appendChild(row);
+
+    if (winners.length > 1) {
+      var tie = document.createElement("p");
+      tie.className = "winner-banner__tie";
+      tie.textContent =
+        "Tied leaders: " +
+        formatWinnerNames(winners) +
+        " · " +
+        formatScore(winners[0].score) +
+        " ⭐";
+      card.appendChild(tie);
+    }
+
+    elWinnerBannerBody.appendChild(card);
+    if (elBreakdownTitle) {
+      elBreakdownTitle.textContent =
+        "Loot (" + (range === "month" ? "this month" : "this week") + ")";
+    }
+  }
+
   function renderLeaderboard() {
     if (!elLeaderboard) return;
     elLeaderboard.replaceChildren("");
     var range = leaderboardRange();
-    var rows = [];
-    var i;
-    for (i = 0; i < state.people.length; i++) {
-      rows.push({
-        person: state.people[i],
-        score: scoreForRange(range, state.people[i].id),
-      });
-    }
-    rows.sort(function (a, b) {
-      return b.score - a.score || a.person.name.localeCompare(b.person.name);
-    });
+    var rows = leaderboardRowsForRange(range);
     if (!rows.length) {
       var empty = document.createElement("li");
       empty.className = "leaderboard__empty";
@@ -2709,6 +3003,7 @@
       elLeaderboard.appendChild(empty);
       return;
     }
+    var i;
     for (i = 0; i < rows.length; i++) {
       (function (row, rank) {
         var person = row.person;
@@ -2726,10 +3021,14 @@
           appendCharacterImg(li, ch, "leaderboard__avatar", 40);
         }
 
+        var copy = document.createElement("div");
+        copy.className = "leaderboard__copy";
+
         var name = document.createElement("span");
         name.className = "leaderboard__name";
         name.textContent = personDisplayLabel(person);
-        li.appendChild(name);
+        copy.appendChild(name);
+        li.appendChild(copy);
 
         var pts = document.createElement("span");
         pts.className = "leaderboard__score";
@@ -2737,148 +3036,200 @@
         pts.textContent = formatScore(row.score) + " ⭐";
         li.appendChild(pts);
 
+        li.addEventListener("click", function () {
+          openPlayerStatsForPerson(person.id);
+        });
+        li.style.cursor = "pointer";
+
         elLeaderboard.appendChild(li);
       })(rows[i], i + 1);
     }
   }
 
-  function renderStatsDiary() {
-    if (!elStatsDiaryFeed) return;
-    elStatsDiaryFeed.replaceChildren("");
-    var pid = filterPersonId();
-    var notes = state.dayNotes.slice().sort(function (a, b) {
-      return b.ts - a.ts;
+  function appendPersonStatDetail(parent, person) {
+    if (!parent || !person) return;
+    normalizePersonItems(person);
+    var ch = characterById(person.characterId);
+    var card = document.createElement("article");
+    card.className = "person-stat-card person-stat-card--solo";
+
+    var head = document.createElement("div");
+    head.className = "person-stat-card__head";
+    if (ch) {
+      appendCharacterImg(head, ch, "person-stat-card__avatar", 64);
+    }
+    var headCopy = document.createElement("div");
+    var headName = document.createElement("strong");
+    headName.textContent = personDisplayLabel(person);
+    headCopy.appendChild(headName);
+    if (ch) {
+      var sub = document.createElement("span");
+      sub.className = "person-stat-card__sub";
+      sub.textContent = ch.name + (ch.kind === "villain" ? " · mob" : " · friend");
+      headCopy.appendChild(sub);
+    }
+    head.appendChild(headCopy);
+    card.appendChild(head);
+
+    var body = document.createElement("div");
+    body.className = "person-stat-card__body";
+
+    var total = scoreForRange("all", person.id);
+    var totalEl = document.createElement("p");
+    totalEl.className = "person-stat-card__total";
+    totalEl.textContent = "All time " + formatScore(total) + " ⭐";
+    if (total < 0) totalEl.classList.add("person-stat-card__total--neg");
+    body.appendChild(totalEl);
+
+    var grid = document.createElement("dl");
+    grid.className = "person-stat-card__scores";
+    var ranges = [
+      { key: "today", label: "Today" },
+      { key: "week", label: "Week" },
+      { key: "month", label: "Month" },
+      { key: "all", label: "All" },
+    ];
+    var r;
+    for (r = 0; r < ranges.length; r++) {
+      var dt = document.createElement("dt");
+      dt.textContent = ranges[r].label;
+      var dd = document.createElement("dd");
+      var val = scoreForRange(ranges[r].key, person.id);
+      dd.textContent = formatScore(val);
+      if (val < 0) dd.classList.add("person-stat-card__score--neg");
+      grid.appendChild(dt);
+      grid.appendChild(dd);
+    }
+    body.appendChild(grid);
+
+    var picks = document.createElement("div");
+    picks.className = "person-stat-card__picks";
+    appendPersonLootSummary(picks, person, {
+      className: "loot-summary loot-summary--card loot-summary--stat",
+      includeDislikes: true,
     });
-    if (pid !== "all") {
-      notes = notes.filter(function (n) {
-        return n.personId === pid || n.personId == null;
-      });
+    body.appendChild(picks);
+
+    var giveBtn = document.createElement("button");
+    giveBtn.type = "button";
+    giveBtn.className = "btn btn--primary btn--block person-stat-card__give";
+    giveBtn.textContent = "Give stars ⭐";
+    giveBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+      openRewardSheet(person.id);
+    });
+    body.appendChild(giveBtn);
+
+    card.appendChild(body);
+    parent.appendChild(card);
+  }
+
+  function renderPersonSwitcherPreview(person) {
+    if (!elPersonSwitcherStage || !elPersonSwitcherAvatar || !elPersonSwitcherName) {
+      return;
     }
-    notes = notes.slice(0, 12);
-    if (elStatsDiaryEmpty) elStatsDiaryEmpty.hidden = notes.length > 0;
-    if (!notes.length) return;
-    var list = document.createElement("ul");
-    list.className = "stats-diary-feed__list";
-    var showPerson = pid === "all";
-    var i;
-    for (i = 0; i < notes.length; i++) {
-      renderDiaryNoteEntry(notes[i], list, showPerson);
+    if (!person) {
+      elPersonSwitcherStage.hidden = true;
+      elPersonSwitcherAvatar.replaceChildren();
+      elPersonSwitcherName.textContent = "";
+      if (elPersonSwitcherFocus) elPersonSwitcherFocus.onclick = null;
+      return;
     }
-    elStatsDiaryFeed.appendChild(list);
+    var ch = characterById(person.characterId);
+    elPersonSwitcherStage.hidden = false;
+    elPersonSwitcherAvatar.replaceChildren();
+    if (ch) {
+      var img = appendCharacterImg(
+        elPersonSwitcherAvatar,
+        ch,
+        "person-switcher__sprite",
+        88
+      );
+      if (img) {
+        img.width = 88;
+        img.height = 88;
+      }
+    }
+    elPersonSwitcherName.textContent = personDisplayLabel(person);
+    if (elPersonSwitcherFocus) {
+      elPersonSwitcherFocus.onclick = function () {
+        openRewardSheet(person.id);
+      };
+    }
+    if (elPersonStatsPrev) {
+      elPersonStatsPrev.disabled = state.people.length <= 1;
+    }
+    if (elPersonStatsNext) {
+      elPersonStatsNext.disabled = state.people.length <= 1;
+    }
   }
 
   function renderPersonStats() {
-    if (!elPersonStatsGrid) return;
-    elPersonStatsGrid.replaceChildren("");
-    if (!state.people.length) {
-      var empty = document.createElement("p");
-      empty.className = "person-stats-empty";
-      empty.textContent = "Add players to see their scores here.";
-      elPersonStatsGrid.appendChild(empty);
+    var pid = statsPersonId();
+    var person = pid ? personById(pid) : null;
+    var hasPeople = state.people.length > 0;
+
+    if (elPersonStatsEmpty) elPersonStatsEmpty.hidden = hasPeople;
+    if (elPersonSwitcher) elPersonSwitcher.hidden = !hasPeople;
+    if (elWinnerBanner) elWinnerBanner.hidden = !hasPeople;
+    if (elHeroScrollsLog) elHeroScrollsLog.hidden = !hasPeople;
+
+    if (!hasPeople) {
+      if (elPersonSwitcherStrip) elPersonSwitcherStrip.replaceChildren("");
+      if (elPersonStatsDetail) elPersonStatsDetail.replaceChildren("");
+      if (elActivityLog) elActivityLog.replaceChildren();
+      if (elBreakdownList) elBreakdownList.replaceChildren("");
+      if (elEmptyLog) elEmptyLog.hidden = true;
+      renderPersonSwitcherPreview(null);
       return;
     }
-    var filterPid = filterPersonId();
-    var i;
-    for (i = 0; i < state.people.length; i++) {
-      (function (person) {
-        if (filterPid !== "all" && person.id !== filterPid) return;
 
-        normalizePersonItems(person);
-        var ch = characterById(person.characterId);
-        var weekScore = scoreForRange("week", person.id);
-        var monthScore = scoreForRange("month", person.id);
-
-        var card = document.createElement("details");
-        card.className = "person-stat-card";
-        card.open = isPersonStatsExpanded(person.id);
-        card.addEventListener("toggle", function () {
-          setPersonStatsExpanded(person.id, card.open);
-        });
-
-        var summary = document.createElement("summary");
-        summary.className = "person-stat-card__summary";
-
-        var chev = document.createElement("span");
-        chev.className = "person-stat-card__chev";
-        chev.setAttribute("aria-hidden", "true");
-        chev.textContent = "▸";
-        summary.appendChild(chev);
-
-        if (ch) {
-          appendCharacterImg(summary, ch, "person-stat-card__avatar");
-        }
-
-        var summaryCopy = document.createElement("div");
-        summaryCopy.className = "person-stat-card__summary-copy";
-        var name = document.createElement("strong");
-        name.textContent = personDisplayLabel(person);
-        summaryCopy.appendChild(name);
-
-        var quick = document.createElement("div");
-        quick.className = "person-stat-card__summary-scores";
-        var weekChip = document.createElement("span");
-        weekChip.className =
-          "person-stat-card__chip" +
-          (weekScore < 0 ? " person-stat-card__chip--neg" : "");
-        weekChip.textContent = "Week " + formatScore(weekScore);
-        var monthChip = document.createElement("span");
-        monthChip.className =
-          "person-stat-card__chip" +
-          (monthScore < 0 ? " person-stat-card__chip--neg" : "");
-        monthChip.textContent = "Month " + formatScore(monthScore);
-        quick.appendChild(weekChip);
-        quick.appendChild(monthChip);
-        summaryCopy.appendChild(quick);
-        summary.appendChild(summaryCopy);
-        card.appendChild(summary);
-
-        var body = document.createElement("div");
-        body.className = "person-stat-card__body";
-
-        var total = scoreForRange("all", person.id);
-        var totalEl = document.createElement("p");
-        totalEl.className = "person-stat-card__total";
-        totalEl.textContent = "All time " + formatScore(total) + " ⭐";
-        if (total < 0) totalEl.classList.add("person-stat-card__total--neg");
-        body.appendChild(totalEl);
-
-        var grid = document.createElement("dl");
-        grid.className = "person-stat-card__scores";
-        var ranges = [
-          { key: "today", label: "Today" },
-          { key: "week", label: "Week" },
-          { key: "month", label: "Month" },
-          { key: "all", label: "All" },
-        ];
-        var r;
-        for (r = 0; r < ranges.length; r++) {
-          var dt = document.createElement("dt");
-          dt.textContent = ranges[r].label;
-          var dd = document.createElement("dd");
-          var val = scoreForRange(ranges[r].key, person.id);
-          dd.textContent = formatScore(val);
-          if (val < 0) dd.classList.add("person-stat-card__score--neg");
-          grid.appendChild(dt);
-          grid.appendChild(dd);
-        }
-        body.appendChild(grid);
-
-        var weekSection = document.createElement("section");
-        weekSection.className = "person-stat-card__period";
-        renderPersonItemBreakdown(weekSection, person.id, "week", "Loot this week");
-        renderPersonCategoryInsights(weekSection, person.id, "week", "this week");
-        body.appendChild(weekSection);
-
-        var monthSection = document.createElement("section");
-        monthSection.className = "person-stat-card__period";
-        renderPersonItemBreakdown(monthSection, person.id, "month", "Loot this month");
-        renderPersonCategoryInsights(monthSection, person.id, "month", "this month");
-        body.appendChild(monthSection);
-
-        card.appendChild(body);
-        elPersonStatsGrid.appendChild(card);
-      })(state.people[i]);
+    if (!person) {
+      setStatsPersonId(state.people[0].id);
+      return;
     }
+
+    renderPersonSwitcherPreview(person);
+
+    if (elPersonSwitcherStrip) {
+      elPersonSwitcherStrip.replaceChildren("");
+      var i;
+      for (i = 0; i < state.people.length; i++) {
+        (function (p) {
+          var ch = characterById(p.characterId);
+          var btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "person-switcher__pick";
+          btn.setAttribute("role", "option");
+          btn.setAttribute("aria-selected", p.id === person.id ? "true" : "false");
+          btn.setAttribute("aria-label", personDisplayLabel(p));
+          if (p.id === person.id) {
+            btn.classList.add("person-switcher__pick--selected");
+          }
+          if (ch) {
+            appendCharacterImg(btn, ch, "person-switcher__pick-img", 48);
+          }
+          var lbl = document.createElement("span");
+          lbl.className = "person-switcher__pick-name";
+          lbl.textContent = p.name;
+          btn.appendChild(lbl);
+          btn.addEventListener("click", function (e) {
+            e.preventDefault();
+            setStatsPersonId(p.id);
+          });
+          elPersonSwitcherStrip.appendChild(btn);
+        })(state.people[i]);
+      }
+      window.requestAnimationFrame(scrollSelectedPersonIntoView);
+    }
+
+    if (elPersonStatsDetail) {
+      elPersonStatsDetail.replaceChildren("");
+      appendPersonStatDetail(elPersonStatsDetail, person);
+    }
+    renderPersonWinnerBanner();
+    renderBreakdown();
+    renderActivityLog();
   }
 
   function refreshScores() {
@@ -2979,28 +3330,6 @@
       })
     );
     showToast(wrap, kind);
-  }
-
-  function renderPersonFilter() {
-    if (!elPersonFilter) return;
-    var val = filterPersonId();
-    while (elPersonFilter.firstChild) {
-      elPersonFilter.removeChild(elPersonFilter.firstChild);
-    }
-    var allOpt = document.createElement("option");
-    allOpt.value = "all";
-    allOpt.textContent = "Everyone";
-    elPersonFilter.appendChild(allOpt);
-    var i;
-    for (i = 0; i < state.people.length; i++) {
-      var p = state.people[i];
-      var opt = document.createElement("option");
-      opt.value = p.id;
-      opt.textContent = personDisplayLabel(p);
-      elPersonFilter.appendChild(opt);
-    }
-    elPersonFilter.value = val;
-    if (elPersonFilter.selectedIndex < 0) elPersonFilter.value = "all";
   }
 
   function renderPeopleGrid() {
@@ -3109,7 +3438,6 @@
   }
 
   function buildTrendDays(period) {
-    var evs = eventsForFilter();
     var now = Date.now();
     var dayMs = 86400000;
     var days = [];
@@ -3119,17 +3447,30 @@
       var monthStart = startOfMonth(now);
       var todayStart = startOfDay(now);
       for (d = monthStart; d <= todayStart; d += dayMs) {
-        var net = sumPointsInRange(evs, d, d + dayMs);
-        if (Math.abs(net) > maxAbs) maxAbs = Math.abs(net);
-        days.push({ start: d, net: net, dayKey: dayKeyFromTs(d) });
+        var dayKey = dayKeyFromTs(d);
+        var winners = winnersForDayKey(dayKey);
+        var topScore = winners.length ? winners[0].score : 0;
+        if (Math.abs(topScore) > maxAbs) maxAbs = Math.abs(topScore);
+        days.push({
+          start: d,
+          dayKey: dayKey,
+          winners: winners,
+          topScore: topScore,
+        });
       }
     } else {
       for (d = 6; d >= 0; d--) {
         var dayStart = startOfDay(now - d * dayMs);
-        var dayEnd = dayStart + dayMs;
-        var netW = sumPointsInRange(evs, dayStart, dayEnd);
-        if (Math.abs(netW) > maxAbs) maxAbs = Math.abs(netW);
-        days.push({ start: dayStart, net: netW, dayKey: dayKeyFromTs(dayStart) });
+        var dayKeyW = dayKeyFromTs(dayStart);
+        var winnersW = winnersForDayKey(dayKeyW);
+        var topW = winnersW.length ? winnersW[0].score : 0;
+        if (Math.abs(topW) > maxAbs) maxAbs = Math.abs(topW);
+        days.push({
+          start: dayStart,
+          dayKey: dayKeyW,
+          winners: winnersW,
+          topScore: topW,
+        });
       }
     }
     return { days: days, maxAbs: maxAbs };
@@ -3140,7 +3481,9 @@
     var period = statsPeriod();
     if (elTrendTitle) {
       elTrendTitle.textContent =
-        period === "month" ? "This month" : "This week";
+        period === "month"
+          ? "Daily winners · this month"
+          : "Daily winners · this week";
     }
     elTrendChart.replaceChildren("");
     elTrendChart.classList.toggle("trend-chart--month", period === "month");
@@ -3151,31 +3494,45 @@
     var i;
     for (i = 0; i < days.length; i++) {
       (function (day) {
+        var winners = day.winners || [];
+        var topScore = day.topScore || 0;
         var wrap = document.createElement("button");
         wrap.type = "button";
         wrap.className = "trend-bar trend-bar--selectable";
         if (day.dayKey === sel) wrap.classList.add("trend-bar--selected");
-        wrap.setAttribute("aria-label", formatDayKeyLong(day.dayKey) + " " + formatScore(day.net));
+        wrap.setAttribute(
+          "aria-label",
+          formatDayKeyLong(day.dayKey) +
+            " · " +
+            formatWinnerNames(winners) +
+            " · " +
+            formatScore(topScore)
+        );
 
         var val = document.createElement("span");
         val.className = "trend-bar__val";
-        val.textContent = formatScore(day.net);
+        val.textContent = formatScore(topScore);
         wrap.appendChild(val);
 
         var fill = document.createElement("div");
         fill.className = "trend-bar__fill";
         fill.setAttribute("aria-hidden", "true");
-        if (day.net === 0) {
+        if (topScore === 0) {
           fill.classList.add("trend-bar__fill--zero");
           fill.style.height = "4px";
-        } else if (day.net < 0) {
+        } else if (topScore < 0) {
           fill.classList.add("trend-bar__fill--neg");
           fill.style.height =
-            Math.round((Math.abs(day.net) / maxAbs) * 100) + "%";
+            Math.round((Math.abs(topScore) / maxAbs) * 100) + "%";
         } else {
-          fill.style.height = Math.round((day.net / maxAbs) * 100) + "%";
+          fill.style.height = Math.round((topScore / maxAbs) * 100) + "%";
         }
         wrap.appendChild(fill);
+
+        var winner = document.createElement("span");
+        winner.className = "trend-bar__winner";
+        winner.textContent = formatWinnerNames(winners);
+        wrap.appendChild(winner);
 
         var label = document.createElement("span");
         label.className = "trend-bar__label";
@@ -3196,12 +3553,26 @@
 
   function renderBreakdown() {
     if (!elBreakdownList) return;
-    elBreakdownList.replaceChildren();
-    var period = statsPeriod();
-    var evs = eventsInRange(period === "month" ? "month" : "week");
+    elBreakdownList.replaceChildren("");
+    var pid = statsPersonId();
+    if (!pid) return;
+    var period = winnerRange();
+    var evs = state.ledger.filter(function (ev) {
+      return ev.personId === pid;
+    });
+    var from = rangeStartTs(period);
+    if (period === "today") {
+      evs = evs.filter(function (ev) {
+        return ev.ts >= from && ev.ts < from + 86400000;
+      });
+    } else if (period !== "all") {
+      evs = evs.filter(function (ev) {
+        return ev.ts >= from;
+      });
+    }
     if (elBreakdownTitle) {
       elBreakdownTitle.textContent =
-        "By item (" + (period === "month" ? "this month" : "this week") + ")";
+        "Loot (" + (period === "month" ? "this month" : "this week") + ")";
     }
     var breakdown = buildItemBreakdown(evs);
     if (!breakdown.length) {
@@ -3219,14 +3590,18 @@
         item.className = "breakdown-list__item";
         var left = document.createElement("span");
         left.className = "breakdown-list__label";
-        var mc = mcItemById(row.id);
-        if (mc) {
-          appendMcItemImg(left, mc, "breakdown-list__img");
-        }
-        var lbl = document.createElement("span");
-        lbl.textContent =
-          row.label + " (" + formatScore(row.points) + ") × " + row.count;
-        left.appendChild(lbl);
+        appendMcItemImg(left, row.id, "breakdown-list__img", 36);
+        var copy = document.createElement("span");
+        copy.className = "breakdown-list__copy";
+        var name = document.createElement("strong");
+        name.textContent = row.label;
+        copy.appendChild(name);
+        var meta = document.createElement("span");
+        meta.className = "breakdown-list__meta";
+        meta.textContent =
+          " · " + formatScore(row.points) + " × " + row.count;
+        copy.appendChild(meta);
+        left.appendChild(copy);
         var pts = document.createElement("span");
         pts.className = "breakdown-list__pts";
         if (row.total < 0) pts.classList.add("breakdown-list__pts--neg");
@@ -3241,11 +3616,25 @@
   function renderActivityLog() {
     if (!elActivityLog) return;
     elActivityLog.replaceChildren();
-    var evs = eventsForFilter()
+    var pid = statsPersonId();
+    if (!pid) {
+      if (elEmptyLog) elEmptyLog.hidden = false;
+      return;
+    }
+    var period = winnerRange();
+    var from = rangeStartTs(period);
+    var evs = state.ledger
+      .filter(function (ev) {
+        return ev.personId === pid && ev.ts >= from;
+      })
       .slice()
       .sort(function (a, b) {
         return b.ts - a.ts;
       });
+    if (elActivityLogTitle) {
+      elActivityLogTitle.textContent =
+        "Activity log · " + (period === "month" ? "this month" : "this week");
+    }
     var show = evs.slice(0, 80);
     if (elEmptyLog) elEmptyLog.hidden = show.length > 0;
     var i;
@@ -3263,12 +3652,7 @@
       var mid = document.createElement("div");
       var title = document.createElement("div");
       title.className = "activity-log__title event-detail";
-      title.appendChild(
-        document.createTextNode(
-          (person ? personDisplayLabel(person) : "?") + " · "
-        )
-      );
-      appendEventDetail(title, ev, { size: 20 });
+      appendEventDetail(title, ev, { size: 26 });
       var meta = document.createElement("div");
       meta.className = "activity-log__meta";
       meta.textContent = formatTime(ev.ts);
@@ -3299,7 +3683,6 @@
       tabs[i].setAttribute("aria-selected", active ? "true" : "false");
     }
     renderLeaderboard();
-    renderPersonStats();
   }
 
   function setStatsPeriod(period) {
@@ -3314,27 +3697,24 @@
       elPeriodMonth.setAttribute("aria-selected", period === "month" ? "true" : "false");
     }
     renderTrendChart();
-    renderBreakdown();
+    renderDayDetail();
   }
 
   function renderAll() {
-    renderPersonFilter();
     renderPeopleGrid();
     refreshScores();
     renderLeaderboard();
     renderPersonStats();
-    renderStatsDiary();
     renderDayNotesPanels();
     renderTrendChart();
     renderDayDetail();
-    renderBreakdown();
-    renderActivityLog();
   }
 
   function setView(view) {
     var home = view === "home";
     var diary = view === "diary";
-    var stats = view === "stats";
+    var leaderboard = view === "leaderboard";
+    var heroScrolls = view === "hero-scrolls";
     if (elTabHome) {
       elTabHome.classList.toggle("view-tabs__btn--active", home);
       elTabHome.setAttribute("aria-selected", home ? "true" : "false");
@@ -3343,14 +3723,24 @@
       elTabDiary.classList.toggle("view-tabs__btn--active", diary);
       elTabDiary.setAttribute("aria-selected", diary ? "true" : "false");
     }
-    if (elTabStats) {
-      elTabStats.classList.toggle("view-tabs__btn--active", stats);
-      elTabStats.setAttribute("aria-selected", stats ? "true" : "false");
+    if (elTabLeaderboard) {
+      elTabLeaderboard.classList.toggle("view-tabs__btn--active", leaderboard);
+      elTabLeaderboard.setAttribute("aria-selected", leaderboard ? "true" : "false");
+    }
+    if (elTabHeroScrolls) {
+      elTabHeroScrolls.classList.toggle("view-tabs__btn--active", heroScrolls);
+      elTabHeroScrolls.setAttribute("aria-selected", heroScrolls ? "true" : "false");
     }
     if (elPanelHome) elPanelHome.hidden = !home;
     if (elPanelDiary) elPanelDiary.hidden = !diary;
-    if (elPanelStats) elPanelStats.hidden = !stats;
+    if (elPanelLeaderboard) elPanelLeaderboard.hidden = !leaderboard;
+    if (elPanelHeroScrolls) elPanelHeroScrolls.hidden = !heroScrolls;
     if (diary) renderDiaryTimeline();
+    if (heroScrolls) renderPersonStats();
+    if (leaderboard) {
+      renderTrendChart();
+      renderDayDetail();
+    }
   }
 
   function showRewardStep(step) {
@@ -3488,13 +3878,13 @@
     var kind = rewardContext.pendingCategoryKind;
     elPointAll.classList.toggle("point-picker--oops-only", kind === "bad");
     if (kind === "bad") {
-      elPointAll.appendChild(createPointButton(-1, mcItemById(person.items.dislike1)));
-      elPointAll.appendChild(createPointButton(-3, mcItemById(person.items.dislike3)));
+      elPointAll.appendChild(createPointButton(-1, itemForDisplay(person.items.dislike1)));
+      elPointAll.appendChild(createPointButton(-3, itemForDisplay(person.items.dislike3)));
       return;
     }
-    elPointAll.appendChild(createPointButton(1, mcItemById(person.items.like1)));
-    elPointAll.appendChild(createPointButton(3, mcItemById(person.items.like3)));
-    elPointAll.appendChild(createPointButton(5, mcItemById(person.items.like5)));
+    elPointAll.appendChild(createPointButton(1, itemForDisplay(person.items.like1)));
+    elPointAll.appendChild(createPointButton(3, itemForDisplay(person.items.like3)));
+    elPointAll.appendChild(createPointButton(5, itemForDisplay(person.items.like5)));
   }
 
   function logStar(points, lootId) {
@@ -3613,25 +4003,98 @@
     playerModalDraft.setupStep = "profile";
   }
 
+  function selectCharacterId(id) {
+    if (!id) return;
+    playerModalDraft.characterId = id;
+    renderCharGrid();
+    syncAddSaveEnabled();
+  }
+
+  function cycleCharacter(delta) {
+    var list = charactersByKind(playerModalDraft.charKind);
+    var i;
+    var idx = -1;
+    if (!list.length) return;
+    for (i = 0; i < list.length; i++) {
+      if (list[i].id === playerModalDraft.characterId) {
+        idx = i;
+        break;
+      }
+    }
+    if (idx < 0) idx = 0;
+    idx = (idx + delta + list.length) % list.length;
+    selectCharacterId(list[idx].id);
+  }
+
+  function scrollSelectedCharIntoView() {
+    if (!elCharGrid) return;
+    var sel = elCharGrid.querySelector(".char-pick--selected");
+    if (sel && sel.scrollIntoView) {
+      sel.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+    }
+  }
+
+  function renderCharPreview(selected) {
+    if (!elCharPickerStage || !elCharPickerAvatar || !elCharPickerName) return;
+    if (!selected) {
+      elCharPickerStage.hidden = true;
+      elCharPickerAvatar.replaceChildren();
+      elCharPickerName.textContent = "";
+      return;
+    }
+    elCharPickerStage.hidden = false;
+    elCharPickerAvatar.replaceChildren("");
+    var img = appendCharacterImg(
+      elCharPickerAvatar,
+      selected,
+      "char-picker__sprite",
+      88
+    );
+    if (img) {
+      img.width = 88;
+      img.height = 88;
+    }
+    elCharPickerName.textContent = selected.name;
+    if (elCharPrev) {
+      elCharPrev.disabled = charactersByKind(playerModalDraft.charKind).length <= 1;
+    }
+    if (elCharNext) {
+      elCharNext.disabled = charactersByKind(playerModalDraft.charKind).length <= 1;
+    }
+  }
+
   function renderCharGrid() {
     if (!elCharGrid) return;
     elCharGrid.replaceChildren("");
     var kind = playerModalDraft.charKind;
-    var shown = 0;
+    var list = charactersByKind(kind);
+    var shown = list.length;
+    var selected =
+      characterById(playerModalDraft.characterId) ||
+      (list.length ? list[0] : null);
+    if (selected && selected.kind !== kind) {
+      selected = list.length ? list[0] : null;
+    }
+    if (selected) {
+      playerModalDraft.characterId = selected.id;
+    } else if (!shown) {
+      playerModalDraft.characterId = firstCharIdForKind(kind);
+      selected = characterById(playerModalDraft.characterId);
+    }
     var i;
-    for (i = 0; i < characters.length; i++) {
-      var ch = characters[i];
-      if (ch.kind !== kind) continue;
-      shown++;
+    for (i = 0; i < list.length; i++) {
       (function (c) {
         var btn = document.createElement("button");
         btn.type = "button";
         btn.className = "char-pick";
+        btn.setAttribute("role", "option");
+        btn.setAttribute("aria-selected", playerModalDraft.characterId === c.id ? "true" : "false");
+        btn.setAttribute("aria-label", c.name);
         if (playerModalDraft.characterId === c.id) {
           btn.classList.add("char-pick--selected");
         }
         var img = document.createElement("img");
-        img.alt = c.name;
+        img.alt = "";
         img.loading = "lazy";
         attachSpriteImg(img, c.id, c.wikiKey || c.id, c.src, c.name);
         btn.appendChild(img);
@@ -3641,19 +4104,19 @@
         btn.addEventListener("click", function (e) {
           e.preventDefault();
           e.stopPropagation();
-          playerModalDraft.characterId = c.id;
-          renderCharGrid();
-          syncAddSaveEnabled();
+          selectCharacterId(c.id);
         });
         elCharGrid.appendChild(btn);
-      })(ch);
+      })(list[i]);
     }
     if (elCharGridEmpty) {
       elCharGridEmpty.hidden = shown > 0;
     }
-    if (!shown && !playerModalDraft.characterId) {
-      playerModalDraft.characterId = firstCharIdForKind(kind);
+    if (elCharPicker) {
+      elCharPicker.hidden = shown === 0;
     }
+    renderCharPreview(selected);
+    window.requestAnimationFrame(scrollSelectedCharIntoView);
     if (elCharTabHero) {
       elCharTabHero.classList.toggle("char-tabs__btn--active", kind === "hero");
     }
@@ -4646,19 +5109,64 @@
         setView("diary");
       });
     }
-    if (elTabStats) {
-      elTabStats.addEventListener("click", function () {
-        setView("stats");
+    if (elTabLeaderboard) {
+      elTabLeaderboard.addEventListener("click", function () {
+        setView("leaderboard");
         setStatsPeriod(statsPeriod());
         setLeaderboardRange(leaderboardRange());
         renderTrendChart();
         renderDayDetail();
         renderLeaderboard();
-        renderPersonStats();
-        renderStatsDiary();
-        renderBreakdown();
-        renderActivityLog();
       });
+    }
+    if (elTabHeroScrolls) {
+      elTabHeroScrolls.addEventListener("click", function () {
+        setView("hero-scrolls");
+        setWinnerRange(winnerRange());
+        renderPersonStats();
+      });
+    }
+    if (elWinnerTabWeek) {
+      elWinnerTabWeek.addEventListener("click", function () {
+        setWinnerRange("week");
+      });
+    }
+    if (elWinnerTabMonth) {
+      elWinnerTabMonth.addEventListener("click", function () {
+        setWinnerRange("month");
+      });
+    }
+    if (elPersonStatsPrev) {
+      elPersonStatsPrev.addEventListener("click", function (e) {
+        e.preventDefault();
+        cycleStatsPerson(-1);
+      });
+    }
+    if (elPersonStatsNext) {
+      elPersonStatsNext.addEventListener("click", function (e) {
+        e.preventDefault();
+        cycleStatsPerson(1);
+      });
+    }
+    if (elPersonSwitcherStage) {
+      elPersonSwitcherStage.addEventListener(
+        "touchstart",
+        function (e) {
+          if (!e.changedTouches || !e.changedTouches.length) return;
+          personSwitcherTouchX = e.changedTouches[0].clientX;
+        },
+        { passive: true }
+      );
+      elPersonSwitcherStage.addEventListener(
+        "touchend",
+        function (e) {
+          if (!e.changedTouches || !e.changedTouches.length) return;
+          var dx = e.changedTouches[0].clientX - personSwitcherTouchX;
+          if (Math.abs(dx) < 36) return;
+          cycleStatsPerson(dx < 0 ? 1 : -1);
+        },
+        { passive: true }
+      );
     }
     var leaderboardTabs = document.querySelectorAll(".leaderboard-tabs__btn");
     var lb;
@@ -4666,13 +5174,6 @@
       leaderboardTabs[lb].addEventListener("click", function () {
         var range = this.getAttribute("data-range");
         if (range) setLeaderboardRange(range);
-      });
-    }
-    if (elPersonFilter) {
-      elPersonFilter.addEventListener("change", function () {
-        state.settings.filterPersonId = elPersonFilter.value || "all";
-        saveState();
-        renderAll();
       });
     }
     if (document.getElementById("btn-add-player")) {
@@ -4722,6 +5223,38 @@
         renderCharGrid();
         syncAddSaveEnabled();
       });
+    }
+    if (elCharPrev) {
+      elCharPrev.addEventListener("click", function (e) {
+        e.preventDefault();
+        cycleCharacter(-1);
+      });
+    }
+    if (elCharNext) {
+      elCharNext.addEventListener("click", function (e) {
+        e.preventDefault();
+        cycleCharacter(1);
+      });
+    }
+    if (elCharPickerStage) {
+      elCharPickerStage.addEventListener(
+        "touchstart",
+        function (e) {
+          if (!e.changedTouches || !e.changedTouches.length) return;
+          charPickerTouchX = e.changedTouches[0].clientX;
+        },
+        { passive: true }
+      );
+      elCharPickerStage.addEventListener(
+        "touchend",
+        function (e) {
+          if (!e.changedTouches || !e.changedTouches.length) return;
+          var dx = e.changedTouches[0].clientX - charPickerTouchX;
+          if (Math.abs(dx) < 36) return;
+          cycleCharacter(dx < 0 ? 1 : -1);
+        },
+        { passive: true }
+      );
     }
     if (document.getElementById("btn-export")) {
       document.getElementById("btn-export").addEventListener("click", exportBackup);
@@ -4817,17 +5350,6 @@
         }
       });
     }
-    if (elDayNoteFormStats) {
-      elDayNoteFormStats.addEventListener("submit", function (e) {
-        e.preventDefault();
-        var text = elDayNoteInputStats ? elDayNoteInputStats.value : "";
-        if (addDayNote(selectedDayKey(), text)) {
-          if (elDayNoteInputStats) elDayNoteInputStats.value = "";
-          renderDayNotesPanels();
-          showToast("Diary entry saved.");
-        }
-      });
-    }
     if (elCheatHelpBackdrop) {
       elCheatHelpBackdrop.addEventListener("click", closeCheatHelp);
     }
@@ -4864,13 +5386,32 @@
     });
   }
 
+  function bootstrapEmbeddedCatalog() {
+    if (window.REWARD_CHARACTERS && window.REWARD_CHARACTERS.length) {
+      applyCharacterList(window.REWARD_CHARACTERS);
+    } else {
+      applyCharacterList(DEFAULT_CHARACTERS);
+    }
+    if (window.REWARD_MC_ITEMS) {
+      applyMcItemsList(window.REWARD_MC_ITEMS);
+    }
+    if (window.REWARD_BEHAVIOR_CATEGORIES) {
+      applyBehaviorCategories(window.REWARD_BEHAVIOR_CATEGORIES);
+    }
+  }
+
   function init() {
     hideToast();
     rebuildItemIndex();
     loadState();
+    bootstrapEmbeddedCatalog();
     bind();
+    setStatsPeriod(statsPeriod());
+    setWinnerRange(winnerRange());
+    renderAll();
     Promise.all([loadCharacters(), loadMcItems(), loadBehaviorCategories()]).then(function () {
       setStatsPeriod(statsPeriod());
+      setWinnerRange(winnerRange());
       renderAll();
       prefetchAnimatedWikiGifs();
     });
