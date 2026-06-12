@@ -288,19 +288,8 @@ body::after {
   border: 2px solid var(--card-edge);
   border-radius: 16px;
   background: linear-gradient(180deg, #fff 0%, #eef4e4 100%);
-  cursor: pointer;
   touch-action: manipulation;
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
   box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.8), 0 3px 0 rgba(45, 70, 40, 0.12);
-}
-
-.person-card:hover {
-  transform: translateY(-2px);
-}
-
-.person-card:active {
-  transform: translateY(1px);
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.08);
 }
 
 .person-card--villain {
@@ -339,6 +328,55 @@ body::after {
 
 .person-card__score--neg {
   color: var(--oops);
+}
+
+.person-card__log {
+  display: flex;
+  gap: 0.35rem;
+  width: 100%;
+  margin-top: 0.15rem;
+}
+
+.person-card__log-btn {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.45rem 0.35rem;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.12);
+}
+
+.person-card__log-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.12);
+}
+
+.person-card__log-btn--good {
+  color: var(--green);
+  background: linear-gradient(180deg, #f1f8e9 0%, #dcedc8 100%);
+  border-color: rgba(46, 125, 50, 0.45);
+}
+
+.person-card__log-btn--good:hover,
+.person-card__log-btn--good:focus-visible {
+  background: linear-gradient(180deg, #e8f5e9 0%, #c5e1a5 100%);
+}
+
+.person-card__log-btn--bad {
+  color: #7f0000;
+  background: linear-gradient(180deg, #ffcdd2 0%, #ef9a9a 100%);
+  border-color: rgba(198, 40, 40, 0.45);
+}
+
+.person-card__log-btn--bad:hover,
+.person-card__log-btn--bad:focus-visible {
+  background: linear-gradient(180deg, #ffebee 0%, #ef5350 100%);
 }
 
 .person-card__actions {
@@ -1909,6 +1947,150 @@ body::after {
   width: 100%;
   margin-top: 0.25rem;
   text-align: center;
+}
+
+.reward-note-label {
+  margin-top: 0.15rem;
+  margin-bottom: 0.35rem;
+}
+
+.reward-note-input {
+  margin-bottom: 0.65rem;
+}
+
+.activity-log__item--editable {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.activity-log__item--editable:active {
+  background: rgba(238, 244, 228, 0.65);
+}
+
+.day-events-list__item--editable {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.day-events-list__reason {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.reward-edit-actions {
+  margin-top: 0.35rem;
+  text-align: center;
+}
+
+.point-btn--selected {
+  box-shadow: 0 0 0 3px rgba(255, 179, 0, 0.55);
+}
+
+.hero-deeds {
+  margin-bottom: 1rem;
+}
+
+.hero-deeds__block {
+  margin-bottom: 0.85rem;
+}
+
+.hero-deeds__grid {
+  display: grid;
+  gap: 0.65rem;
+}
+
+@media (min-width: 520px) {
+  .hero-deeds__grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.hero-deeds__panel {
+  padding: 0.65rem 0.75rem;
+  border-radius: 12px;
+  border: 2px solid var(--card-edge);
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.hero-deeds__panel-title {
+  margin: 0 0 0.45rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.hero-deeds__empty {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.hero-deeds__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.hero-deeds__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.35rem 0;
+  border-bottom: 1px dashed rgba(91, 130, 68, 0.18);
+}
+
+.hero-deeds__row:last-child {
+  border-bottom: none;
+}
+
+.hero-deeds__row--good .hero-deeds__rank {
+  color: var(--green);
+}
+
+.hero-deeds__row--bad .hero-deeds__rank {
+  color: var(--oops);
+}
+
+.hero-deeds__rank {
+  flex: 0 0 1.1rem;
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-align: center;
+}
+
+.hero-deeds__cat-img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  flex-shrink: 0;
+}
+
+.hero-deeds__copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.hero-deeds__copy strong {
+  font-size: 0.86rem;
+  line-height: 1.2;
+}
+
+.hero-deeds__meta {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.hero-deeds__row--good .hero-deeds__meta {
+  color: var(--green);
+}
+
+.hero-deeds__row--bad .hero-deeds__meta {
+  color: var(--oops);
 }
 
 .category-insights__hint {

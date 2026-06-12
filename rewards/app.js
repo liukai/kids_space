@@ -10,6 +10,7 @@
   var SCHEMA_VERSION = 2;
   var MAX_PEOPLE = 12;
   var MAX_LEDGER = 2000;
+  var MAX_LEDGER_NOTE = 120;
 
   var MC_ITEMS_LIKE = [];
   var MC_ITEMS_COMMON = [];
@@ -203,10 +204,12 @@
 
   var rewardContext = {
     personId: null,
+    editEntryId: null,
     step: "category",
     pendingCategoryId: null,
     pendingCategoryLabel: null,
     pendingCategoryKind: null,
+    categoryKindFilter: null,
   };
 
   var playerModalDraft = {
@@ -270,9 +273,18 @@
   var elPointAll = document.getElementById("point-picker-all");
   var elRewardStepPoints = document.getElementById("reward-step-points");
   var elRewardStepCategory = document.getElementById("reward-step-category");
+  var elRewardCategoryHint = document.getElementById("reward-category-hint");
   var elRewardPendingSummary = document.getElementById("reward-pending-summary");
   var elCategoryPicker = document.getElementById("category-picker");
   var elRewardStepBack = document.getElementById("reward-step-back");
+  var elRewardNoteInput = document.getElementById("reward-note-input");
+  var elRewardEditActions = document.getElementById("reward-edit-actions");
+  var elRewardDeleteEntry = document.getElementById("reward-delete-entry");
+  var elHeroDeeds = document.getElementById("hero-deeds");
+  var elHeroDeedsToday = document.getElementById("hero-deeds-today");
+  var elHeroDeedsPeriod = document.getElementById("hero-deeds-period");
+  var elHeroDeedsTodayTitle = document.getElementById("hero-deeds-today-title");
+  var elHeroDeedsPeriodTitle = document.getElementById("hero-deeds-period-title");
   var elPersonStatsDetail = document.getElementById("person-stats-detail");
   var elPersonStatsEmpty = document.getElementById("person-stats-empty");
   var elPersonSwitcher = document.getElementById("person-switcher");
@@ -1426,8 +1438,7 @@
       elWinnerTabMonth.classList.toggle("winner-banner__tab--active", range === "month");
     }
     renderPersonWinnerBanner();
-    renderBreakdown();
-    renderActivityLog();
+    renderHeroDeedsAndLog();
   }
 
   function leaderboardRowsForRange(range) {
@@ -1843,6 +1854,7 @@
       personId: pid === "all" ? null : pid,
       text: trimmed,
       ts: Date.now(),
+      updatedAt: Date.now(),
     });
     saveState();
     return true;
@@ -1973,6 +1985,12 @@
         );
       }
       appendEventDetail(lbl, ev, { size: 22 });
+      if (ev.note) {
+        var reason = document.createElement("span");
+        reason.className = "day-events-list__reason";
+        reason.textContent = " · " + ev.note;
+        lbl.appendChild(reason);
+      }
       var pts = document.createElement("span");
       pts.className =
         ev.points >= 0
@@ -1981,6 +1999,19 @@
       pts.textContent = formatScore(ev.points);
       li.appendChild(lbl);
       li.appendChild(pts);
+      li.classList.add("day-events-list__item--editable");
+      li.setAttribute("role", "button");
+      li.setAttribute("tabindex", "0");
+      li.setAttribute("aria-label", "Edit this entry");
+      li.addEventListener("click", function () {
+        openEditLedgerEntry(ev.id);
+      });
+      li.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          openEditLedgerEntry(ev.id);
+        }
+      });
       elDayEventsList.appendChild(li);
     }
     if (!evs.length) {
@@ -2270,6 +2301,149 @@
     return rows;
   }
 
+  function deedRankLimit(range) {
+    return range === "today" ? 3 : 5;
+  }
+
+  function rankGoodDeeds(stats, limit) {
+    return stats
+      .filter(function (s) {
+        return s.kind === "good" && s.positive > 0;
+      })
+      .sort(function (a, b) {
+        return b.positive - a.positive || b.count - a.count;
+      })
+      .slice(0, limit);
+  }
+
+  function rankBadDeeds(stats, limit) {
+    return stats
+      .filter(function (s) {
+        return s.kind === "bad" && s.negative < 0;
+      })
+      .sort(function (a, b) {
+        return a.negative - b.negative || b.count - a.count;
+      })
+      .slice(0, limit);
+  }
+
+  function appendDeedRankList(parent, title, rows, scoreKey, emptyText) {
+    var section = document.createElement("div");
+    section.className = "hero-deeds__panel";
+    var heading = document.createElement("h3");
+    heading.className = "hero-deeds__panel-title";
+    heading.textContent = title;
+    section.appendChild(heading);
+    if (!rows.length) {
+      var empty = document.createElement("p");
+      empty.className = "hero-deeds__empty";
+      empty.textContent = emptyText;
+      section.appendChild(empty);
+      parent.appendChild(section);
+      return;
+    }
+    var list = document.createElement("ol");
+    list.className = "hero-deeds__list";
+    var i;
+    for (i = 0; i < rows.length; i++) {
+      (function (row, rank) {
+        var li = document.createElement("li");
+        li.className =
+          "hero-deeds__row hero-deeds__row--" +
+          (scoreKey === "positive" ? "good" : "bad");
+        var place = document.createElement("span");
+        place.className = "hero-deeds__rank";
+        place.textContent = String(rank);
+        li.appendChild(place);
+        var cat = behaviorCategoryById(row.id);
+        if (cat) {
+          appendCategoryImg(li, cat, "hero-deeds__cat-img", 28);
+        }
+        var copy = document.createElement("span");
+        copy.className = "hero-deeds__copy";
+        var name = document.createElement("strong");
+        name.textContent = row.label;
+        copy.appendChild(name);
+        var meta = document.createElement("span");
+        meta.className = "hero-deeds__meta";
+        meta.textContent =
+          formatScore(row[scoreKey]) + " ⭐ · " + row.count + "×";
+        copy.appendChild(meta);
+        li.appendChild(copy);
+        list.appendChild(li);
+      })(rows[i], i + 1);
+    }
+    section.appendChild(list);
+    parent.appendChild(section);
+  }
+
+  function renderDeedHighlightBlock(parent, goodRows, badRows, goodTitle, badTitle) {
+    if (!parent) return;
+    parent.replaceChildren("");
+    var grid = document.createElement("div");
+    grid.className = "hero-deeds__grid";
+    appendDeedRankList(
+      grid,
+      goodTitle,
+      goodRows,
+      "positive",
+      "No good deeds logged yet."
+    );
+    appendDeedRankList(
+      grid,
+      badTitle,
+      badRows,
+      "negative",
+      "No oops logged yet."
+    );
+    parent.appendChild(grid);
+  }
+
+  function renderHeroDeedsHighlight() {
+    if (!elHeroDeeds) return;
+    var pid = statsPersonId();
+    if (!pid) {
+      elHeroDeeds.hidden = true;
+      return;
+    }
+    elHeroDeeds.hidden = false;
+
+    var todayLimit = deedRankLimit("today");
+    var todayEvs = eventsInRange("today", pid);
+    var todayStats = buildCategoryStats(todayEvs);
+    if (elHeroDeedsTodayTitle) {
+      elHeroDeedsTodayTitle.textContent =
+        "Today · top " + todayLimit + " & bottom " + todayLimit;
+    }
+    renderDeedHighlightBlock(
+      elHeroDeedsToday,
+      rankGoodDeeds(todayStats, todayLimit),
+      rankBadDeeds(todayStats, todayLimit),
+      "Top good deeds",
+      "Biggest oops"
+    );
+
+    var period = winnerRange();
+    var periodLimit = deedRankLimit(period);
+    var periodEvs = eventsInRange(period, pid);
+    var periodStats = buildCategoryStats(periodEvs);
+    if (elHeroDeedsPeriodTitle) {
+      elHeroDeedsPeriodTitle.textContent =
+        (period === "month" ? "This month" : "This week") +
+        " · top " +
+        periodLimit +
+        " & bottom " +
+        periodLimit;
+    }
+    renderDeedHighlightBlock(
+      elHeroDeedsPeriod,
+      rankGoodDeeds(periodStats, periodLimit),
+      rankBadDeeds(periodStats, periodLimit),
+      "Top good deeds",
+      "Biggest oops"
+    );
+  }
+
   function appendCharacterImg(parent, character, className, size) {
     if (!parent || !character) return null;
     var img = document.createElement("img");
@@ -2491,8 +2665,120 @@
       points: points,
       categoryId: resolveLegacyCategoryId(String(entry.categoryId || "other").trim()) || "other",
       lootId: lootIdFromEntry(entry),
-      note: String(entry.note || "").trim(),
+      note: String(entry.note || entry.reason || "").trim().slice(0, MAX_LEDGER_NOTE),
+      updatedAt: Number(entry.updatedAt) || Number(entry.ts) || Date.now(),
     };
+  }
+
+  function ledgerEntryUpdatedAt(entry) {
+    if (!entry) return 0;
+    var u = Number(entry.updatedAt);
+    if (isFinite(u) && u > 0) return u;
+    var ts = Number(entry.ts);
+    return isFinite(ts) && ts > 0 ? ts : 0;
+  }
+
+  function personUpdatedAt(person) {
+    if (!person) return 0;
+    var u = Number(person.updatedAt);
+    return isFinite(u) && u > 0 ? u : 0;
+  }
+
+  function dayNoteUpdatedAt(note) {
+    if (!note) return 0;
+    var u = Number(note.updatedAt);
+    if (isFinite(u) && u > 0) return u;
+    var ts = Number(note.ts);
+    return isFinite(ts) && ts > 0 ? ts : 0;
+  }
+
+  function dayNoteById(id) {
+    var i;
+    for (i = 0; i < state.dayNotes.length; i++) {
+      if (state.dayNotes[i].id === id) return state.dayNotes[i];
+    }
+    return null;
+  }
+
+  function applyLedgerEntryFields(target, source) {
+    if (!target || !source) return;
+    target.ts = source.ts;
+    target.points = source.points;
+    target.categoryId = source.categoryId;
+    target.lootId = source.lootId;
+    target.note = source.note;
+    target.updatedAt = ledgerEntryUpdatedAt(source);
+  }
+
+  function applyPersonFields(target, source) {
+    if (!target || !source) return;
+    normalizePersonItems(source);
+    target.name = source.name;
+    target.characterId = source.characterId;
+    target.items = source.items;
+    target.updatedAt = personUpdatedAt(source) || Date.now();
+  }
+
+  function applyDayNoteFields(target, source) {
+    if (!target || !source) return;
+    target.dayKey = source.dayKey;
+    target.personId = source.personId;
+    target.text = source.text;
+    target.ts = Number(source.ts) || target.ts || Date.now();
+    target.updatedAt = dayNoteUpdatedAt(source) || target.updatedAt || target.ts;
+  }
+
+  function mergeLedgerEntryPreferNewer(existing, incoming) {
+    if (!existing) return { action: "add", entry: incoming };
+    if (!incoming) return { action: "keep" };
+    var localAt = ledgerEntryUpdatedAt(existing);
+    var incomingAt = ledgerEntryUpdatedAt(incoming);
+    if (incomingAt > localAt) {
+      return { action: "replace", entry: incoming };
+    }
+    if (incomingAt < localAt) {
+      return { action: "keep" };
+    }
+    if (incoming.note && !existing.note) {
+      existing.note = incoming.note;
+      return { action: "patch" };
+    }
+    return { action: "keep" };
+  }
+
+  function mergePersonPreferNewer(existing, incoming) {
+    if (!existing) return { action: "add", person: incoming };
+    if (!incoming) return { action: "keep" };
+    if (personUpdatedAt(incoming) > personUpdatedAt(existing)) {
+      return { action: "replace", person: incoming };
+    }
+    return { action: "keep" };
+  }
+
+  function mergeDayNotePreferNewer(existing, incoming) {
+    if (!existing) return { action: "add", note: incoming };
+    if (!incoming) return { action: "keep" };
+    if (dayNoteUpdatedAt(incoming) > dayNoteUpdatedAt(existing)) {
+      return { action: "replace", note: incoming };
+    }
+    return { action: "keep" };
+  }
+
+  function readRewardNote() {
+    if (!elRewardNoteInput) return "";
+    return String(elRewardNoteInput.value || "").trim().slice(0, MAX_LEDGER_NOTE);
+  }
+
+  function clearRewardNote() {
+    if (elRewardNoteInput) elRewardNoteInput.value = "";
+  }
+
+  function ledgerEntryById(id) {
+    var i;
+    for (i = 0; i < state.ledger.length; i++) {
+      if (state.ledger[i].id === id) return state.ledger[i];
+    }
+    return null;
   }
 
   function migrateToLedger() {
@@ -2666,7 +2952,7 @@
     }
   }
 
-  function createPointButton(points, item) {
+  function createPointButton(points, item, selectedPoints) {
     var btn = document.createElement("button");
     btn.type = "button";
     var good = points > 0;
@@ -2680,6 +2966,9 @@
           : points === -3
             ? " point-btn--oops-big"
             : "");
+    if (selectedPoints === points) {
+      btn.classList.add("point-btn--selected");
+    }
     btn.setAttribute("data-points", String(points));
     btn.appendChild(document.createTextNode(formatScore(points)));
     var span = document.createElement("span");
@@ -3173,12 +3462,15 @@
     if (elPersonSwitcher) elPersonSwitcher.hidden = !hasPeople;
     if (elWinnerBanner) elWinnerBanner.hidden = !hasPeople;
     if (elHeroScrollsLog) elHeroScrollsLog.hidden = !hasPeople;
+    if (elHeroDeeds) elHeroDeeds.hidden = !hasPeople;
 
     if (!hasPeople) {
       if (elPersonSwitcherStrip) elPersonSwitcherStrip.replaceChildren("");
       if (elPersonStatsDetail) elPersonStatsDetail.replaceChildren("");
       if (elActivityLog) elActivityLog.replaceChildren();
       if (elBreakdownList) elBreakdownList.replaceChildren("");
+      if (elHeroDeedsToday) elHeroDeedsToday.replaceChildren("");
+      if (elHeroDeedsPeriod) elHeroDeedsPeriod.replaceChildren("");
       if (elEmptyLog) elEmptyLog.hidden = true;
       renderPersonSwitcherPreview(null);
       return;
@@ -3228,8 +3520,7 @@
       appendPersonStatDetail(elPersonStatsDetail, person);
     }
     renderPersonWinnerBanner();
-    renderBreakdown();
-    renderActivityLog();
+    renderHeroDeedsAndLog();
   }
 
   function refreshScores() {
@@ -3310,7 +3601,7 @@
     showToast._t = window.setTimeout(hideToast, 2400);
   }
 
-  function showStarToast(person, points, cat, lootId, kind) {
+  function showStarToast(person, points, cat, lootId, kind, note) {
     if (!elToast) return;
     var wrap = document.createDocumentFragment();
     if (person) {
@@ -3329,6 +3620,9 @@
         className: "item-inline item-inline--toast",
       })
     );
+    if (note) {
+      wrap.appendChild(document.createTextNode(" · " + note));
+    }
     showToast(wrap, kind);
   }
 
@@ -3339,11 +3633,9 @@
     for (i = 0; i < state.people.length; i++) {
       (function (person) {
         var ch = characterById(person.characterId);
-        var card = document.createElement("button");
-        card.type = "button";
+        var card = document.createElement("article");
         card.className =
           "person-card" + (ch && ch.kind === "villain" ? " person-card--villain" : "");
-        card.setAttribute("aria-label", "Give stars to " + personDisplayLabel(person));
 
         if (ch) {
           var avatar = appendCharacterImg(card, ch, "person-card__avatar", 64);
@@ -3369,20 +3661,36 @@
           card.appendChild(charName);
         }
 
-        normalizePersonItems(person);
-        var itemsPreview = document.createElement("p");
-        appendPersonLootSummary(itemsPreview, person, {
-          className: "person-card__rewards loot-summary loot-summary--card",
-          includeDislikes: false,
-        });
-        card.appendChild(itemsPreview);
-
         var score = personScore(person.id, "today");
         var scoreEl = document.createElement("span");
         scoreEl.className = "person-card__score";
         if (score < 0) scoreEl.classList.add("person-card__score--neg");
         scoreEl.textContent = "Today " + formatScore(score) + " ⭐";
         card.appendChild(scoreEl);
+
+        var logRow = document.createElement("div");
+        logRow.className = "person-card__log";
+
+        var goodBtn = document.createElement("button");
+        goodBtn.type = "button";
+        goodBtn.className = "person-card__log-btn person-card__log-btn--good";
+        goodBtn.textContent = "😊 Good";
+        goodBtn.setAttribute("aria-label", "Log good deed for " + personDisplayLabel(person));
+        goodBtn.addEventListener("click", function () {
+          openRewardSheet(person.id, "good");
+        });
+        logRow.appendChild(goodBtn);
+
+        var badBtn = document.createElement("button");
+        badBtn.type = "button";
+        badBtn.className = "person-card__log-btn person-card__log-btn--bad";
+        badBtn.textContent = "😅 Oops";
+        badBtn.setAttribute("aria-label", "Log oops for " + personDisplayLabel(person));
+        badBtn.addEventListener("click", function () {
+          openRewardSheet(person.id, "bad");
+        });
+        logRow.appendChild(badBtn);
+        card.appendChild(logRow);
 
         var actions = document.createElement("div");
         actions.className = "person-card__actions";
@@ -3423,10 +3731,6 @@
         });
         actions.appendChild(del);
         card.appendChild(actions);
-
-        card.addEventListener("click", function () {
-          openRewardSheet(person.id);
-        });
 
         elPeopleGrid.appendChild(card);
       })(state.people[i]);
@@ -3613,6 +3917,22 @@
     }
   }
 
+  function attachActivityLogItemHandlers(li, entryId) {
+    li.classList.add("activity-log__item--editable");
+    li.setAttribute("role", "button");
+    li.setAttribute("tabindex", "0");
+    li.setAttribute("aria-label", "Edit this entry");
+    li.addEventListener("click", function () {
+      openEditLedgerEntry(entryId);
+    });
+    li.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        openEditLedgerEntry(entryId);
+      }
+    });
+  }
+
   function renderActivityLog() {
     if (!elActivityLog) return;
     elActivityLog.replaceChildren();
@@ -3633,7 +3953,9 @@
       });
     if (elActivityLogTitle) {
       elActivityLogTitle.textContent =
-        "Activity log · " + (period === "month" ? "this month" : "this week");
+        "Activity log · " +
+        (period === "month" ? "this month" : "this week") +
+        " · tap to edit";
     }
     var show = evs.slice(0, 80);
     if (elEmptyLog) elEmptyLog.hidden = show.length > 0;
@@ -3668,8 +3990,15 @@
       pts.textContent = formatScore(ev.points);
       li.appendChild(pts);
 
+      attachActivityLogItemHandlers(li, ev.id);
       elActivityLog.appendChild(li);
     }
+  }
+
+  function renderHeroDeedsAndLog() {
+    renderHeroDeedsHighlight();
+    renderBreakdown();
+    renderActivityLog();
   }
 
   function setLeaderboardRange(range) {
@@ -3747,60 +4076,126 @@
     rewardContext.step = step;
     if (elRewardStepCategory) elRewardStepCategory.hidden = step !== "category";
     if (elRewardStepPoints) elRewardStepPoints.hidden = step !== "points";
+    syncRewardEditUI();
   }
 
-  function openRewardSheet(personId) {
+  function syncRewardEditUI() {
+    var editing = !!rewardContext.editEntryId;
+    if (elRewardEditActions) {
+      elRewardEditActions.hidden = !editing || rewardContext.step !== "points";
+    }
+    if (elRewardTierHint && editing && rewardContext.step === "points") {
+      elRewardTierHint.textContent = "Tap new stars to update, edit reason, or delete";
+    }
+  }
+
+  function renderRewardSheetPerson(person) {
+    if (!person || !elRewardPerson) return;
+    var ch = characterById(person.characterId);
+    elRewardPerson.replaceChildren();
+    if (ch) {
+      appendCharacterImg(elRewardPerson, ch, "sheet__avatar");
+    }
+    var copy = document.createElement("div");
+    copy.className = "sheet__person-copy";
+    var strong = document.createElement("strong");
+    strong.textContent = personDisplayLabel(person);
+    copy.appendChild(strong);
+    if (ch) {
+      var sub = document.createElement("span");
+      sub.className = "sheet__person-sub";
+      sub.textContent = ch.name + (ch.kind === "villain" ? " · mob avatar" : " · hero");
+      copy.appendChild(sub);
+    }
+    normalizePersonItems(person);
+    var itemsLine = document.createElement("span");
+    appendPersonLootSummary(itemsLine, person, {
+      className: "sheet__rewards-line loot-summary loot-summary--sheet",
+    });
+    copy.appendChild(itemsLine);
+    elRewardPerson.appendChild(copy);
+  }
+
+  function openRewardSheet(personId, kindFilter) {
     var person = personById(personId);
     if (!person || !elRewardSheet) return;
+    rewardContext.editEntryId = null;
     rewardContext.personId = personId;
     rewardContext.pendingCategoryId = null;
     rewardContext.pendingCategoryLabel = null;
     rewardContext.pendingCategoryKind = null;
-
-    var ch = characterById(person.characterId);
-    if (elRewardPerson) {
-      elRewardPerson.replaceChildren();
-      if (ch) {
-        appendCharacterImg(elRewardPerson, ch, "sheet__avatar");
-      }
-      var copy = document.createElement("div");
-      copy.className = "sheet__person-copy";
-      var strong = document.createElement("strong");
-      strong.textContent = personDisplayLabel(person);
-      copy.appendChild(strong);
-      if (ch) {
-        var sub = document.createElement("span");
-        sub.className = "sheet__person-sub";
-        sub.textContent = ch.name + (ch.kind === "villain" ? " · mob avatar" : " · hero");
-        copy.appendChild(sub);
-      }
-      normalizePersonItems(person);
-      var itemsLine = document.createElement("span");
-      appendPersonLootSummary(itemsLine, person, {
-        className: "sheet__rewards-line loot-summary loot-summary--sheet",
-      });
-      copy.appendChild(itemsLine);
-      elRewardPerson.appendChild(copy);
-    }
-
+    rewardContext.categoryKindFilter =
+      kindFilter === "bad" ? "bad" : kindFilter === "good" ? "good" : null;
+    clearRewardNote();
+    renderRewardSheetPerson(person);
     showRewardStep("category");
     renderCategoryPicker();
     elRewardSheet.hidden = false;
   }
 
+  function openEditLedgerEntry(entryId) {
+    var entry = ledgerEntryById(entryId);
+    if (!entry || !elRewardSheet) return;
+    var person = personById(entry.personId);
+    if (!person) return;
+    rewardContext.editEntryId = entryId;
+    rewardContext.personId = entry.personId;
+    renderRewardSheetPerson(person);
+    if (elRewardNoteInput) elRewardNoteInput.value = entry.note || "";
+    var cat = behaviorCategoryById(entry.categoryId);
+    if (cat) {
+      rewardContext.pendingCategoryId = cat.id;
+      rewardContext.pendingCategoryLabel = cat.label;
+      rewardContext.pendingCategoryKind = cat.kind;
+      if (elRewardPendingSummary) {
+        elRewardPendingSummary.replaceChildren("");
+        appendCategoryImg(elRewardPendingSummary, cat, "reward-pending-summary__img", 40);
+        var txt = document.createElement("span");
+        txt.textContent = cat.label;
+        elRewardPendingSummary.appendChild(txt);
+        elRewardPendingSummary.className =
+          "reward-pending-summary" +
+          (cat.kind === "bad" ? " reward-pending-summary--oops" : " reward-pending-summary--good");
+      }
+      renderPointPickers();
+      showRewardStep("points");
+    } else {
+      showRewardStep("category");
+      renderCategoryPicker();
+    }
+    elRewardSheet.hidden = false;
+  }
+
+  function deleteLedgerEntry(entryId) {
+    if (!entryId || !ledgerEntryById(entryId)) return;
+    if (!window.confirm("Remove this star entry?")) return;
+    state.ledger = state.ledger.filter(function (e) {
+      return e.id !== entryId;
+    });
+    saveState();
+    closeRewardSheet();
+    renderAll();
+    showToast("Entry removed.");
+  }
+
   function closeRewardSheet() {
     if (elRewardSheet) elRewardSheet.hidden = true;
     rewardContext.personId = null;
+    rewardContext.editEntryId = null;
     rewardContext.pendingCategoryId = null;
     rewardContext.pendingCategoryLabel = null;
     rewardContext.pendingCategoryKind = null;
     rewardContext.step = "category";
+    rewardContext.categoryKindFilter = null;
+    clearRewardNote();
+    syncRewardEditUI();
   }
 
   function beginPointsPick(cat) {
     rewardContext.pendingCategoryId = cat.id;
     rewardContext.pendingCategoryLabel = cat.label;
     rewardContext.pendingCategoryKind = cat.kind;
+    if (!rewardContext.editEntryId) clearRewardNote();
     if (elRewardPendingSummary) {
       elRewardPendingSummary.replaceChildren();
       appendCategoryImg(elRewardPendingSummary, cat, "reward-pending-summary__img", 40);
@@ -3812,8 +4207,11 @@
         (cat.kind === "bad" ? " reward-pending-summary--oops" : " reward-pending-summary--good");
     }
     if (elRewardTierHint) {
-      elRewardTierHint.textContent =
-        cat.kind === "bad" ? "How big was the oops?" : "How many stars?";
+      elRewardTierHint.textContent = rewardContext.editEntryId
+        ? "Tap new stars to update, edit reason, or delete"
+        : cat.kind === "bad"
+          ? "How big was the oops?"
+          : "How many stars?";
     }
     renderPointPickers();
     showRewardStep("points");
@@ -3860,10 +4258,40 @@
     elCategoryPicker.replaceChildren("");
     elCategoryPicker.className = "category-groups";
 
+    var filter = rewardContext.categoryKindFilter;
+    if (elRewardCategoryHint) {
+      if (filter === "good") {
+        elRewardCategoryHint.textContent = "Pick a good thing";
+      } else if (filter === "bad") {
+        elRewardCategoryHint.textContent = "Pick an oops";
+      } else {
+        elRewardCategoryHint.textContent = "Pick a good thing or an oops";
+      }
+    }
+
+    var i;
+    if (filter === "good") {
+      var goodOnly = renderCategoryGroup(elCategoryPicker, "😊 Good things", "good");
+      for (i = 0; i < BEHAVIOR_CATEGORIES.length; i++) {
+        if (BEHAVIOR_CATEGORIES[i].kind !== "bad") {
+          renderCategoryChip(goodOnly, BEHAVIOR_CATEGORIES[i]);
+        }
+      }
+      return;
+    }
+    if (filter === "bad") {
+      var badOnly = renderCategoryGroup(elCategoryPicker, "😅 Oops — bad things", "bad");
+      for (i = 0; i < BEHAVIOR_CATEGORIES.length; i++) {
+        if (BEHAVIOR_CATEGORIES[i].kind === "bad") {
+          renderCategoryChip(badOnly, BEHAVIOR_CATEGORIES[i]);
+        }
+      }
+      return;
+    }
+
     var goodGrid = renderCategoryGroup(elCategoryPicker, "😊 Good things", "good");
     var badGrid = renderCategoryGroup(elCategoryPicker, "😅 Oops — bad things", "bad");
 
-    var i;
     for (i = 0; i < BEHAVIOR_CATEGORIES.length; i++) {
       var cat = BEHAVIOR_CATEGORIES[i];
       renderCategoryChip(cat.kind === "bad" ? badGrid : goodGrid, cat);
@@ -3876,34 +4304,88 @@
     normalizePersonItems(person);
     elPointAll.replaceChildren("");
     var kind = rewardContext.pendingCategoryKind;
+    var selectedPoints = null;
+    if (rewardContext.editEntryId) {
+      var editing = ledgerEntryById(rewardContext.editEntryId);
+      if (editing) selectedPoints = editing.points;
+    }
     elPointAll.classList.toggle("point-picker--oops-only", kind === "bad");
     if (kind === "bad") {
-      elPointAll.appendChild(createPointButton(-1, itemForDisplay(person.items.dislike1)));
-      elPointAll.appendChild(createPointButton(-3, itemForDisplay(person.items.dislike3)));
+      elPointAll.appendChild(
+        createPointButton(-1, itemForDisplay(person.items.dislike1), selectedPoints)
+      );
+      elPointAll.appendChild(
+        createPointButton(-3, itemForDisplay(person.items.dislike3), selectedPoints)
+      );
       return;
     }
-    elPointAll.appendChild(createPointButton(1, itemForDisplay(person.items.like1)));
-    elPointAll.appendChild(createPointButton(3, itemForDisplay(person.items.like3)));
-    elPointAll.appendChild(createPointButton(5, itemForDisplay(person.items.like5)));
+    elPointAll.appendChild(
+      createPointButton(1, itemForDisplay(person.items.like1), selectedPoints)
+    );
+    elPointAll.appendChild(
+      createPointButton(3, itemForDisplay(person.items.like3), selectedPoints)
+    );
+    elPointAll.appendChild(
+      createPointButton(5, itemForDisplay(person.items.like5), selectedPoints)
+    );
   }
 
   function logStar(points, lootId) {
     if (rewardContext.personId == null) return;
+    var note = readRewardNote();
+    var categoryId = rewardContext.pendingCategoryId || "other";
+    var person = personById(rewardContext.personId);
+    var resolvedLoot = lootId || "unknown";
+    if (person) {
+      var item = personItemForPoints(person, points);
+      if (item) resolvedLoot = item.id;
+    }
+
+    if (rewardContext.editEntryId) {
+      var existing = ledgerEntryById(rewardContext.editEntryId);
+      if (!existing) {
+        closeRewardSheet();
+        return;
+      }
+      existing.points = points;
+      existing.lootId = resolvedLoot;
+      existing.note = note;
+      existing.categoryId = categoryId;
+      existing.updatedAt = Date.now();
+      saveState();
+      var cat = behaviorCategoryById(categoryId);
+      var toastKind =
+        points >= 5
+          ? "mega"
+          : points === 3
+            ? "rare"
+            : points === -3
+              ? "oops-big"
+              : points < 0
+                ? "oops"
+                : null;
+      showStarToast(person, points, cat, resolvedLoot, toastKind, note);
+      closeRewardSheet();
+      renderAll();
+      return;
+    }
+
+    var now = Date.now();
     var entry = {
       id: uid("led"),
       type: "score",
       personId: rewardContext.personId,
       points: points,
-      categoryId: rewardContext.pendingCategoryId || "other",
-      lootId: lootId || "unknown",
-      note: "",
-      ts: Date.now(),
+      categoryId: categoryId,
+      lootId: resolvedLoot,
+      note: note,
+      ts: now,
+      updatedAt: now,
     };
     state.ledger.push(entry);
     saveState();
 
-    var person = personById(rewardContext.personId);
-    var cat = behaviorCategoryById(entry.categoryId);
+    var catNew = behaviorCategoryById(entry.categoryId);
     var kind =
       points >= 5
         ? "mega"
@@ -3914,7 +4396,7 @@
             : points < 0
               ? "oops"
               : null;
-    showStarToast(person, points, cat, lootId, kind);
+    showStarToast(person, points, catNew, resolvedLoot, kind, note);
     closeRewardSheet();
     renderAll();
   }
@@ -4164,6 +4646,7 @@
       existing.name = name;
       existing.characterId = playerModalDraft.characterId;
       existing.items = items;
+      existing.updatedAt = Date.now();
       saveState();
       closeAddPlayerModal();
       showToast(personDisplayLabel(existing) + " updated!");
@@ -4176,6 +4659,7 @@
       name: name,
       characterId: playerModalDraft.characterId,
       items: items,
+      updatedAt: Date.now(),
     });
     saveState();
     closeAddPlayerModal();
@@ -4187,6 +4671,7 @@
     return {
       schemaVersion: SCHEMA_VERSION,
       exportedAt: new Date().toISOString(),
+      savedAt: state.savedAt || Date.now(),
       app: "reward_overworld",
       people: state.people,
       ledger: state.ledger,
@@ -4278,31 +4763,80 @@
     var ledgerIds = {};
     var peopleIds = {};
     var noteIds = {};
+    var ledgerById = {};
+    var peopleById = {};
+    var notesById = {};
     var c;
     var i;
+    var j;
 
     for (c = 0; c < chunks.length; c++) {
       var chunk = importChunkFromObject(chunks[c]);
 
       for (i = 0; i < chunk.ledger.length; i++) {
         var entry = normalizeLedgerEntry(chunk.ledger[i]);
-        if (!entry || ledgerIds[entry.id]) continue;
+        if (!entry) continue;
+        if (ledgerIds[entry.id]) {
+          var prevEntry = ledgerById[entry.id];
+          var decision = mergeLedgerEntryPreferNewer(prevEntry, entry);
+          if (decision.action === "replace") {
+            for (j = 0; j < merged.ledger.length; j++) {
+              if (merged.ledger[j].id === entry.id) {
+                merged.ledger[j] = entry;
+                break;
+              }
+            }
+            ledgerById[entry.id] = entry;
+          }
+          continue;
+        }
         merged.ledger.push(entry);
         ledgerIds[entry.id] = true;
+        ledgerById[entry.id] = entry;
       }
 
       for (i = 0; i < chunk.people.length; i++) {
         var person = chunk.people[i];
-        if (!person || !person.id || !person.name || peopleIds[person.id]) continue;
+        if (!person || !person.id || !person.name) continue;
+        if (peopleIds[person.id]) {
+          var prevPerson = peopleById[person.id];
+          var personDecision = mergePersonPreferNewer(prevPerson, person);
+          if (personDecision.action === "replace") {
+            for (j = 0; j < merged.people.length; j++) {
+              if (merged.people[j].id === person.id) {
+                merged.people[j] = person;
+                break;
+              }
+            }
+            peopleById[person.id] = person;
+          }
+          continue;
+        }
         merged.people.push(person);
         peopleIds[person.id] = true;
+        peopleById[person.id] = person;
       }
 
       for (i = 0; i < chunk.dayNotes.length; i++) {
         var note = chunk.dayNotes[i];
-        if (!note || !note.id || noteIds[note.id]) continue;
+        if (!note || !note.id) continue;
+        if (noteIds[note.id]) {
+          var prevNote = notesById[note.id];
+          var noteDecision = mergeDayNotePreferNewer(prevNote, note);
+          if (noteDecision.action === "replace") {
+            for (j = 0; j < merged.dayNotes.length; j++) {
+              if (merged.dayNotes[j].id === note.id) {
+                merged.dayNotes[j] = note;
+                break;
+              }
+            }
+            notesById[note.id] = note;
+          }
+          continue;
+        }
         merged.dayNotes.push(note);
         noteIds[note.id] = true;
+        notesById[note.id] = note;
       }
     }
 
@@ -4312,11 +4846,17 @@
   function formatImportStats(stats) {
     var parts = [];
     if (stats.ledgerAdded) parts.push("+" + stats.ledgerAdded + " stars");
+    if (stats.ledgerUpdated) parts.push(stats.ledgerUpdated + " stars updated");
+    if (stats.ledgerNotesPatched) {
+      parts.push("+" + stats.ledgerNotesPatched + " reasons filled in");
+    }
     if (stats.peopleAdded) parts.push("+" + stats.peopleAdded + " players");
+    if (stats.peopleUpdated) parts.push(stats.peopleUpdated + " players updated");
     if (stats.notesAdded) parts.push("+" + stats.notesAdded + " diary notes");
+    if (stats.notesUpdated) parts.push(stats.notesUpdated + " diary notes updated");
     var skipped =
       stats.ledgerSkipped + stats.peopleSkipped + stats.notesSkipped;
-    if (skipped) parts.push(skipped + " duplicates skipped");
+    if (skipped) parts.push(skipped + " kept (local newer)");
     return parts.length ? parts.join(" · ") : "Nothing new to merge";
   }
 
@@ -4350,10 +4890,14 @@
   function importBackupData(data) {
     var stats = {
       ledgerAdded: 0,
+      ledgerUpdated: 0,
       ledgerSkipped: 0,
+      ledgerNotesPatched: 0,
       peopleAdded: 0,
+      peopleUpdated: 0,
       peopleSkipped: 0,
       notesAdded: 0,
+      notesUpdated: 0,
       notesSkipped: 0,
     };
     var existingLedger = ledgerIdSet();
@@ -4365,7 +4909,16 @@
       var entry = normalizeLedgerEntry(data.ledger[i]);
       if (!entry) continue;
       if (existingLedger[entry.id]) {
-        stats.ledgerSkipped += 1;
+        var localEntry = ledgerEntryById(entry.id);
+        var decision = mergeLedgerEntryPreferNewer(localEntry, entry);
+        if (decision.action === "replace") {
+          applyLedgerEntryFields(localEntry, entry);
+          stats.ledgerUpdated += 1;
+        } else if (decision.action === "patch") {
+          stats.ledgerNotesPatched += 1;
+        } else {
+          stats.ledgerSkipped += 1;
+        }
         continue;
       }
       state.ledger.push(entry);
@@ -4377,10 +4930,18 @@
       var person = data.people[i];
       if (!person || !person.id || !person.name) continue;
       if (existingPeople[person.id]) {
-        stats.peopleSkipped += 1;
+        var localPerson = personById(person.id);
+        var personDecision = mergePersonPreferNewer(localPerson, person);
+        if (personDecision.action === "replace") {
+          applyPersonFields(localPerson, person);
+          stats.peopleUpdated += 1;
+        } else {
+          stats.peopleSkipped += 1;
+        }
         continue;
       }
       normalizePersonItems(person);
+      if (!person.updatedAt) person.updatedAt = personUpdatedAt(person) || Date.now();
       state.people.push(person);
       existingPeople[person.id] = true;
       stats.peopleAdded += 1;
@@ -4390,9 +4951,17 @@
       var note = data.dayNotes[i];
       if (!note || !note.id) continue;
       if (existingNotes[note.id]) {
-        stats.notesSkipped += 1;
+        var localNote = dayNoteById(note.id);
+        var noteDecision = mergeDayNotePreferNewer(localNote, note);
+        if (noteDecision.action === "replace") {
+          applyDayNoteFields(localNote, note);
+          stats.notesUpdated += 1;
+        } else {
+          stats.notesSkipped += 1;
+        }
         continue;
       }
+      if (!note.updatedAt) note.updatedAt = dayNoteUpdatedAt(note) || Date.now();
       state.dayNotes.push(note);
       existingNotes[note.id] = true;
       stats.notesAdded += 1;
@@ -5184,6 +5753,11 @@
     if (elRewardStepBack) {
       elRewardStepBack.addEventListener("click", function () {
         showRewardStep("category");
+      });
+    }
+    if (elRewardDeleteEntry) {
+      elRewardDeleteEntry.addEventListener("click", function () {
+        if (rewardContext.editEntryId) deleteLedgerEntry(rewardContext.editEntryId);
       });
     }
 

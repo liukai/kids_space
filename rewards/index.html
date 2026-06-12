@@ -18,7 +18,7 @@
     href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&family=Pixelify+Sans:wght@400;500;600;700&display=swap"
     rel="stylesheet"
   />
-  <link rel="stylesheet" href="styles.css?v=32" />
+  <link rel="stylesheet" href="styles.css?v=36" />
 </head>
 <body>
   <div class="app">
@@ -186,6 +186,13 @@
         <div class="winner-banner__body" id="winner-banner-body"></div>
       </section>
 
+      <section class="hero-deeds" id="hero-deeds" aria-label="Top good deeds and biggest oops">
+        <h2 class="section-title" id="hero-deeds-today-title">Today · top 3 & bottom 3</h2>
+        <div class="hero-deeds__block" id="hero-deeds-today"></div>
+        <h2 class="section-title" id="hero-deeds-period-title">This week · top 5 & bottom 5</h2>
+        <div class="hero-deeds__block" id="hero-deeds-period"></div>
+      </section>
+
       <div id="hero-scrolls-log">
         <h2 class="section-title" id="activity-log-title">Activity log · this week</h2>
         <ul class="activity-log" id="activity-log" aria-live="polite"></ul>
@@ -219,14 +226,27 @@
       <h2 class="sr-only" id="reward-sheet-title">Give stars</h2>
 
       <div id="reward-step-category">
-        <p class="point-picker-hint">Pick a good thing or an oops</p>
+        <p class="point-picker-hint" id="reward-category-hint">Pick a good thing or an oops</p>
         <div class="category-groups" id="category-picker" role="group" aria-label="Behavior category"></div>
       </div>
 
       <div id="reward-step-points" hidden>
         <p class="reward-pending-summary" id="reward-pending-summary"></p>
+        <label class="field-label reward-note-label" for="reward-note-input">Reason (optional)</label>
+        <input
+          type="text"
+          id="reward-note-input"
+          class="field-input reward-note-input"
+          maxlength="120"
+          placeholder="What happened?"
+          autocomplete="off"
+          enterkeyhint="done"
+        />
         <p class="point-picker-hint" id="reward-tier-hint">How many stars?</p>
         <div class="point-picker point-picker--all" id="point-picker-all" role="group" aria-label="Points"></div>
+        <div class="reward-edit-actions" id="reward-edit-actions" hidden>
+          <button type="button" class="link-btn link-btn--danger" id="reward-delete-entry">Delete this entry</button>
+        </div>
         <button type="button" class="link-btn reward-step-back" id="reward-step-back">← Change category</button>
       </div>
     </div>
@@ -297,7 +317,7 @@
     <div class="modal__panel modal__panel--wide" role="dialog" aria-modal="true" aria-labelledby="import-modal-title">
       <h2 class="modal__title" id="import-modal-title">Import backup</h2>
       <p class="modal__hint">
-        Pick a backup file or paste export JSON below. Everything merges by id — duplicates are skipped.
+        Pick a backup file or paste export JSON below. Same ids merge together — if both devices edited the same entry, the newest version wins.
       </p>
       <div class="modal__actions modal__actions--import-top">
         <button type="button" class="btn btn--ghost" id="import-pick-file">Pick backup file</button>
@@ -375,6 +395,6 @@
   <script src="characters-embed.js?v=7"></script>
   <script src="mc-items-embed.js?v=8"></script>
   <script src="behavior-categories-embed.js?v=1"></script>
-  <script src="app.js?v=38" defer></script>
+  <script src="app.js?v=43" defer></script>
 </body>
 </html>
