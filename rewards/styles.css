@@ -3976,6 +3976,11 @@ body::after {
   background: linear-gradient(180deg, #fff8f8 0%, #fce8e8 100%);
 }
 
+.cheat-action-btn--cash {
+  border-color: rgba(46, 125, 50, 0.35);
+  background: linear-gradient(180deg, #f6fff6 0%, #e8f5e9 100%);
+}
+
 .cheat-action-btn__label {
   font-family: var(--font-display);
   font-size: 1.05rem;

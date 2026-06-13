@@ -372,6 +372,12 @@
       desc: "Two random friends vs mob — they throw blocks until one goes BOOM!",
     },
     {
+      code: "cash",
+      action: "cash",
+      label: "💵 Cash mode",
+      desc: "Switch scores between stars and dollars (100 ⭐ = $10).",
+    },
+    {
       code: "?",
       action: "help",
       label: "❓ Cheat list",
@@ -2090,7 +2096,7 @@
             var score = document.createElement("span");
             score.className = "day-detail__winner-score";
             if (entry.score < 0) score.classList.add("day-detail__winner-score--neg");
-            score.textContent = formatScore(entry.score) + " ⭐";
+            score.textContent = formatScoreWithUnit(entry.score);
             copy.appendChild(score);
             row.appendChild(copy);
             row.addEventListener("click", function () {
@@ -2207,8 +2213,62 @@
   }
 
   function formatScore(n) {
+    if (showDollars()) return formatScoreAsDollars(n);
     if (n > 0) return "+" + n;
     return String(n);
+  }
+
+  var POINTS_PER_DOLLAR = 10;
+
+  function showDollars() {
+    return !!state.settings.showDollars;
+  }
+
+  function formatDollarAmount(absDollars) {
+    var abs = Math.abs(absDollars);
+    if (abs >= 1 && Math.abs(abs - Math.round(abs)) < 0.001) {
+      return "$" + Math.round(abs);
+    }
+    return "$" + abs.toFixed(2);
+  }
+
+  function formatScoreAsDollars(n) {
+    if (!isFinite(n)) return String(n);
+    var dollars = n / POINTS_PER_DOLLAR;
+    if (n > 0) return "+" + formatDollarAmount(dollars);
+    if (n < 0) return "-" + formatDollarAmount(dollars);
+    return formatDollarAmount(0);
+  }
+
+  function formatScoreWithUnit(n) {
+    return formatScore(n) + (showDollars() ? "" : " ⭐");
+  }
+
+  function syncScoreDisplayMode() {
+    if (document.body) {
+      document.body.classList.toggle("score-mode--dollars", showDollars());
+    }
+  }
+
+  function toggleShowDollars() {
+    state.settings.showDollars = !showDollars();
+    saveState();
+    syncScoreDisplayMode();
+    renderAll();
+    showToast(showDollars() ? "💵 Cash mode — 100 ⭐ = $10" : "⭐ Star mode");
+  }
+
+  function rewardPointsHint(editing, bad) {
+    if (showDollars()) {
+      if (editing) {
+        return "Tap amounts to change, edit reason, then Save — or pick a tier";
+      }
+      return bad ? "How big was the oops?" : "How much cash?";
+    }
+    if (editing) {
+      return "Tap stars to change points, edit reason, then Save — or tap a star tier";
+    }
+    return bad ? "How big was the oops?" : "How many stars?";
   }
 
   function applyScoreEl(el, n) {
@@ -2502,7 +2562,7 @@
         var meta = document.createElement("span");
         meta.className = "hero-deeds__meta";
         meta.textContent =
-          formatScore(row[scoreKey]) + " ⭐ · " + row.count + "×";
+          formatScoreWithUnit(row[scoreKey]) + " · " + row.count + "×";
         copy.appendChild(meta);
         li.appendChild(copy);
         list.appendChild(li);
@@ -3392,7 +3452,7 @@
     var scoreEl = document.createElement("p");
     scoreEl.className = "winner-banner__period-score";
     if (score < 0) scoreEl.classList.add("winner-banner__score--neg");
-    scoreEl.textContent = formatScore(score) + " ⭐";
+    scoreEl.textContent = formatScoreWithUnit(score);
     card.appendChild(scoreEl);
 
     if (leaders.length) {
@@ -3403,8 +3463,7 @@
           "Tied leaders: " +
           formatWinnerNames(leaders) +
           " · " +
-          formatScore(leaders[0].score) +
-          " ⭐";
+          formatScoreWithUnit(leaders[0].score);
         card.appendChild(tieMeta);
       } else if (!isChamp) {
         var leaderMeta = document.createElement("p");
@@ -3413,8 +3472,7 @@
           "Leader: " +
           formatWinnerNames(leaders) +
           " · " +
-          formatScore(leaders[0].score) +
-          " ⭐";
+          formatScoreWithUnit(leaders[0].score);
         card.appendChild(leaderMeta);
       }
     }
@@ -3464,7 +3522,7 @@
         var pts = document.createElement("span");
         pts.className = "leaderboard__score";
         if (row.score < 0) pts.classList.add("leaderboard__score--neg");
-        pts.textContent = formatScore(row.score) + " ⭐";
+        pts.textContent = formatScoreWithUnit(row.score);
         li.appendChild(pts);
 
         li.addEventListener("click", function () {
@@ -3508,7 +3566,8 @@
     var total = scoreForRange("all", person.id);
     var totalEl = document.createElement("p");
     totalEl.className = "person-stat-card__total";
-    totalEl.textContent = "All time " + formatScore(total) + " ⭐";
+    totalEl.textContent =
+      "All time " + formatScoreWithUnit(total);
     if (total < 0) totalEl.classList.add("person-stat-card__total--neg");
     body.appendChild(totalEl);
 
@@ -3544,7 +3603,7 @@
     var giveBtn = document.createElement("button");
     giveBtn.type = "button";
     giveBtn.className = "btn btn--primary btn--block person-stat-card__give";
-    giveBtn.textContent = "Give stars ⭐";
+    giveBtn.textContent = showDollars() ? "Log cash 💵" : "Give stars ⭐";
     giveBtn.addEventListener("click", function (e) {
       e.preventDefault();
       openRewardSheet(person.id);
@@ -3751,7 +3810,7 @@
         document.createTextNode(personDisplayLabel(person) + ": ")
       );
     }
-    wrap.appendChild(document.createTextNode(formatScore(points) + " ⭐ · "));
+    wrap.appendChild(document.createTextNode(formatScoreWithUnit(points) + " · "));
     if (cat) {
       appendCategoryImg(wrap, cat, "toast__img", 22);
       wrap.appendChild(document.createTextNode(cat.label + " · "));
@@ -3807,7 +3866,7 @@
         var scoreEl = document.createElement("span");
         scoreEl.className = "person-card__score";
         if (score < 0) scoreEl.classList.add("person-card__score--neg");
-        scoreEl.textContent = "Today " + formatScore(score) + " ⭐";
+        scoreEl.textContent = "Today " + formatScoreWithUnit(score);
         card.appendChild(scoreEl);
 
         var logRow = document.createElement("div");
@@ -3946,7 +4005,7 @@
         var score = document.createElement("span");
         score.className = "trend-bar__winner-score";
         if (entry.score < 0) score.classList.add("trend-bar__winner-score--neg");
-        score.textContent = formatScore(entry.score) + " ⭐";
+        score.textContent = formatScoreWithUnit(entry.score);
         copy.appendChild(score);
         row.appendChild(copy);
         box.appendChild(row);
@@ -4235,8 +4294,7 @@
       elRewardSaveEntry.hidden = !editing || rewardContext.step !== "points";
     }
     if (elRewardTierHint && editing && rewardContext.step === "points") {
-      elRewardTierHint.textContent =
-        "Tap stars to change points, edit reason, then Save — or tap a star tier";
+      elRewardTierHint.textContent = rewardPointsHint(true, false);
     }
   }
 
@@ -4375,11 +4433,10 @@
         (cat.kind === "bad" ? " reward-pending-summary--oops" : " reward-pending-summary--good");
     }
     if (elRewardTierHint) {
-      elRewardTierHint.textContent = rewardContext.editEntryId
-        ? "Tap new stars to update, edit reason, or delete"
-        : cat.kind === "bad"
-          ? "How big was the oops?"
-          : "How many stars?";
+      elRewardTierHint.textContent = rewardPointsHint(
+        !!rewardContext.editEntryId,
+        cat.kind === "bad"
+      );
     }
     renderPointPickers();
     showRewardStep("points");
@@ -5746,7 +5803,13 @@
         title.textContent = def.label || def.code;
         var hint = document.createElement("span");
         hint.className = "cheat-action-btn__hint";
-        hint.textContent = def.desc;
+        if (def.action === "cash") {
+          hint.textContent = showDollars()
+            ? "Showing dollars — tap to switch back to stars (100 ⭐ = $10)."
+            : def.desc;
+        } else {
+          hint.textContent = def.desc;
+        }
         btn.appendChild(title);
         btn.appendChild(hint);
         btn.addEventListener("click", function (e) {
@@ -5768,6 +5831,10 @@
     if (key === "craft") {
       closeCheatHelp();
       runCraftCheat();
+      return;
+    }
+    if (key === "cash") {
+      toggleShowDollars();
       return;
     }
     if (key === "help") {
@@ -5805,6 +5872,11 @@
     if (cheatState.buffer.slice(-5) === "craft") {
       cheatState.buffer = "";
       runCraftCheat();
+      return;
+    }
+    if (cheatState.buffer.slice(-4) === "cash") {
+      cheatState.buffer = "";
+      toggleShowDollars();
       return;
     }
     if (cheatState.buffer.slice(-1) === "?") {
@@ -6160,6 +6232,7 @@
     hideToast();
     rebuildItemIndex();
     loadState();
+    syncScoreDisplayMode();
     bootstrapEmbeddedCatalog();
     bind();
     setStatsPeriod(statsPeriod());
