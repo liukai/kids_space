@@ -18,7 +18,7 @@
     href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&family=Pixelify+Sans:wght@400;500;600;700&display=swap"
     rel="stylesheet"
   />
-  <link rel="stylesheet" href="styles.css?v=43" />
+  <link rel="stylesheet" href="styles.css?v=44" />
 </head>
 <body>
   <div class="app">
@@ -60,6 +60,7 @@
 
       <section class="players-section" aria-label="Players">
         <h2 class="section-title">Players</h2>
+        <p class="players-section__hint">Tap a face to select several players, then Good or Oops for the same reason.</p>
         <div class="people-grid" id="people-grid" aria-label="Player cards"></div>
 
         <p class="empty-hint" id="empty-people" hidden>
@@ -69,25 +70,6 @@
         <button type="button" class="btn btn--add-player" id="btn-add-player">
           ➕ Add player
         </button>
-      </section>
-
-      <section class="day-notes-card" aria-label="Diary today">
-        <h2 class="section-title">Diary · today</h2>
-        <p class="day-notes-card__hint">Notes and star reasons — saved day by day.</p>
-        <form class="day-note-form" id="day-note-form-home">
-          <input
-            type="text"
-            id="day-note-input-home"
-            class="day-note-form__input"
-            maxlength="240"
-            placeholder="Field trip, big win, mood…"
-            autocomplete="off"
-          />
-          <button type="submit" class="btn btn--primary btn--small">Add</button>
-        </form>
-        <ul class="day-notes-list" id="day-notes-list-home"></ul>
-        <p class="day-notes-empty" id="day-notes-empty-home" hidden>Nothing yet today — open Diary to browse past entries.</p>
-        <button type="button" class="btn btn--secondary btn--block day-notes-card__more" id="btn-open-diary">Browse full diary →</button>
       </section>
     </section>
 
@@ -403,6 +385,6 @@
   <script src="characters-embed.js?v=7"></script>
   <script src="mc-items-embed.js?v=8"></script>
   <script src="behavior-categories-embed.js?v=3"></script>
-  <script src="app.js?v=50" defer></script>
+  <script src="app.js?v=51" defer></script>
 </body>
 </html>

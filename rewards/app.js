@@ -206,6 +206,7 @@
 
   var rewardContext = {
     personId: null,
+    personIds: [],
     editEntryId: null,
     step: "category",
     pendingCategoryId: null,
@@ -213,6 +214,8 @@
     pendingCategoryKind: null,
     categoryKindFilter: null,
   };
+
+  var selectedPlayerIds = {};
 
   var playerModalDraft = {
     mode: "add",
@@ -2051,9 +2054,56 @@
   }
 
   function renderDayNotesPanels() {
-    var todayKey = dayKeyFromTs(Date.now());
-    renderDayNotesList(elDayNotesListHome, elDayNotesEmptyHome, todayKey);
     renderDiaryTimeline();
+  }
+
+  function isPlayerSelected(personId) {
+    return !!selectedPlayerIds[personId];
+  }
+
+  function togglePlayerSelected(personId) {
+    if (!personById(personId)) return;
+    if (selectedPlayerIds[personId]) delete selectedPlayerIds[personId];
+    else selectedPlayerIds[personId] = true;
+    renderPeopleGrid();
+  }
+
+  function clearPlayerSelection() {
+    selectedPlayerIds = {};
+    renderPeopleGrid();
+  }
+
+  function selectedPlayerIdList() {
+    var out = [];
+    var i;
+    for (i = 0; i < state.people.length; i++) {
+      if (selectedPlayerIds[state.people[i].id]) out.push(state.people[i].id);
+    }
+    return out;
+  }
+
+  function resolveRewardPersonIds(clickedPersonId) {
+    var ids = selectedPlayerIdList();
+    if (!ids.length) return [clickedPersonId];
+    if (ids.indexOf(clickedPersonId) < 0) ids.push(clickedPersonId);
+    return ids;
+  }
+
+  function rewardPersonIds() {
+    if (rewardContext.editEntryId && rewardContext.personId) {
+      return [rewardContext.personId];
+    }
+    if (rewardContext.personIds && rewardContext.personIds.length) {
+      return rewardContext.personIds.slice();
+    }
+    if (rewardContext.personId) return [rewardContext.personId];
+    return [];
+  }
+
+  function primaryRewardPerson() {
+    var ids = rewardPersonIds();
+    if (!ids.length) return null;
+    return personById(ids[0]);
   }
 
   function eventsForDay(dayKey) {
@@ -2259,14 +2309,22 @@
   }
 
   function rewardPointsHint(editing, bad) {
+    var count = rewardPersonIds().length;
+    var multi = count > 1 && !editing;
     if (showDollars()) {
       if (editing) {
         return "Tap amounts to change, edit reason, then Save — or pick a tier";
+      }
+      if (multi) {
+        return "Same cash for " + count + " players — pick an amount";
       }
       return bad ? "How big was the oops?" : "How much cash?";
     }
     if (editing) {
       return "Tap stars to change points, edit reason, then Save — or tap a star tier";
+    }
+    if (multi) {
+      return "Same stars for " + count + " players — pick an amount";
     }
     return bad ? "How big was the oops?" : "How many stars?";
   }
@@ -3836,7 +3894,25 @@
         var ch = characterById(person.characterId);
         var card = document.createElement("article");
         card.className =
-          "person-card" + (ch && ch.kind === "villain" ? " person-card--villain" : "");
+          "person-card" +
+          (ch && ch.kind === "villain" ? " person-card--villain" : "") +
+          (isPlayerSelected(person.id) ? " person-card--selected" : "");
+
+        var selectBtn = document.createElement("button");
+        selectBtn.type = "button";
+        selectBtn.className = "person-card__select";
+        selectBtn.setAttribute(
+          "aria-label",
+          (isPlayerSelected(person.id) ? "Deselect " : "Select ") +
+            personDisplayLabel(person) +
+            " for group logging"
+        );
+        selectBtn.setAttribute("aria-pressed", isPlayerSelected(person.id) ? "true" : "false");
+        selectBtn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          togglePlayerSelected(person.id);
+        });
+        card.appendChild(selectBtn);
 
         if (ch) {
           var avatar = appendCharacterImg(card, ch, "person-card__avatar", 64);
@@ -4316,44 +4392,82 @@
   }
 
   function renderRewardSheetPerson(person) {
-    if (!person || !elRewardPerson) return;
-    var ch = characterById(person.characterId);
+    renderRewardSheetPeople(person ? [person.id] : rewardPersonIds());
+  }
+
+  function renderRewardSheetPeople(personIds) {
+    if (!elRewardPerson) return;
     elRewardPerson.replaceChildren();
-    if (ch) {
-      appendCharacterImg(elRewardPerson, ch, "sheet__avatar");
+    if (!personIds || !personIds.length) return;
+
+    if (personIds.length === 1) {
+      var person = personById(personIds[0]);
+      if (!person) return;
+      var ch = characterById(person.characterId);
+      if (ch) {
+        appendCharacterImg(elRewardPerson, ch, "sheet__avatar");
+      }
+      var copy = document.createElement("div");
+      copy.className = "sheet__person-copy";
+      var strong = document.createElement("strong");
+      strong.textContent = personDisplayLabel(person);
+      copy.appendChild(strong);
+      if (ch) {
+        var sub = document.createElement("span");
+        sub.className = "sheet__person-sub";
+        sub.textContent = ch.name + (ch.kind === "villain" ? " · mob avatar" : " · hero");
+        copy.appendChild(sub);
+      }
+      normalizePersonItems(person);
+      var itemsLine = document.createElement("span");
+      appendPersonLootSummary(itemsLine, person, {
+        className: "sheet__rewards-line loot-summary loot-summary--sheet",
+      });
+      copy.appendChild(itemsLine);
+      elRewardPerson.appendChild(copy);
+      return;
     }
-    var copy = document.createElement("div");
-    copy.className = "sheet__person-copy";
-    var strong = document.createElement("strong");
-    strong.textContent = personDisplayLabel(person);
-    copy.appendChild(strong);
-    if (ch) {
-      var sub = document.createElement("span");
-      sub.className = "sheet__person-sub";
-      sub.textContent = ch.name + (ch.kind === "villain" ? " · mob avatar" : " · hero");
-      copy.appendChild(sub);
+
+    var avatars = document.createElement("div");
+    avatars.className = "sheet__people-avatars";
+    var names = [];
+    var i;
+    for (i = 0; i < personIds.length; i++) {
+      var p = personById(personIds[i]);
+      if (!p) continue;
+      names.push(personDisplayLabel(p));
+      var c = characterById(p.characterId);
+      if (c) appendCharacterImg(avatars, c, "sheet__people-avatar", 40);
     }
-    normalizePersonItems(person);
-    var itemsLine = document.createElement("span");
-    appendPersonLootSummary(itemsLine, person, {
-      className: "sheet__rewards-line loot-summary loot-summary--sheet",
-    });
-    copy.appendChild(itemsLine);
-    elRewardPerson.appendChild(copy);
+    elRewardPerson.appendChild(avatars);
+
+    var multiCopy = document.createElement("div");
+    multiCopy.className = "sheet__person-copy";
+    var multiStrong = document.createElement("strong");
+    multiStrong.textContent = names.join(" · ");
+    multiCopy.appendChild(multiStrong);
+    var multiSub = document.createElement("span");
+    multiSub.className = "sheet__person-sub";
+    multiSub.textContent =
+      personIds.length + " players · same reason · each gets their own loot";
+    multiCopy.appendChild(multiSub);
+    elRewardPerson.appendChild(multiCopy);
   }
 
   function openRewardSheet(personId, kindFilter) {
     var person = personById(personId);
     if (!person || !elRewardSheet) return;
+    var personIds = resolveRewardPersonIds(personId);
     rewardContext.editEntryId = null;
-    rewardContext.personId = personId;
+    rewardContext.personIds = personIds;
+    rewardContext.personId = personIds[0];
     rewardContext.pendingCategoryId = null;
     rewardContext.pendingCategoryLabel = null;
     rewardContext.pendingCategoryKind = null;
     rewardContext.categoryKindFilter =
       kindFilter === "bad" ? "bad" : kindFilter === "good" ? "good" : null;
     clearRewardNote();
-    renderRewardSheetPerson(person);
+    renderRewardSheetPeople(personIds);
     showRewardStep("category");
     renderCategoryPicker();
     elRewardSheet.hidden = false;
@@ -4366,6 +4480,7 @@
     if (!person) return;
     rewardContext.editEntryId = entryId;
     rewardContext.personId = entry.personId;
+    rewardContext.personIds = [entry.personId];
     renderRewardSheetPerson(person);
     if (elRewardNoteInput) elRewardNoteInput.value = ledgerEntryNote(entry);
     var cat = behaviorCategoryById(entry.categoryId);
@@ -4407,6 +4522,7 @@
   function closeRewardSheet() {
     if (elRewardSheet) elRewardSheet.hidden = true;
     rewardContext.personId = null;
+    rewardContext.personIds = [];
     rewardContext.editEntryId = null;
     rewardContext.pendingCategoryId = null;
     rewardContext.pendingCategoryLabel = null;
@@ -4524,7 +4640,7 @@
   }
 
   function renderPointPickers() {
-    var person = personById(rewardContext.personId);
+    var person = primaryRewardPerson();
     if (!person || !elPointAll) return;
     normalizePersonItems(person);
     elPointAll.replaceChildren("");
@@ -4556,17 +4672,19 @@
   }
 
   function logStar(points, lootId) {
-    if (rewardContext.personId == null) return;
+    var personIds = rewardPersonIds();
+    if (!personIds.length) return;
     var note = readRewardNote();
     var categoryId = rewardContext.pendingCategoryId || "other";
-    var person = personById(rewardContext.personId);
-    var resolvedLoot = lootId || "unknown";
-    if (person) {
-      var item = personItemForPoints(person, points);
-      if (item) resolvedLoot = item.id;
-    }
 
     if (rewardContext.editEntryId) {
+      if (personIds.length !== 1) return;
+      var person = personById(personIds[0]);
+      var resolvedLoot = lootId || "unknown";
+      if (person) {
+        var item = personItemForPoints(person, points);
+        if (item) resolvedLoot = item.id;
+      }
       var existing = ledgerEntryById(rewardContext.editEntryId);
       if (!existing) {
         closeRewardSheet();
@@ -4597,21 +4715,7 @@
     }
 
     var now = Date.now();
-    var entry = {
-      id: uid("led"),
-      type: "score",
-      personId: rewardContext.personId,
-      points: points,
-      categoryId: categoryId,
-      lootId: resolvedLoot,
-      note: note,
-      ts: now,
-      updatedAt: now,
-    };
-    state.ledger.push(entry);
-    saveState();
-
-    var catNew = behaviorCategoryById(entry.categoryId);
+    var catNew = behaviorCategoryById(categoryId);
     var kind =
       points >= 5
         ? "mega"
@@ -4622,7 +4726,49 @@
             : points < 0
               ? "oops"
               : null;
-    showStarToast(person, points, catNew, resolvedLoot, kind, note);
+    var logged = 0;
+    var i;
+    for (i = 0; i < personIds.length; i++) {
+      var pid = personIds[i];
+      var p = personById(pid);
+      if (!p) continue;
+      var resolved = lootId || "unknown";
+      var lootItem = personItemForPoints(p, points);
+      if (lootItem) resolved = lootItem.id;
+      state.ledger.push({
+        id: uid("led"),
+        type: "score",
+        personId: pid,
+        points: points,
+        categoryId: categoryId,
+        lootId: resolved,
+        note: note,
+        ts: now,
+        updatedAt: now,
+      });
+      logged += 1;
+    }
+    if (!logged) return;
+    saveState();
+
+    if (logged === 1) {
+      var onlyPerson = personById(personIds[0]);
+      var onlyLoot = lootId || "unknown";
+      var onlyItem = onlyPerson ? personItemForPoints(onlyPerson, points) : null;
+      if (onlyItem) onlyLoot = onlyItem.id;
+      showStarToast(onlyPerson, points, catNew, onlyLoot, kind, note);
+    } else {
+      showToast(
+        formatScoreWithUnit(points) +
+          " · " +
+          (catNew ? catNew.label : "Logged") +
+          " · " +
+          logged +
+          " players",
+        kind
+      );
+    }
+    clearPlayerSelection();
     closeRewardSheet();
     renderAll();
   }
@@ -4649,6 +4795,7 @@
     if (filterPersonId() === personId) {
       state.settings.filterPersonId = "all";
     }
+    if (selectedPlayerIds[personId]) delete selectedPlayerIds[personId];
     saveState();
     renderAll();
   }
@@ -6154,17 +6301,6 @@
     if (elBtnOpenDiary) {
       elBtnOpenDiary.addEventListener("click", function () {
         setView("diary");
-      });
-    }
-    if (elDayNoteFormHome) {
-      elDayNoteFormHome.addEventListener("submit", function (e) {
-        e.preventDefault();
-        var text = elDayNoteInputHome ? elDayNoteInputHome.value : "";
-        if (addDayNote(dayKeyFromTs(Date.now()), text)) {
-          if (elDayNoteInputHome) elDayNoteInputHome.value = "";
-          renderDayNotesPanels();
-          showToast("Saved to diary.");
-        }
       });
     }
     if (elDayNoteFormDiary) {

@@ -277,10 +277,17 @@ body::after {
 }
 
 .players-section .section-title {
-  margin-bottom: 0.65rem;
+  margin-bottom: 0.35rem;
+}
+
+.players-section__hint {
+  margin: 0 0 0.65rem;
+  font-size: 0.82rem;
+  color: var(--muted);
 }
 
 .person-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -301,6 +308,52 @@ body::after {
 .person-card--villain {
   background: linear-gradient(180deg, #fff8f0 0%, #f0e8dc 100%);
   border-color: rgba(120, 90, 60, 0.35);
+}
+
+.person-card--selected {
+  border-color: var(--green);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.8),
+    0 0 0 2px rgba(104, 159, 56, 0.25),
+    0 3px 0 rgba(45, 70, 40, 0.12);
+}
+
+.person-card__select {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  z-index: 1;
+  width: 1.35rem;
+  height: 1.35rem;
+  padding: 0;
+  border: 2px solid rgba(91, 130, 68, 0.35);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--green);
+  font: inherit;
+  font-size: 0.72rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.person-card__select::after {
+  content: "";
+  display: block;
+  width: 0.45rem;
+  height: 0.45rem;
+  margin: 0.18rem auto 0;
+  border-radius: 999px;
+  background: transparent;
+}
+
+.person-card--selected .person-card__select {
+  border-color: var(--green);
+  background: var(--green);
+  color: #fff;
+}
+
+.person-card--selected .person-card__select::after {
+  background: #fff;
 }
 
 .person-card__avatar {
@@ -1965,6 +2018,18 @@ body::after {
   margin-top: 2px;
   font-size: 0.78rem;
   color: var(--muted);
+}
+
+.sheet__people-avatars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.sheet__people-avatar {
+  object-fit: contain;
+  image-rendering: pixelated;
 }
 
 .sheet__rewards-line {
